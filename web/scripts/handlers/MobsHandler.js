@@ -283,6 +283,7 @@ export class MobsHandler {
         }
 
         mob.identified = !!mob.name && hasKnownInfo;
+        mob.hpConfirmed = !!(dbInfo && typeof dbInfo.hp === 'number' && dbInfo.hp === mob.maxHealth);
         return hasKnownInfo;
     }
 

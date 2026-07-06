@@ -43,10 +43,10 @@ describe('MobsDrawing living resource filter at render', () => {
         settingsSync.getBool.mockImplementation(key => key !== 'settingResourceColorBadges');
     });
 
-    function livingMob({id = 1, tier = 4, enchant = 0, name = 'Fiber'} = {}) {
+    function livingMob({id = 1, tier = 4, enchant = 0, name = 'Fiber', hpConfirmed = true} = {}) {
         return {
             id, typeId: 529, hX: 10, hY: 20, tier,
-            enchantmentLevel: enchant, name,
+            enchantmentLevel: enchant, name, hpConfirmed,
             type: name === 'Hide' ? EnemyType.LivingSkinnable : EnemyType.LivingHarvestable,
             getCurrentHP: () => 100, maxHealth: 100,
         };
@@ -351,7 +351,7 @@ describe('MobsDrawing minimum HP filter for hostile mobs (settingShowMinimumHeal
         settingsSync.getJSON.mockImplementation(key => key === 'settingLivingFiberEnchants' ? {e0: Array(8).fill(true), e1: Array(8).fill(true), e2: Array(8).fill(true), e3: Array(8).fill(true), e4: Array(8).fill(true)} : null);
         settingsSync.getNumber.mockImplementation((key, d) => key === 'settingTextMinimumHealthEnemies' ? 2100 : (d ?? 0));
 
-        const living = {id: 20, typeId: 529, hX: 10, hY: 20, tier: 4, enchantmentLevel: 0, name: 'Fiber', type: EnemyType.LivingHarvestable, getCurrentHP: () => 100, maxHealth: 100};
+        const living = {id: 20, typeId: 529, hX: 10, hY: 20, tier: 4, enchantmentLevel: 0, name: 'Fiber', hpConfirmed: true, type: EnemyType.LivingHarvestable, getCurrentHP: () => 100, maxHealth: 100};
         drawing.invalidate(ctx, [living]);
 
         expect(drawing.DrawCustomImage).toHaveBeenCalled();
