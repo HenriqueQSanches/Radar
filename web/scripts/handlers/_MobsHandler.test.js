@@ -678,6 +678,30 @@ describe('MobsHandler', () => {
             expect(mobs[0].enchantmentLevel).toBe(2);
             expect(mobs[0].tier).toBe(4);
         });
+
+        // @verified 2026-07-11: "pelego T1 marcado como T6/T7" report — enchant
+        // arrives after spawn (MobChangeState), so the spawn-time lookup used
+        // isEnchanted=false; if the enchant-scaled hp collides with a higher
+        // tier's base hp, the wrong tier was locked in forever. It must now be
+        // corrected once the real enchant is known.
+        test('HARV-2: enchant arriving after spawn re-identifies a mob whose scaled hp collided with a higher tier', () => {
+            const foxTypeId = dbs.mobsDatabase.getTypeIdByName('T2_MOB_HIDE_MISTS_FOX');
+            const houndTypeId = dbs.mobsDatabase.getTypeIdByName('T6_MOB_HIDE_MISTS_HOUND');
+            expect(foxTypeId).not.toBeNull();
+            expect(houndTypeId).not.toBeNull();
+            const collidingHp = dbs.mobsDatabase.mobsById.get(houndTypeId).hp;
+
+            const spawnParams = normalizeParams({'0': 93000, '1': foxTypeId, '2': 255, '7': [0, 0], '13': collidingHp, '33': 0});
+            handler.NewMobEvent(spawnParams);
+            expect(handler.getMobList()[0].tier).toBe(6);
+
+            handler.updateEnchantEvent({0: 93000, 1: 2});
+
+            const mobs = handler.getMobList();
+            expect(mobs[0].enchantmentLevel).toBe(2);
+            expect(mobs[0].tier).toBe(2);
+            expect(mobs[0].uniqueName).toBe('T2_MOB_HIDE_MISTS_FOX');
+        });
     });
 
     // -------------------------------------------------------------------------

@@ -133,4 +133,44 @@ describe('MobsDatabase runtime offset calibration', () => {
         // adoption the guard prevents.
         expect(db.getMobInfo(foxIdx + OFFSET, collidingHp, false)?.tier).toBe(6);
     });
+
+    test('a corrupted calibration delta no longer strands a T1 critter on an unrelated high-tier row', () => {
+        // Regression for "coelho T1 marcado como T7": MOB_RABBIT's hp (20) has
+        // several same-hp siblings within the calibration window (other T1 hide
+        // critters plus non-harvestable T1_MOB_VANITY_SUMMON_* decorative pets).
+        // Those vanity rows share hp and tier but not the harvestable flag, so
+        // the old code called the window "incoherent" and fell back to
+        // `primary` — which, if the consensus delta had drifted for any
+        // unrelated reason, could be a completely different, much higher tier
+        // row. `primary` is confirmed wrong here (its hp doesn't match), so it
+        // must never be preferred over an hp-confirmed candidate.
+        const rabbitTypeId = db.getTypeIdByName('MOB_RABBIT');
+        expect(rabbitTypeId).not.toBeNull();
+        const rabbitHp = db.mobsById.get(rabbitTypeId).hp;
+
+        db.calibrationDelta = 100; // simulates a consensus corrupted by unrelated spawns
+        const info = db.getMobInfo(rabbitTypeId, rabbitHp);
+
+        expect(info?.tier).toBe(1);
+        expect(info?.uniqueName).not.toMatch(/BOSS/);
+    });
+
+    test('incoherent hp-matched windows do not feed the calibration vote', () => {
+        // Root cause behind the T1/T3 "marcado como T7" and "tronco confundido
+        // com pelego" reports: common critters (rabbits, hide critters) share
+        // hp with unrelated rows (vanity summons, wood/rock/ore/fiber critters)
+        // by game design. Voting on every such ambiguous window — as the old
+        // code did — lets these very common encounters gradually outvote the
+        // real delta and corrupt identification for unrelated mobs later in
+        // the session. An incoherent window must never reach _voteDeltas.
+        const rabbitTypeId = db.getTypeIdByName('MOB_RABBIT');
+        const rabbitHp = db.mobsById.get(rabbitTypeId).hp;
+        db.calibrationDelta = 100; // forces the window search (primary mismatches)
+
+        const voteSpy = vi.spyOn(db, '_voteDeltas');
+        db.getMobInfo(rabbitTypeId, rabbitHp);
+
+        expect(voteSpy).not.toHaveBeenCalled();
+        expect(db.getCalibrationStats().delta).toBe(100); // consensus untouched
+    });
 });

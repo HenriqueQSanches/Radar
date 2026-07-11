@@ -266,33 +266,50 @@ export class MobsDatabase {
         }
         if (candidates.length === 0) return primary;
 
-        // The true delta is always among the candidates (duplicate hp rows add
-        // spurious ones); voting for all of them lets the one delta consistent
-        // across spawns win the consensus within a few observations.
-        this._voteDeltas(candidates);
-
-        // Voting may have just moved the consensus — if it now explains this
-        // spawn, trust it.
-        if (candidates.includes(this.calibrationDelta)) {
-            return this.mobsById.get(typeId - this.calibrationDelta);
-        }
-
-        // Rehome this lookup only when every hp match carries the same label —
-        // then whichever row is truly the server's, the answer is identical.
-        // Otherwise (ambiguous, e.g. an enchant-scaled hp colliding with a
-        // random row) stay on the consensus mapping and let the votes decide.
+        // Prefer the candidate closest to the current consensus (falling back
+        // to proximity to zero, the vendored anchor) among the hp-confirmed
+        // rows. `primary` is not an option for the final return here: we only
+        // reach this branch because primary.hp !== hp, so it is a
+        // confirmed-wrong guess, while every candidate's hp is confirmed correct.
         let best = candidates[0];
         for (const d of candidates) {
             if (this._deltaDistance(d) < this._deltaDistance(best)) best = d;
         }
         const bestRow = this.mobsById.get(typeId - best);
+
+        // Duplicate-hp rows are common by game design across totally different
+        // resource types at the same tier (e.g. WOOD/ROCK/ORE/FIBER critters,
+        // or a decorative VANITY_SUMMON pet, sharing a HIDE critter's hp and
+        // tier). Such a window is not trustworthy evidence of the *server's*
+        // typeId offset: voting on it every time one of these very common
+        // mobs spawns can, over a session, outvote the real delta and corrupt
+        // identification for unrelated mobs elsewhere ("pelego T1 marcado como
+        // T7", "tronco confundido com pelego"). Only feed the calibration
+        // vote from windows where every hp match agrees on identity.
         const coherent = candidates.every(d => {
             const row = this.mobsById.get(typeId - d);
             return row.isHarvestable === bestRow.isHarvestable
                 && row.type === bestRow.type
                 && row.tier === bestRow.tier;
         });
-        return coherent ? bestRow : primary;
+
+        if (coherent) {
+            // The true delta is always among the candidates here; voting for
+            // all of them lets the one delta consistent across spawns win the
+            // consensus within a few observations.
+            this._voteDeltas(candidates);
+
+            // Voting may have just moved the consensus — if it now explains
+            // this spawn, trust it.
+            if (candidates.includes(this.calibrationDelta)) {
+                return this.mobsById.get(typeId - this.calibrationDelta);
+            }
+        } else {
+            window.logger?.debug(CATEGORIES.SYSTEM, 'MobsDatabaseIncoherentHpMatch', {
+                typeId, hp, candidates, chosenDelta: best,
+            });
+        }
+        return bestRow;
     }
 
     /**

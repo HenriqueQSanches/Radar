@@ -341,9 +341,20 @@ export class MobsHandler {
         // so a bogus value can't silently move the mob out of its marking cell.
         if (!Number.isInteger(enchantmentLevel) || enchantmentLevel < 0 || enchantmentLevel > 4) return;
         const found = this.mobsList.find(m => m.id === mobId);
-        if (found) {
-            found.enchantmentLevel = enchantmentLevel;
-            found.touch();
+        if (!found) return;
+
+        const changed = found.enchantmentLevel !== enchantmentLevel;
+        found.enchantmentLevel = enchantmentLevel;
+        found.touch();
+
+        // Spawn-time identification used whatever enchant was known then (often
+        // 0, if this event arrives later). An enchanted mob's inflated maxHealth
+        // can collide with a higher-tier row's base hp, locking in the wrong
+        // tier via MobsDatabase's hp-window fallback. Re-identify now that the
+        // real enchant is known, so the isEnchanted guard applies retroactively.
+        if (changed) {
+            const dbInfo = window.mobsDatabase?.getMobInfo(found.typeId, found.maxHealth, enchantmentLevel > 0);
+            this._applyDbInfo(found, dbInfo);
         }
     }
 
