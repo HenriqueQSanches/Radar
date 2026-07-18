@@ -173,4 +173,24 @@ describe('MobsDatabase runtime offset calibration', () => {
         expect(voteSpy).not.toHaveBeenCalled();
         expect(db.getCalibrationStats().delta).toBe(100); // consensus untouched
     });
+
+    test('getResourceInfo uses the server-reported tier to correct a drifted lookup', () => {
+        // Regression for "minério de ferro marcado como T5.1 errado": dead
+        // critter corpses (Ore/Rock/Wood/Fiber/Hide) carry no hp to verify the
+        // typeId lookup against — getResourceInfo used to trust the calibrated
+        // primary row blindly. If the delta had drifted for any unrelated
+        // reason, the resource *type* (icon) could come out wrong even though
+        // the numeric tier shown comes from a separate, reliable server field.
+        const oreTypeId = db.getTypeIdByName('T5_MOB_CRITTER_ORE_MOUNTAIN_RED');
+        expect(oreTypeId).not.toBeNull();
+
+        db.calibrationDelta = 100; // corrupted consensus, unrelated to this critter
+
+        const withoutHint = db.getResourceInfo(oreTypeId);
+        expect(withoutHint?.type).not.toBe('Ore'); // documents the old blind-trust bug
+
+        const withHint = db.getResourceInfo(oreTypeId, 5); // server's own loot tier
+        expect(withHint?.type).toBe('Ore');
+        expect(withHint?.tier).toBe(5);
+    });
 });

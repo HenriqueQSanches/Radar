@@ -89,7 +89,7 @@ export class HarvestablesHandler
         // Static resources: use HarvestablesDatabase based on typeNumber
         let stringType;
         if (isLiving && window.mobsDatabase?.isLoaded) {
-            const resourceInfo = window.mobsDatabase.getResourceInfo(mobileTypeId);
+            const resourceInfo = window.mobsDatabase.getResourceInfo(mobileTypeId, tier);
             stringType = resourceInfo?.type || this.GetStringType(type);
 
             window.logger?.info(CATEGORIES.HARVESTABLES, 'LivingResource_TypeFromMobsDB', {
@@ -152,7 +152,7 @@ export class HarvestablesHandler
         // Static resources: use HarvestablesDatabase based on typeNumber
         let stringType;
         if (isLiving && window.mobsDatabase?.isLoaded) {
-            const resourceInfo = window.mobsDatabase.getResourceInfo(mobileTypeId);
+            const resourceInfo = window.mobsDatabase.getResourceInfo(mobileTypeId, tier);
             stringType = resourceInfo?.type || this.GetStringType(type);
 
             window.logger?.info(CATEGORIES.HARVESTABLES, 'UpdateHarvestable_LivingResource_TypeFromMobsDB', {

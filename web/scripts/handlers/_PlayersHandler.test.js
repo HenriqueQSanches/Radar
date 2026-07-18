@@ -590,6 +590,66 @@ describe('PlayersHandler', () => {
         });
     });
 
+    describe('threat toast (persistent identity alert)', () => {
+        // The radar cannot draw where a hostile player is — Albion encrypts
+        // other players' move packets, so PlayersDrawing renders them at
+        // (0,0) — the toast is the only channel carrying their actual
+        // identity, and it must survive independently of the flash/sound
+        // settings so detection stays "signaling" even with those muted.
+        let toastShow;
+
+        beforeEach(() => {
+            toastShow = vi.fn();
+            window.toast = {show: toastShow};
+        });
+
+        afterEach(() => {
+            delete window.toast;
+        });
+
+        test('synthetic: hostile detected in red zone shows nickname+guild in a warning toast', () => {
+            zonesDatabase.getPvpType.mockReturnValue('red');
+            handler.handleNewPlayerEvent(1, {1: 'Baddie', 8: 'EvilGuild', 53: 255, 51: null, 40: [], 43: []});
+
+            expect(toastShow).toHaveBeenCalledTimes(1);
+            const [message, type] = toastShow.mock.calls[0];
+            expect(message).toContain('Baddie');
+            expect(message).toContain('EvilGuild');
+            expect(type).toBe('warning');
+        });
+
+        test('synthetic: hostile detected in black zone escalates toast severity', () => {
+            zonesDatabase.getPvpType.mockReturnValue('black');
+            handler.handleNewPlayerEvent(1, {1: 'Reaper', 8: '', 53: 0, 51: null, 40: [], 43: []});
+
+            expect(toastShow).toHaveBeenCalledTimes(1);
+            expect(toastShow.mock.calls[0][1]).toBe('error');
+        });
+
+        test('synthetic: toast still fires via handleThreatMovement when flash and sound are both disabled', () => {
+            zonesDatabase.getPvpType.mockReturnValue('red');
+            settingsSync.getBool.mockImplementation(k => {
+                if (k === 'settingFlash' || k === 'settingSound') return false;
+                return true;
+            });
+            handler.handleNewPlayerEvent(1, {1: 'Ghost', 8: '', 53: 255, 51: null, 40: [], 43: []});
+            toastShow.mockClear(); // spawn itself already alerted; test the movement path in isolation
+
+            handler.alertedThreatIds.delete(1);
+            handler.handleThreatMovement(1);
+
+            expect(toastShow).toHaveBeenCalledTimes(1);
+        });
+
+        test('synthetic: same player does not toast twice while still alerted', () => {
+            zonesDatabase.getPvpType.mockReturnValue('red');
+            handler.handleNewPlayerEvent(1, {1: 'Baddie', 8: '', 53: 255, 51: null, 40: [], 43: []});
+            handler.handleThreatMovement(1);
+
+            expect(toastShow).toHaveBeenCalledTimes(1);
+        });
+    });
+
     describe('getThreatPlayers (zone-aware threat list)', () => {
         // @verified 2026-04-24: safe zone yields zero threats regardless of faction.
         test('synthetic: safe zone returns no threats', () => {

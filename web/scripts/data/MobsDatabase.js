@@ -393,12 +393,45 @@ export class MobsDatabase {
     }
 
     /**
-     * Get resource info if mob is harvestable
+     * Get resource info if mob is harvestable.
+     *
+     * Used for dead critters turned into harvestable corpses, which carry no
+     * HP to verify the typeId lookup against (unlike live mobs via
+     * getMobInfo's observedMaxHp). If the caller knows the server-reported
+     * loot tier (reliable — it comes straight off the wire, not from this
+     * calibrated table), pass it as `expectedTier`: it's used the same way
+     * observedMaxHp is elsewhere, to catch and correct a drifted calibration
+     * instead of silently returning the wrong resource type (e.g. "minério
+     * marcado com ícone errado").
      * @param {number} typeId - The mob type ID
+     * @param {number} [expectedTier] - Server-reported loot tier, if known
      * @returns {{type: string, tier: number}|null} Resource info or null
      */
-    getResourceInfo(typeId) {
+    getResourceInfo(typeId, expectedTier) {
         const info = this.getMobInfo(typeId);
+        if (info && info.isHarvestable && (!Number.isFinite(expectedTier) || info.tier === expectedTier)) {
+            return {
+                type: info.type,
+                tier: info.tier
+            };
+        }
+
+        if (Number.isFinite(expectedTier)) {
+            // Tie-break by proximity to zero (the vendored anchor), NOT to the
+            // current calibrationDelta: that delta is exactly what we're
+            // trying to correct for here, so weighting toward it would just
+            // reintroduce the same corruption this check exists to catch.
+            const searchWindow = MobsDatabase.CALIBRATION_WINDOW;
+            let best = null;
+            for (let d = -searchWindow; d <= searchWindow; d++) {
+                const row = this.mobsById.get(typeId - d);
+                if (row && row.isHarvestable && row.tier === expectedTier) {
+                    if (!best || Math.abs(d) < Math.abs(best.d)) best = {d, row};
+                }
+            }
+            if (best) return {type: best.row.type, tier: best.row.tier};
+        }
+
         if (info && info.isHarvestable) {
             return {
                 type: info.type,

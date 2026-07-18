@@ -173,10 +173,26 @@ export class PlayersHandler {
 
         if (settingsSync.getBool('settingFlash')) this.triggerScreenFlash();
         if (settingsSync.getBool('settingSound')) this.playThreatSound();
+        // The radar can't draw where this player is (Albion encrypts other
+        // players' move packets — see PlayersDrawing.invalidate), so the toast
+        // is the one channel that can carry actual identity, not just "someone
+        // is near": nickname/guild survive even if the flash/sound are missed
+        // or disabled, and it self-dismisses instead of piling up.
+        this._showThreatToast(player, pvpType);
+    }
+
+    _showThreatToast(player, pvpType) {
+        if (typeof window === 'undefined' || !window.toast) return;
+        const who = player.guildName ? `${player.nickname} [${player.guildName}]` : player.nickname;
+        const severe = pvpType === 'black';
+        window.toast.show(
+            `${severe ? '☠️' : '⚠️'} Jogador hostil detectado: ${who || 'desconhecido'}`,
+            severe ? 'error' : 'warning',
+            severe ? 6000 : 4000
+        );
     }
 
     handleThreatMovement(id) {
-        if (!settingsSync.getBool('settingSound') && !settingsSync.getBool('settingFlash')) return;
         this._emitThreatAlert(this.playersList.find(p => p.id === id));
     }
 
