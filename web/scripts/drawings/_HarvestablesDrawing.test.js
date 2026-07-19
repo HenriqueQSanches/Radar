@@ -172,9 +172,13 @@ describe('HarvestablesDrawing render-time routing', () => {
     // harvestables (mobileTypeId=-1/null/65535) go to the Static filter.
     // -------------------------------------------------------------------------
 
+    // @updated 2026-07-18: mobileTypeId 555 (T5_MOB_CRITTER_FIBER_SWAMP_DEAD) —
+    // was 532 before the July mob-dump update shifted that row onto an
+    // unrelated Hide-type mob, which broke the Fiber-specific settings gate
+    // this test exercises.
     // @verified 2026-04-24: dead Fiber carcass routes through Living since it has a valid mobileTypeId.
-    test('full-flow: dead Fiber carcass mobileTypeId=532 renders under Living filter', () => {
-        const p = {0: 9001, 5: 11, 6: 532, 7: 5, 8: [0, 0], 10: 3, 11: 0};  // size=3 so drawing does not skip
+    test('full-flow: dead Fiber carcass mobileTypeId=555 renders under Living filter', () => {
+        const p = {0: 9001, 5: 11, 6: 555, 7: 5, 8: [0, 0], 10: 3, 11: 0};  // size=3 so drawing does not skip
 
         settingsSync.getJSON.mockImplementation(key => {
             if (key === 'settingLivingFiberEnchants') return allTrue();
@@ -190,8 +194,8 @@ describe('HarvestablesDrawing render-time routing', () => {
     });
 
     // @verified 2026-04-24: dead Fiber carcass skipped when Living off even if Static is on.
-    test('full-flow: dead Fiber carcass mobileTypeId=532 skipped when Living off, Static on', () => {
-        const p = {0: 9001, 5: 11, 6: 532, 7: 5, 8: [0, 0], 10: 3, 11: 0};  // size=3 so drawing does not skip
+    test('full-flow: dead Fiber carcass mobileTypeId=555 skipped when Living off, Static on', () => {
+        const p = {0: 9001, 5: 11, 6: 555, 7: 5, 8: [0, 0], 10: 3, 11: 0};  // size=3 so drawing does not skip
 
         settingsSync.getJSON.mockImplementation(key => {
             if (key === 'settingLivingFiberEnchants') return allFalse();

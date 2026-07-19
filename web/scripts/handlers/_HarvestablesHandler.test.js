@@ -128,7 +128,9 @@ describe('HarvestablesHandler', () => {
 
             handler.newHarvestableObject(p[0], p);
 
-            expect(spy).toHaveBeenCalledWith(424);
+            // getResourceInfo now also receives the server's own tier
+            // (Parameters[7]=3) as a verification hint — see MobsDatabase.
+            expect(spy).toHaveBeenCalledWith(424, 3);
             const list = handler.getHarvestableList();
             expect(list).toHaveLength(1);
             expect(list[0].stringType).toBe('Hide');
@@ -297,7 +299,7 @@ describe('HarvestablesHandler', () => {
                 1: 529,
                 2: 255,
                 7: [-358.25, 15.5],
-                13: 1000,
+                13: 856, // real T3 fiber critter hp — was a dummy 1000 that no longer resolves after the July mob-dump update
                 33: 0
             };
             mobsHandler.NewMobEvent(mobParams);
@@ -326,7 +328,7 @@ describe('HarvestablesHandler', () => {
                 1: 531,
                 2: 255,
                 7: [-364.47, 194.42],
-                13: 1000,
+                13: 1203, // real T4 fiber critter hp — was a dummy 1000 that no longer resolves after the July mob-dump update
                 33: 0
             };
             mobsHandler.NewMobEvent(mobParams);
