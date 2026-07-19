@@ -50,75 +50,75 @@ const platforms: Record<string, PlatformConfig> = {
 };
 
 function createWindowsReadme(exeName: string): string {
-    return `# OpenRadar v${VERSION} - Albion Online Radar (Windows)
+    return `# OpenRadar v${VERSION} - Radar do Albion Online (Windows)
 
-## About
+## Sobre
 
-OpenRadar is a native Go application (~95 MB) with all assets embedded.
-No external dependencies besides Npcap are required.
+OpenRadar é um aplicativo Go nativo (~95 MB) com tudo embutido.
+Não precisa de nenhuma dependência externa além do Npcap.
 
-## Installation
+## Instalação
 
-1. **Install Npcap** (REQUIRED - version 1.84 or newer)
+1. **Instale o Npcap** (OBRIGATÓRIO - versão 1.84 ou mais nova)
    Download: https://npcap.com/
-   Direct link (v1.84): https://npcap.com/dist/npcap-1.84.exe
+   Link direto (v1.84): https://npcap.com/dist/npcap-1.84.exe
 
-2. **Launch ${exeName}**
-   Double-click on ${exeName}
+2. **Abra o ${exeName}**
+   Dê duplo clique no ${exeName}
 
-3. **Select your network adapter**
-   Choose the adapter you use to connect to the Internet
-   (DO NOT choose 127.0.0.1 or localhost)
+3. **Selecione seu adaptador de rede**
+   Escolha o adaptador que você usa pra conectar na Internet
+   (NÃO escolha 127.0.0.1 ou localhost)
 
-4. **Access the radar**
-   Open http://localhost:5001 in your browser
+4. **Acesse o radar**
+   Abra http://localhost:5001 no navegador
 
-## Command-line Options
+## Opções de linha de comando
 
-  ${exeName} -version     Show version information
-  ${exeName} -ip X.X.X.X  Skip adapter selection prompt
-  ${exeName} -dev         Development mode (read files from disk)
+  ${exeName} -version     Mostra a versão
+  ${exeName} -ip X.X.X.X  Pula a seleção de adaptador
+  ${exeName} -dev         Modo desenvolvimento (lê os arquivos do disco)
 
-## Prerequisites
+## Requisitos
 
 - Windows 10/11 (64-bit)
-- Npcap 1.84 or newer installed
+- Npcap 1.84 ou mais novo instalado
 
-## Verification
+## Verificação
 
-This binary was built from open source code via GitHub Actions CI/CD.
-Verify the integrity using the checksums file:
+Esse binário foi compilado a partir do código aberto via GitHub Actions CI/CD.
+Verifique a integridade usando o arquivo de checksums:
 
   certutil -hashfile ${exeName} SHA256
 
-Compare with checksums-sha256.txt from the release.
+Compare com o checksums-sha256.txt da release.
 
-## Support
+## Suporte
 
-GitHub: https://github.com/Nouuu/Albion-Online-OpenRadar
+GitHub: https://github.com/HenriqueQSanches/Radar
 
-## Technical Details
+## Detalhes técnicos
 
-- Native Go backend (v2.0)
-- Single binary with embedded assets
-- Server on port 5001 (HTTP + WebSocket on /ws)
-- Captures UDP traffic on port 5056
+- Backend Go nativo (v2.0)
+- Binário único com tudo embutido
+- Servidor na porta 5001 (HTTP + WebSocket em /ws)
+- Captura tráfego UDP na porta 5056
 
-Built for: win64
+Compilado para: win64
 `;
 }
 
 function createLinuxReadme(exeName: string): string {
-    return `# OpenRadar v${VERSION} - Albion Online Radar (Linux)
+    return `# OpenRadar v${VERSION} - Radar do Albion Online (Linux)
 
-## About
+## Sobre
 
-OpenRadar is a native Go application (~95 MB) with all assets embedded.
-No external dependencies besides libpcap are required.
+OpenRadar é um aplicativo Go nativo (~95 MB) com tudo embutido.
+Não precisa de nenhuma dependência externa além do libpcap.
 
-## Installation
+## Instalação
 
-1. **Install dependencies** (REQUIRED)
+1. **Instale as dependências** (OBRIGATÓRIO)
 
    Ubuntu/Debian:
      sudo apt-get install libpcap0.8 libcap2-bin
@@ -129,81 +129,81 @@ No external dependencies besides libpcap are required.
    Arch Linux:
      sudo pacman -S libpcap libcap
 
-2. **Make executable**
+2. **Torne executável**
    chmod +x ${exeName}
 
-3. **Grant capture permissions** (choose ONE option)
+3. **Conceda permissão de captura** (escolha UMA opção)
 
-   Option A - Run as root (simple):
+   Opção A - Rodar como root (simples):
      sudo ./${exeName}
 
-   Option B - Grant capabilities (recommended, run as normal user):
-     # Grant network capture capabilities
+   Opção B - Conceder capabilities (recomendado, roda como usuário normal):
+     # Concede permissão de captura de rede
      sudo setcap cap_net_raw,cap_net_admin=eip ./${exeName}
 
-     # Verify capabilities were applied (optional)
+     # Confere se as capabilities foram aplicadas (opcional)
      getcap ./${exeName}
 
-     # Run as normal user
+     # Roda como usuário normal
      ./${exeName}
 
-   Note: Capabilities are removed if the file is modified or moved.
-   Re-run setcap after updates.
+   Obs: as capabilities são removidas se o arquivo for modificado ou movido.
+   Rode o setcap de novo depois de cada atualização.
 
-4. **Select your network adapter**
-   Choose the adapter you use to connect to the Internet
-   (DO NOT choose 127.0.0.1 or localhost)
+4. **Selecione seu adaptador de rede**
+   Escolha o adaptador que você usa pra conectar na Internet
+   (NÃO escolha 127.0.0.1 ou localhost)
 
-5. **Access the radar**
-   Open http://localhost:5001 in your browser
+5. **Acesse o radar**
+   Abra http://localhost:5001 no navegador
 
-## Command-line Options
+## Opções de linha de comando
 
-  ./${exeName} -version     Show version information
-  ./${exeName} -ip X.X.X.X  Skip adapter selection prompt
-  ./${exeName} -dev         Development mode (read files from disk)
+  ./${exeName} -version     Mostra a versão
+  ./${exeName} -ip X.X.X.X  Pula a seleção de adaptador
+  ./${exeName} -dev         Modo desenvolvimento (lê os arquivos do disco)
 
-## Prerequisites
+## Requisitos
 
 - Linux (Ubuntu 18.04+, Debian 10+, Fedora 32+, Arch, etc.)
-- libpcap installed
-- libcap installed (for setcap command)
-- Network capture permissions (root or setcap)
+- libpcap instalado
+- libcap instalado (pro comando setcap)
+- Permissão de captura de rede (root ou setcap)
 
-## Troubleshooting
+## Resolução de problemas
 
-If you get "permission denied" or "no suitable device found":
+Se aparecer "permission denied" ou "no suitable device found":
   sudo setcap cap_net_raw,cap_net_admin=eip ./${exeName}
 
-If setcap is not found, install libcap:
+Se o setcap não for encontrado, instale o libcap:
   Ubuntu/Debian: sudo apt-get install libcap2-bin
   Fedora/RHEL:   sudo dnf install libcap
   Arch Linux:    sudo pacman -S libcap
 
-If setcap doesn't work, run as root:
+Se o setcap não funcionar, rode como root:
   sudo ./${exeName}
 
-## Verification
+## Verificação
 
-This binary was built from open source code via GitHub Actions CI/CD.
-Verify the integrity using the checksums file:
+Esse binário foi compilado a partir do código aberto via GitHub Actions CI/CD.
+Verifique a integridade usando o arquivo de checksums:
 
   sha256sum ${exeName}
 
-Compare with checksums-sha256.txt from the release.
+Compare com o checksums-sha256.txt da release.
 
-## Support
+## Suporte
 
-GitHub: https://github.com/Nouuu/Albion-Online-OpenRadar
+GitHub: https://github.com/HenriqueQSanches/Radar
 
-## Technical Details
+## Detalhes técnicos
 
-- Native Go backend (v2.0)
-- Single binary with embedded assets
-- Server on port 5001 (HTTP + WebSocket on /ws)
-- Captures UDP traffic on port 5056
+- Backend Go nativo (v2.0)
+- Binário único com tudo embutido
+- Servidor na porta 5001 (HTTP + WebSocket em /ws)
+- Captura tráfego UDP na porta 5056
 
-Built for: linux-x64
+Compilado para: linux-x64
 `;
 }
 

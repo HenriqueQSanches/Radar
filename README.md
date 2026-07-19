@@ -18,6 +18,15 @@ O alerta de "inimigo por perto" tocava no volume máximo do arquivo, que é baix
 ### Alerta por movimentação
 Antes o som só disparava quando o inimigo aparecia. Agora ele também dispara quando um inimigo já detectado se movimenta por perto — mas só **um apito por inimigo** (some quando ele sai e volta), pra não virar uma sirene.
 
+### Calibração de tier corrompida por bicho comum (T1/T3 marcado como T7, tronco virando pelego)
+A correção do encantamento resolvia só metade do problema: quando o HP de um pelego comum (coelho, T1/T3) coincidia com o de outro bicho de tier bem diferente (às vezes um chefe), o sistema de calibração votava nisso e ia acumulando erro ao longo da sessão — depois disso, bichos completamente não relacionados (inclusive troncos/madeira) saíam com tier ou tipo errado. Agora a calibração só aceita votos de janelas de HP coerentes (onde todos os candidatos concordam entre si), e mesmo quando o resultado é ambíguo, prefere sempre o candidato com HP confirmado em vez de um palpite já sabido errado.
+
+### Minério (e outros recursos vivos) com ícone errado
+Corpos de "critter" (bichinho que vira recurso ao morrer) tinham o tipo do recurso decidido sem nenhuma verificação — se a calibração acima estivesse um pouco torta, o ícone saía errado (ex: minério aparecendo como outro material) mesmo com o tier certo, já que o tier vem direto do servidor. Agora usa esse tier confiável do servidor pra confirmar/corrigir a identificação.
+
+### Alerta de jogador mais visível
+A posição de outros jogadores é criptografada pelo próprio Albion (proteção anti-radar), então eles nunca aparecem "andando" no mapa — só dá pra saber que tem um por perto. Pra compensar, além do flash de tela e do som que já existiam, agora aparece também um aviso na tela com nome e guilda do jogador hostil, que fica alguns segundos (não é só um pisca rápido que dá pra perder).
+
 ## Como rodar
 
 Precisa de [Go](https://go.dev/) e [Node.js](https://nodejs.org/) instalados, e do [Npcap](https://npcap.com/) pra capturar o tráfego.

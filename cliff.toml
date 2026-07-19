@@ -6,15 +6,15 @@
 [changelog]
 header = ""
 body = """
-{% set repo_url = "https://github.com/Nouuu/Albion-Online-OpenRadar" -%}
+{% set repo_url = "https://github.com/HenriqueQSanches/Radar" -%}
 
-Real-time radar for Albion Online.
+Radar em tempo real pro Albion Online.
 
 {% for group, commits in commits | group_by(attribute="group") -%}
 {%- if group == "Features" -%}
-### ✨ Features
+### ✨ Novidades
 {% elif group == "Bug fixes" -%}
-### 🐛 Bug Fixes
+### 🐛 Correções
 {% elif group == "Performance" -%}
 ### ⚡ Performance
 {% else -%}
@@ -26,13 +26,13 @@ Real-time radar for Albion Online.
 {% endfor %}
 ---
 
-### Verification
+### Verificação
 
 ```bash
 sha256sum -c checksums-sha256.txt
 ```
 
-### Requirements
+### Requisitos
 
 **Windows:** Windows 10/11 (64-bit), [Npcap 1.87+](https://npcap.com/)
 
@@ -40,7 +40,7 @@ sha256sum -c checksums-sha256.txt
 
 ---
 {% if previous.version and version -%}
-**Full Changelog**: {{ repo_url }}/compare/{{ previous.version }}...{{ version }}
+**Changelog completo**: {{ repo_url }}/compare/{{ previous.version }}...{{ version }}
 {%- endif %}
 """
 trim = true
@@ -49,8 +49,8 @@ postprocessors = [
 ]
 
 [git]
-conventional_commits = true
-filter_unconventional = true
+conventional_commits = false
+filter_unconventional = false
 split_commits = false
 commit_parsers = [
   { message = "^feat", group = "Features" },
@@ -64,6 +64,7 @@ commit_parsers = [
   { message = "^style", skip = true },
   { message = "^refactor", skip = true },
   { message = "^Merge", skip = true },
+  { message = ".*", group = "Correções e melhorias" },
 ]
 filter_commits = false
 tag_pattern = "v?[0-9]+\\.[0-9]+\\.[0-9]+"
