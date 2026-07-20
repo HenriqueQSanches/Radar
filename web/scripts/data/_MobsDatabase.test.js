@@ -193,4 +193,27 @@ describe('MobsDatabase runtime offset calibration', () => {
         expect(withHint?.type).toBe('Ore');
         expect(withHint?.tier).toBe(5);
     });
+
+    test('getMobInfo refuses to name a resource type for an enchanted mob sitting in a type-ambiguous cluster', () => {
+        // Regression for "pedra encantada T6.1 marcada como fibra": ROCK/ORE/FIBER
+        // "_ROADS_VETERAN" critters share the *exact same* hp at the same tier
+        // by game design (e.g. hp=4592 at tier 6). Enchant-scaled hp can't
+        // verify a lookup at all, so getMobInfo(..., isEnchanted=true) blindly
+        // trusted whatever calibrationDelta pointed at — if the delta drifted
+        // by roughly the ~15-30 rows separating these families (observed in
+        // real sessions), a Rock could get silently reported as Fiber.
+        const rockTypeId = db.getTypeIdByName('T6_MOB_CRITTER_ROCK_ROADS_VETERAN');
+        const fiberTypeId = db.getTypeIdByName('T6_MOB_CRITTER_FIBER_ROADS_VETERAN');
+        expect(rockTypeId).not.toBeNull();
+        expect(fiberTypeId).not.toBeNull();
+
+        // Simulate the delta drifting to exactly the gap between the two
+        // families, so the real Rock's wire id resolves (via calibrationDelta)
+        // to the Fiber row instead of its own.
+        db.calibrationDelta = rockTypeId - fiberTypeId;
+
+        const info = db.getMobInfo(rockTypeId, 999999 /* enchant-scaled, unverifiable */, true);
+        expect(info?.type).not.toBe('Fiber'); // must not confidently mislabel it Fiber
+        expect(info?.isHarvestable).toBe(false); // safer to show nothing specific than a wrong material
+    });
 });

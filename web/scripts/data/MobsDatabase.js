@@ -248,7 +248,22 @@ export class MobsDatabase {
     getMobInfo(typeId, observedMaxHp, isEnchanted = false) {
         const primary = this.mobsById.get(typeId - this.calibrationDelta) || null;
 
-        if (isEnchanted) return primary;
+        if (isEnchanted) {
+            // Enchant-scaled hp can't verify this lookup, so it blindly trusts
+            // whatever calibrationDelta currently is. That's fine for most
+            // rows, but ROCK/ORE/FIBER/WOOD "_ROADS" critters (and other
+            // families) share the *exact same* hp at the same tier by game
+            // design — if the delta is off by exactly the gap between two
+            // such rows (observed drifts of ~20-30 happen in real sessions),
+            // an enchanted Rock could get silently reported as Fiber with no
+            // way to catch it. Detect that this exact row has a same-hp,
+            // same-tier, different-type sibling nearby and refuse to name a
+            // specific material in that case — safer than guessing wrong.
+            if (primary && this._hasTypeAmbiguousSibling(typeId - this.calibrationDelta, primary)) {
+                return {...primary, type: null, isHarvestable: false};
+            }
+            return primary;
+        }
 
         const hp = Number(observedMaxHp);
         if (!Number.isFinite(hp) || hp <= 0) return primary;
@@ -264,7 +279,12 @@ export class MobsDatabase {
             const row = this.mobsById.get(typeId - d);
             if (row && row.hp === hp) candidates.push(d);
         }
-        if (candidates.length === 0) return primary;
+        if (candidates.length === 0) {
+            if (primary && this._hasTypeAmbiguousSibling(typeId - this.calibrationDelta, primary)) {
+                return {...primary, type: null, isHarvestable: false};
+            }
+            return primary;
+        }
 
         // Prefer the candidate closest to the current consensus (falling back
         // to proximity to zero, the vendored anchor) among the hp-confirmed
@@ -304,12 +324,58 @@ export class MobsDatabase {
             if (candidates.includes(this.calibrationDelta)) {
                 return this.mobsById.get(typeId - this.calibrationDelta);
             }
-        } else {
-            window.logger?.debug(CATEGORIES.SYSTEM, 'MobsDatabaseIncoherentHpMatch', {
-                typeId, hp, candidates, chosenDelta: best,
-            });
+            return bestRow;
         }
+
+        window.logger?.debug(CATEGORIES.SYSTEM, 'MobsDatabaseIncoherentHpMatch', {
+            typeId, hp, candidates, chosenDelta: best,
+        });
+
+        // Some duplicate-hp windows are a genuine game-design ambiguity, not
+        // just a calibration artifact: distinct resource-type critters (e.g.
+        // ROCK/ORE/FIBER "_ROADS" variants) share the *exact same* hp at the
+        // same tier by design. No calibration delta can tell them apart from
+        // hp alone — the true row could be any of them. Picking one anyway
+        // (as the coherent path does) risks reporting a wrong material
+        // (Ore shown as Fiber), which is worse for the player than showing
+        // nothing: don't guess a specific resource type in that case.
+        const harvestableTypes = new Set(
+            candidates
+                .map(d => this.mobsById.get(typeId - d))
+                .filter(row => row.isHarvestable)
+                .map(row => row.type)
+        );
+        if (harvestableTypes.size > 1) {
+            window.logger?.debug(CATEGORIES.SYSTEM, 'MobsDatabaseTypeAmbiguous', {
+                typeId, hp, tier: bestRow.tier, candidateTypes: [...harvestableTypes],
+            });
+            return {...bestRow, type: null, isHarvestable: false};
+        }
+
         return bestRow;
+    }
+
+    /**
+     * Check whether some other row within the calibration window shares
+     * `row`'s hp and tier but names a different resource type — i.e. hp+tier
+     * alone can never disambiguate which of them a given wire id really is.
+     * @param {number} key - The mobsById key `row` was found at (typeId - delta)
+     * @param {Object} row - The candidate row to check for ambiguous siblings
+     * @returns {boolean}
+     * @private
+     */
+    _hasTypeAmbiguousSibling(key, row) {
+        if (!row || !row.isHarvestable) return false;
+        const searchWindow = MobsDatabase.CALIBRATION_WINDOW;
+        for (let offset = -searchWindow; offset <= searchWindow; offset++) {
+            if (offset === 0) continue;
+            const sibling = this.mobsById.get(key + offset);
+            if (sibling && sibling.isHarvestable && sibling.hp === row.hp
+                && sibling.tier === row.tier && sibling.type !== row.type) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

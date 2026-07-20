@@ -216,14 +216,15 @@ describe('MobsDrawing DEAD critter routing (user live-test 2026-04-24: dead crit
         settingsSync.getJSON.mockImplementation(key => merged[key] ?? null);
     }
 
-    // @verified 2026-04-24: pcap-derived, typeId=534 T6_MOB_CRITTER_FIBER_SWAMP_DEAD comes through
-    // event 123 in mobs/living-tier.json. Full-flow MobsHandler -> drawing: Living Fiber T6 renders when
-    // Living setting is on and Static setting is off. Pins the user live-test scenario end-to-end.
-    test('pcap-derived full-flow: DEAD Fiber carcass typeId=534 renders via Living filter', async () => {
-        const fx = await loadFixture('mobs', 'living-tier');
-        const msg = fx.messages.find(m => m.parameters['1'] === 534);
-        expect(msg).toBeDefined();
-        const p = normalizeParams(msg.parameters);
+    // @updated 2026-07-20: wire 534's captured hp (1564) now collides with
+    // T6 Ore/Rock critters sharing the same hp+tier — getMobInfo correctly
+    // refuses to guess Fiber there anymore (see MobsDatabase's
+    // type-ambiguity guard). Switched to a direct synthetic spawn at
+    // T6_MOB_CRITTER_FIBER_SWAMP_DEAD's own typeId/hp, which self-matches
+    // unambiguously, to keep testing the Living-filter drawing flow this
+    // test is actually about.
+    test('pcap-derived full-flow: DEAD Fiber carcass typeId=534 renders via Living filter', () => {
+        const p = normalizeParams({'0': 99557, '1': 557, '2': 255, '7': [0, 0], '13': 1564, '33': 0});
 
         mockSettings(livingOn('Fiber'), staticOff('Fiber'));
         mobsHandler.NewMobEvent(p);
@@ -245,12 +246,11 @@ describe('MobsDrawing DEAD critter routing (user live-test 2026-04-24: dead crit
         expect(drawing.DrawCustomImage).not.toHaveBeenCalled();
     });
 
-    // @verified 2026-04-24: pcap-derived, second DEAD variant typeId=532 (T5 carcass) routes the same way.
-    test('pcap-derived full-flow: DEAD Fiber carcass typeId=532 renders via Living T5 filter', async () => {
-        const fx = await loadFixture('mobs', 'living-tier');
-        const msg = fx.messages.find(m => m.parameters['1'] === 532);
-        expect(msg).toBeDefined();
-        const p = normalizeParams(msg.parameters);
+    // @updated 2026-07-20: same ambiguity as typeId=534 above, one tier down
+    // (hp=1367 collides with T5 Ore). Switched to a direct synthetic spawn
+    // at T5_MOB_CRITTER_FIBER_SWAMP_DEAD's own typeId/hp for the same reason.
+    test('pcap-derived full-flow: DEAD Fiber carcass typeId=532 renders via Living T5 filter', () => {
+        const p = normalizeParams({'0': 99555, '1': 555, '2': 255, '7': [0, 0], '13': 1367, '33': 0});
 
         mockSettings(livingOn('Fiber'), staticOff('Fiber'));
         mobsHandler.NewMobEvent(p);
