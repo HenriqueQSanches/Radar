@@ -44,7 +44,8 @@ class Mob {
         this.exp = 0;
         this.hX = 0;
         this.hY = 0;
-        this.lastUpdateTime = Date.now(); // For stale entity cleanup
+        this.spawnedAt = Date.now(); // When this enchant/tier timing question needs an answer, not just cleanup
+        this.lastUpdateTime = this.spawnedAt; // For stale entity cleanup
     }
 
     touch() {
@@ -344,8 +345,20 @@ export class MobsHandler {
         if (!found) return;
 
         const changed = found.enchantmentLevel !== enchantmentLevel;
+        const previousEnchant = found.enchantmentLevel;
+        const wasIdentified = found.identified;
         found.enchantmentLevel = enchantmentLevel;
         found.touch();
+
+        // 🐛 DEBUG: how long after spawn does this arrive, and does it flip
+        // a mob from unidentified/hidden to identified? Answers "pelego
+        // encantado so aparece depois que eu mato" — if this consistently
+        // fires late (or only after combat starts touching the mob), that's
+        // the mechanism, not a MobsDrawing filter bug.
+        window.logger?.debug(CATEGORIES.MOBS, 'updateEnchantEvent', {
+            mobId, typeId: found.typeId, previousEnchant, newEnchant: enchantmentLevel, changed,
+            wasIdentified, msSinceSpawn: Date.now() - found.spawnedAt,
+        });
 
         // Spawn-time identification used whatever enchant was known then (often
         // 0, if this event arrives later). An enchanted mob's inflated maxHealth
