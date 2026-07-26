@@ -250,16 +250,21 @@ export class MobsDatabase {
 
         if (isEnchanted) {
             // Enchant-scaled hp can't verify this lookup, so it blindly trusts
-            // whatever calibrationDelta currently is. That's fine for most
-            // rows, but ROCK/ORE/FIBER/WOOD "_ROADS" critters (and other
-            // families) share the *exact same* hp at the same tier by game
-            // design — if the delta is off by exactly the gap between two
-            // such rows (observed drifts of ~20-30 happen in real sessions),
-            // an enchanted Rock could get silently reported as Fiber with no
-            // way to catch it. Detect that this exact row has a same-hp,
-            // same-tier, different-type sibling nearby and refuse to name a
-            // specific material in that case — safer than guessing wrong.
-            if (primary && this._hasTypeAmbiguousSibling(typeId - this.calibrationDelta, primary)) {
+            // whatever calibrationDelta currently is. At the vendored anchor
+            // (delta 0) that's exact by definition — typeId maps to exactly
+            // one row, full stop, regardless of some *other* row elsewhere
+            // happening to share its hp+tier (that's extremely common: T5
+            // Ore/Rock share hp=1367, for instance, and flagging every such
+            // row "ambiguous" hid correctly-identified enchanted ore/rock for
+            // no reason). Only treat it as ambiguous once the delta has
+            // actually drifted from 0 — that's the one case where we don't
+            // know if this typeId still points at the right row, which is
+            // when a same-hp/same-tier/different-type sibling nearby (e.g. an
+            // enchanted Rock landing on Fiber's row after a ~20-30 drift,
+            // observed in real sessions) becomes a real risk worth refusing
+            // to guess through.
+            if (this.calibrationDelta !== 0 && primary
+                && this._hasTypeAmbiguousSibling(typeId - this.calibrationDelta, primary)) {
                 return {...primary, type: null, isHarvestable: false};
             }
             return primary;

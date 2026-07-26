@@ -216,4 +216,28 @@ describe('MobsDatabase runtime offset calibration', () => {
         expect(info?.type).not.toBe('Fiber'); // must not confidently mislabel it Fiber
         expect(info?.isHarvestable).toBe(false); // safer to show nothing specific than a wrong material
     });
+
+    test('getMobInfo trusts an enchanted mob at the vendored anchor even when a same-hp/tier sibling exists elsewhere', () => {
+        // Regression for "minerio/pedra T5 encantado nao aparece": T5 Ore and
+        // T5 Rock critters share hp=1367 by game design (like the Roads
+        // families above), so the ambiguity guard's window scan always finds
+        // a sibling for either one — but at calibrationDelta 0, the wire
+        // typeId maps to exactly one row with no ambiguity at all. The guard
+        // must only kick in once the delta has actually drifted (tested
+        // above), not unconditionally — otherwise every enchanted Ore/Rock at
+        // this tier gets hidden for no reason, even when correctly identified.
+        const oreTypeId = db.getTypeIdByName('T5_MOB_CRITTER_ORE_MOUNTAIN_RED');
+        const rockTypeId = db.getTypeIdByName('T5_MOB_CRITTER_ROCK_HIGHLAND_RED');
+        expect(oreTypeId).not.toBeNull();
+        expect(rockTypeId).not.toBeNull();
+        expect(db.calibrationDelta).toBe(0); // fresh instance, vendored anchor
+
+        const ore = db.getMobInfo(oreTypeId, 999999 /* enchant-scaled, unverifiable */, true);
+        expect(ore?.type).toBe('Ore');
+        expect(ore?.isHarvestable).toBe(true);
+
+        const rock = db.getMobInfo(rockTypeId, 999999, true);
+        expect(rock?.type).toBe('Rock');
+        expect(rock?.isHarvestable).toBe(true);
+    });
 });
