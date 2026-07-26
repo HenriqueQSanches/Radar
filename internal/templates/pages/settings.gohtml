@@ -157,9 +157,9 @@
                     <select id="logLevel" class="select select-bordered select-sm w-full max-w-xs">
                         <option value="OFF">OFF - No logs</option>
                         <option value="ERROR">ERROR - Errors only</option>
-                        <option value="WARN" selected>WARN - Warnings & Errors</option>
+                        <option value="WARN">WARN - Warnings & Errors</option>
                         <option value="INFO">INFO - Info, Warnings & Errors</option>
-                        <option value="DEBUG">DEBUG - Everything</option>
+                        <option value="DEBUG" selected>DEBUG - Everything</option>
                     </select>
                     <p class="text-xs text-base-content/50 mt-2">Controls minimum log level displayed</p>
                 </div>
@@ -383,10 +383,10 @@
                 addListener(collapseNetwork, 'change', () => settingsSync.setBool('collapse-settings-network', collapseNetwork.checked));
             }
 
-            // Log level dropdown
+            // Log level dropdown (defaults to DEBUG — see logger.js DEFAULT_LOG_LEVEL)
             const logLevelEl = document.getElementById('logLevel');
             if (logLevelEl) {
-                logLevelEl.value = settingsSync.get('logLevel') || 'WARN';
+                logLevelEl.value = settingsSync.get('logLevel') || 'DEBUG';
                 addListener(logLevelEl, 'change', () => settingsSync.set('logLevel', logLevelEl.value));
             }
 
@@ -464,6 +464,12 @@
             bindCheckbox("categoryNetwork");
             bindCheckbox("categoryMap");
             bindCheckbox("categoryPlayers");
+            // Mobs/Harvestables default to enabled: identification bugs (wrong
+            // mob/resource type or tier) need to be diagnosed after the fact
+            // from logs/debug/, not by catching a console command at the
+            // exact moment they happen.
+            if (settingsSync.get("categoryMobs") === null) settingsSync.setBool("categoryMobs", true);
+            if (settingsSync.get("categoryHarvestables") === null) settingsSync.setBool("categoryHarvestables", true);
             bindCheckbox("categoryMobs");
             bindCheckbox("categoryHarvestables");
             bindCheckbox("categoryDungeons");
@@ -472,6 +478,8 @@
 
             // Console & Server settings
             bindCheckbox("settingLogToConsole");
+            // Default to enabled for the same reason as categoryMobs/Harvestables above.
+            if (settingsSync.get("settingLogToServer") === null) settingsSync.setBool("settingLogToServer", true);
             bindCheckbox("settingLogToServer");
 
             // WebSocket performance (default: enabled)

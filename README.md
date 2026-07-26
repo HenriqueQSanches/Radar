@@ -27,6 +27,9 @@ Corpos de "critter" (bichinho que vira recurso ao morrer) tinham o tipo do recur
 ### Alerta de jogador mais visível
 A posição de outros jogadores é criptografada pelo próprio Albion (proteção anti-radar), então eles nunca aparecem "andando" no mapa — só dá pra saber que tem um por perto. Pra compensar, além do flash de tela e do som que já existiam, agora aparece também um aviso na tela com nome e guilda do jogador hostil, que fica alguns segundos (não é só um pisca rápido que dá pra perder).
 
+### Log detalhado ligado por padrão
+Investigar um bug de identificação (tier/tipo errado) só dava pra fazer pegando o F12 no exato momento que acontecia — impraticável no meio de uma sessão de jogo. Agora o log de Mobs/Recursos Coletáveis em nível DEBUG, salvo em `logs/debug/`, já vem ativado por padrão (Configurações > Logging), sem precisar mexer em nada. Dá pra desligar por lá se o volume de log incomodar.
+
 ## Como rodar
 
 Precisa de [Go](https://go.dev/) e [Node.js](https://nodejs.org/) instalados, e do [Npcap](https://npcap.com/) pra capturar o tráfego.

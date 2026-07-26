@@ -9,6 +9,17 @@ let reconnectTimeoutId = null;
 const MAX_RECONNECT_DELAY = 30000;
 const INITIAL_RECONNECT_DELAY = 1000;
 
+// Diagnosing identification bugs (wrong mob/resource type or tier) after the
+// fact — instead of asking someone to catch a console command at the exact
+// moment it happens — depends on these logs already being on disk. Default
+// to DEBUG + persisted-to-server + the categories behind those bugs, so a
+// fresh browser profile (or one where localStorage got cleared) still
+// captures everything needed without anyone touching Settings first. Users
+// can still turn any of this off/down from the Logging section.
+const DEFAULT_LOG_LEVEL = 'DEBUG';
+const DEFAULT_LOG_TO_SERVER = true;
+const CATEGORIES_ON_BY_DEFAULT = new Set(['MOBS', 'HARVESTABLES']);
+
 class Logger {
     constructor() {
         this.wsClient = null;
@@ -33,8 +44,8 @@ class Logger {
     }
 
     shouldLog(level, category) {
-        const minLevelName = settingsSync.get('logLevel', 'WARN');
-        const minLevel = LOG_LEVELS[minLevelName] ?? LOG_LEVELS.WARN;
+        const minLevelName = settingsSync.get('logLevel', DEFAULT_LOG_LEVEL);
+        const minLevel = LOG_LEVELS[minLevelName] ?? LOG_LEVELS[DEFAULT_LOG_LEVEL];
 
         if (minLevel === LOG_LEVELS.OFF) return false;
         if (level === 'CRITICAL') return true;
@@ -44,7 +55,8 @@ class Logger {
 
         if (level === 'DEBUG' || level === 'INFO') {
             const settingKey = CATEGORY_SETTINGS[category];
-            if (settingKey && !settingsSync.getBool(settingKey)) {
+            const defaultOn = CATEGORIES_ON_BY_DEFAULT.has(category);
+            if (settingKey && !settingsSync.getBool(settingKey, defaultOn)) {
                 return false;
             }
         }
@@ -69,7 +81,7 @@ class Logger {
             this.logToConsole(logEntry);
         }
 
-        if (settingsSync.getBool('settingLogToServer') && socketConnected) {
+        if (settingsSync.getBool('settingLogToServer', DEFAULT_LOG_TO_SERVER) && socketConnected) {
             this.buffer.push(logEntry);
             if (this.buffer.length >= this.maxBufferSize) this.flush();
         }
