@@ -7,6 +7,7 @@ export class HarvestablesDrawing extends DrawingUtils  {
     constructor() {
         super();
         this.lastVisibleCount = 0;
+        this._filterStateById = new Map();
     }
 
     interpolate(harvestables, lpX, lpY, t) {
@@ -35,7 +36,23 @@ export class HarvestablesDrawing extends DrawingUtils  {
                 enchantmentLevel: harvestableOne.charges,
             };
             const filterFn = isPureStatic ? shouldRenderStaticResource : shouldRenderLivingResource;
-            if (!filterFn(filterEntity, key => settingsSync.getJSON(key))) {
+            const accepted = filterFn(filterEntity, key => settingsSync.getJSON(key));
+
+            // Only log on the first check or when the filter's verdict flips (e.g. user
+            // toggles a checkbox mid-session) — this loop runs every frame, so logging
+            // every pass would flood the file. This is the log side of the diff needed to
+            // correlate "resource never shown" against "user's checkbox settings" without
+            // asking the user to reproduce/explain what they had checked.
+            const previouslyAccepted = this._filterStateById.get(harvestableOne.id);
+            if (previouslyAccepted !== accepted) {
+                this._filterStateById.set(harvestableOne.id, accepted);
+                window.logger?.debug(CATEGORIES.HARVESTABLES, 'ResourceFilterVerdict', {
+                    id: harvestableOne.id, name: filterEntity.name, tier: filterEntity.tier,
+                    enchant: filterEntity.enchantmentLevel, isPureStatic, accepted,
+                });
+            }
+
+            if (!accepted) {
                 continue;
             }
 

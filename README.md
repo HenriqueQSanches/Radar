@@ -30,6 +30,12 @@ A posição de outros jogadores é criptografada pelo próprio Albion (proteçã
 ### Log detalhado ligado por padrão
 Investigar um bug de identificação (tier/tipo errado) só dava pra fazer pegando o F12 no exato momento que acontecia — impraticável no meio de uma sessão de jogo. Agora o log de Mobs/Recursos Coletáveis em nível DEBUG, salvo em `logs/debug/`, já vem ativado por padrão (Configurações > Logging), sem precisar mexer em nada. Dá pra desligar por lá se o volume de log incomodar.
 
+### Log para diagnosticar recurso que "não aparece"
+Quando um recurso não aparece no radar, o motivo pode ser as caixinhas de filtro em Resources (tier/encantamento) desmarcadas, e não um bug de verdade — mas isso não dava pra saber só olhando o log. Agora fica registrado tanto quando um recurso passa a ser exibido/escondido pelo filtro quanto quando você marca ou desmarca uma caixinha na tela de Resources, então dá pra comparar os dois e achar a causa sem precisar descrever o que estava marcado.
+
+### Download em um clique só (Windows)
+Baixar o `.exe` direto da página de release confundia quem não é da área (tinha checksum, README, binário Linux, tudo junto). Agora tem um `IniciarRadar.bat`: baixa o Radar sozinho na primeira vez, abre o programa e já deixa o navegador aberto em `localhost:5001` — só dar duplo clique.
+
 ## Como rodar
 
 Precisa de [Go](https://go.dev/) e [Node.js](https://nodejs.org/) instalados, e do [Npcap](https://npcap.com/) pra capturar o tráfego.

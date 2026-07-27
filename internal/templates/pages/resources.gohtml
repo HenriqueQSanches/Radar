@@ -272,6 +272,10 @@
                                 enchants[enchantLevel][i] = element.checked;
                                 settingsSync.setJSON(storageKey, enchants);
                                 updateTierButtonState(config.prefix, i);
+                                window.logger?.info('HARVESTABLES', 'ResourceFilterSettingChanged', {
+                                    storageKey, type: config.type, resourceName: config.name,
+                                    enchantLevel, tier: i + 1, checked: element.checked,
+                                });
                             }
                         });
                     });

@@ -57,21 +57,28 @@ function createWindowsReadme(exeName: string): string {
 OpenRadar é um aplicativo Go nativo (~95 MB) com tudo embutido.
 Não precisa de nenhuma dependência externa além do Npcap.
 
-## Instalação
+## Instalação (jeito fácil)
 
 1. **Instale o Npcap** (OBRIGATÓRIO - versão 1.84 ou mais nova)
    Download: https://npcap.com/
    Link direto (v1.84): https://npcap.com/dist/npcap-1.84.exe
 
-2. **Abra o ${exeName}**
-   Dê duplo clique no ${exeName}
+2. **Baixe e dê duplo clique em IniciarRadar.bat**
+   Ele baixa o ${exeName} sozinho (se ainda não estiver na pasta), abre o Radar
+   e já deixa o navegador aberto em http://localhost:5001 — não precisa fazer
+   mais nada.
 
 3. **Selecione seu adaptador de rede**
-   Escolha o adaptador que você usa pra conectar na Internet
-   (NÃO escolha 127.0.0.1 ou localhost)
+   Na janela do Radar que abrir, escolha o adaptador que você usa pra conectar
+   na Internet (NÃO escolha 127.0.0.1 ou localhost)
 
-4. **Acesse o radar**
-   Abra http://localhost:5001 no navegador
+## Instalação manual (sem o .bat)
+
+Se preferir baixar só o ${exeName} e rodar você mesmo:
+
+1. Dê duplo clique no ${exeName}
+2. Selecione seu adaptador de rede (NÃO escolha 127.0.0.1 ou localhost)
+3. Abra http://localhost:5001 no navegador
 
 ## Opções de linha de comando
 
