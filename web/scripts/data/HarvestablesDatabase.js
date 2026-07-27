@@ -16,8 +16,8 @@ export class HarvestablesDatabase {
 
         /** @type {Map<string, number>} Resource type to base typeNumber mapping */
         this.resourceToTypeNumber = new Map([
-            ['WOOD', 0],   // typeNumber 0-5
-            ['ROCK', 6],   // typeNumber 6-10
+            ['WOOD', 0],   // typeNumber 0-6
+            ['ROCK', 7],   // typeNumber 7-10
             ['FIBER', 11], // typeNumber 11-15
             ['HIDE', 16],  // typeNumber 16-22
             ['ORE', 23]    // typeNumber 23-27
@@ -120,8 +120,13 @@ export class HarvestablesDatabase {
      * @returns {string|null} - Resource type or null
      */
     getResourceTypeFromTypeNumber(typeNumber) {
-        if (typeNumber >= 0 && typeNumber <= 5) return 'WOOD';
-        if (typeNumber >= 6 && typeNumber <= 10) return 'ROCK';
+        // Range boundaries are reverse-engineered from observed wire traffic, not an
+        // official table. type 6 was captured live as a T5 Cedar wood node (confirmed
+        // against the in-game tooltip) while every other real capture of 6-10 was type 7
+        // (Rock) — so 6 belongs to WOOD, not ROCK. Only that boundary moved; the others
+        // (FIBER/HIDE/ORE) still match every real capture and were left alone.
+        if (typeNumber >= 0 && typeNumber <= 6) return 'WOOD';
+        if (typeNumber >= 7 && typeNumber <= 10) return 'ROCK';
         if (typeNumber >= 11 && typeNumber <= 15) return 'FIBER';
         if (typeNumber >= 16 && typeNumber <= 22) return 'HIDE';
         if (typeNumber >= 23 && typeNumber <= 27) return 'ORE';

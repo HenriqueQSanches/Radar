@@ -33,6 +33,9 @@ Investigar um bug de identificação (tier/tipo errado) só dava pra fazer pegan
 ### Log para diagnosticar recurso que "não aparece"
 Quando um recurso não aparece no radar, o motivo pode ser as caixinhas de filtro em Resources (tier/encantamento) desmarcadas, e não um bug de verdade — mas isso não dava pra saber só olhando o log. Agora fica registrado tanto quando um recurso passa a ser exibido/escondido pelo filtro quanto quando você marca ou desmarca uma caixinha na tela de Resources, então dá pra comparar os dois e achar a causa sem precisar descrever o que estava marcado.
 
+### Tronco de Cedro T5 aparecendo como Pedra
+Recurso estático usa uma faixa fixa de números pra decidir se é Madeira/Pedra/Fibra/Couro/Minério, montada observando o tráfego do jogo ao longo do tempo. Peguei ao vivo um Tronco de Cedro T5.1 chegando com o número 6, que caía bem na faixa que eu tinha marcado como Pedra — cruzei com todo o histórico de log e só o número 7 já tinha aparecido como Pedra de verdade, então movi essa fronteira pra Madeira incluir o 6. As outras faixas (Fibra/Couro/Minério) não foram mexidas.
+
 ### Download em um clique só (Windows)
 Baixar o `.exe` direto da página de release confundia quem não é da área (tinha checksum, README, binário Linux, tudo junto). Agora tem um `IniciarRadar.bat`: baixa o Radar sozinho na primeira vez, abre o programa e já deixa o navegador aberto em `localhost:5001` — só dar duplo clique.
 
