@@ -6,7 +6,7 @@ import (
 	"github.com/nospy/albion-openradar/internal/market"
 )
 
-// MarketAPI exposes the "Calcular Rota" price list.
+// MarketAPI exposes the market-route price list backing the radar page's route button.
 type MarketAPI struct {
 	client *market.Client
 }

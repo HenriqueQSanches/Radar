@@ -52,9 +52,9 @@ type itemMeta struct {
 // buildItems returns every item id to query — T3-T5 base resources, plus the
 // @1 (enchant 1) variant for T4 and T5 only, per the feature's scope — and a
 // lookup from item id back to resource/tier/enchant for reading the response.
-func buildItems() ([]string, map[string]itemMeta) {
-	ids := make([]string, 0, 25)
-	meta := make(map[string]itemMeta, 25)
+func buildItems() (ids []string, meta map[string]itemMeta) {
+	ids = make([]string, 0, 25)
+	meta = make(map[string]itemMeta, 25)
 	for _, r := range resources {
 		for tier := 3; tier <= 5; tier++ {
 			id := fmt.Sprintf("T%d_%s", tier, r.code)
