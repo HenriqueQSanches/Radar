@@ -63,15 +63,16 @@ type itemMeta struct {
 	enchant  int
 }
 
-// buildItems returns every raw-resource item id to query — T3-T5 base
-// resources, plus the @1 (enchant 1) variant for T4 and T5 only, per the
-// feature's scope — and a lookup from item id back to resource/tier/enchant
-// for reading the response.
+// buildItems returns every raw-resource item id to query — T2-T8 base
+// resources, plus the @1 (enchant 1) variant for T4-T8 (raw resources aren't
+// enchantable below T4, matching the Resources settings grid) — and a lookup
+// from item id back to resource/tier/enchant for reading the response.
 func buildItems() (ids []string, meta map[string]itemMeta) {
-	ids = make([]string, 0, 25)
-	meta = make(map[string]itemMeta, 25)
+	const tierCount = 7 // T2-T8
+	ids = make([]string, 0, len(resources)*tierCount*2)
+	meta = make(map[string]itemMeta, len(resources)*tierCount*2)
 	for _, r := range resources {
-		for tier := 3; tier <= 5; tier++ {
+		for tier := 2; tier <= 8; tier++ {
 			id := fmt.Sprintf("T%d_%s", tier, r.code)
 			ids = append(ids, id)
 			meta[id] = itemMeta{resource: r.name, tier: tier, enchant: 0}
@@ -206,7 +207,7 @@ func (c *Client) fetchEntries(ids []string, meta map[string]itemMeta) ([]Entry, 
 	return entries, nil
 }
 
-// BestRoute returns every T3-T5 (and T4.1/T5.1) resource's sell price across
+// BestRoute returns every T2-T8 (and T4.1-T8.1) resource's sell price across
 // the standard trade cities, highest price first. Results are cached for
 // cacheTTL.
 func (c *Client) BestRoute() ([]Entry, error) {
@@ -232,6 +233,45 @@ func (c *Client) BestRoute() ([]Entry, error) {
 	c.mu.Unlock()
 
 	return entries, nil
+}
+
+// CityRanking is one city's average raw-resource sell price, used to answer
+// "which city is selling resources for more, overall" rather than "which
+// resource sells for more, and where" (that's BestRoute).
+type CityRanking struct {
+	City         string  `json:"city"`
+	AveragePrice float64 `json:"averagePrice"`
+	SampleCount  int     `json:"sampleCount"`
+}
+
+// BestCities ranks each of the standard trade cities by its average
+// T2-T8 resource sell price, highest average first. It reuses BestRoute's
+// (cached) entries rather than issuing a separate request.
+func (c *Client) BestCities() ([]CityRanking, error) {
+	entries, err := c.BestRoute()
+	if err != nil {
+		return nil, err
+	}
+
+	sums := make(map[string]int)
+	counts := make(map[string]int)
+	for _, e := range entries {
+		sums[e.City] += e.Price
+		counts[e.City]++
+	}
+
+	rankings := make([]CityRanking, 0, len(sums))
+	for city, sum := range sums {
+		rankings = append(rankings, CityRanking{
+			City:         city,
+			AveragePrice: float64(sum) / float64(counts[city]),
+			SampleCount:  counts[city],
+		})
+	}
+
+	sort.Slice(rankings, func(i, j int) bool { return rankings[i].AveragePrice > rankings[j].AveragePrice })
+
+	return rankings, nil
 }
 
 // FishPrices returns every T4-T8 fish family's sell price across the

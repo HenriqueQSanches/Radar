@@ -47,7 +47,7 @@ func TestBestRoute_FiltersZeroPricesAndSorts(t *testing.T) {
 }
 
 func TestBestRoute_UnknownItemIdIgnored(t *testing.T) {
-	body := `[{"item_id":"T2_WOOD","city":"Thetford","sell_price_min":10}]`
+	body := `[{"item_id":"T1_WOOD","city":"Thetford","sell_price_min":10}]`
 
 	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(body))
@@ -58,7 +58,7 @@ func TestBestRoute_UnknownItemIdIgnored(t *testing.T) {
 		t.Fatalf("BestRoute returned error: %v", err)
 	}
 	if len(entries) != 0 {
-		t.Errorf("expected T2 (below scope) to be ignored, got %+v", entries)
+		t.Errorf("expected T1 (below scope) to be ignored, got %+v", entries)
 	}
 }
 
@@ -98,21 +98,72 @@ func TestBestRoute_UpstreamErrorPropagates(t *testing.T) {
 	}
 }
 
-func TestBuildItems_OnlyT4AndT5GetEnchantedVariant(t *testing.T) {
+func TestBuildItems_CoversT2ThroughT8AndOnlyT4PlusGetEnchantedVariant(t *testing.T) {
 	ids, meta := buildItems()
 
+	if _, ok := meta["T2_WOOD@1"]; ok {
+		t.Error("T2 is below T4 and should not have an enchanted variant")
+	}
 	if _, ok := meta["T3_WOOD@1"]; ok {
-		t.Error("T3 should not have an enchanted variant in scope")
+		t.Error("T3 is below T4 and should not have an enchanted variant")
+	}
+	if m, ok := meta["T2_WOOD"]; !ok || m.tier != 2 || m.enchant != 0 {
+		t.Errorf("expected T2_WOOD to map to tier 2 enchant 0, got %+v (ok=%v)", m, ok)
 	}
 	if m, ok := meta["T4_ORE@1"]; !ok || m.tier != 4 || m.enchant != 1 {
 		t.Errorf("expected T4_ORE@1 to map to tier 4 enchant 1, got %+v (ok=%v)", m, ok)
 	}
-	if m, ok := meta["T5_ROCK"]; !ok || m.tier != 5 || m.enchant != 0 {
-		t.Errorf("expected T5_ROCK to map to tier 5 enchant 0, got %+v (ok=%v)", m, ok)
+	if m, ok := meta["T8_ROCK@1"]; !ok || m.tier != 8 || m.enchant != 1 {
+		t.Errorf("expected T8_ROCK@1 to map to tier 8 enchant 1, got %+v (ok=%v)", m, ok)
 	}
-	// 5 resources * (3 base tiers + 2 enchanted tiers) = 25
-	if len(ids) != 25 {
-		t.Errorf("expected 25 item ids, got %d", len(ids))
+	// 5 resources * (7 base tiers T2-T8 + 5 enchanted tiers T4-T8) = 60
+	if len(ids) != 60 {
+		t.Errorf("expected 60 item ids, got %d", len(ids))
+	}
+}
+
+func TestBestCities_RanksByAveragePriceDescending(t *testing.T) {
+	// Caerleon: (100+300)/2 = 200. Thetford: 400/1 = 400. Thetford should rank first.
+	body := `[
+		{"item_id":"T5_ORE","city":"Caerleon","sell_price_min":100},
+		{"item_id":"T5_ROCK","city":"Caerleon","sell_price_min":300},
+		{"item_id":"T5_ORE","city":"Thetford","sell_price_min":400}
+	]`
+
+	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(body))
+	})
+
+	rankings, err := client.BestCities()
+	if err != nil {
+		t.Fatalf("BestCities returned error: %v", err)
+	}
+	if len(rankings) != 2 {
+		t.Fatalf("expected 2 city rankings, got %d: %+v", len(rankings), rankings)
+	}
+	if rankings[0].City != "Thetford" || rankings[0].AveragePrice != 400 {
+		t.Errorf("expected Thetford/400 first, got %+v", rankings[0])
+	}
+	if rankings[1].City != "Caerleon" || rankings[1].AveragePrice != 200 || rankings[1].SampleCount != 2 {
+		t.Errorf("expected Caerleon/200 (2 samples) second, got %+v", rankings[1])
+	}
+}
+
+func TestBestCities_ReusesBestRouteCache(t *testing.T) {
+	calls := 0
+	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		w.Write([]byte(`[{"item_id":"T5_ORE","city":"Thetford","sell_price_min":100}]`))
+	})
+
+	if _, err := client.BestRoute(); err != nil {
+		t.Fatalf("BestRoute returned error: %v", err)
+	}
+	if _, err := client.BestCities(); err != nil {
+		t.Fatalf("BestCities returned error: %v", err)
+	}
+	if calls != 1 {
+		t.Errorf("expected BestCities to reuse BestRoute's cache, got %d upstream requests", calls)
 	}
 }
 

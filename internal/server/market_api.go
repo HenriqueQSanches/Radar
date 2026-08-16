@@ -18,6 +18,7 @@ func NewMarketAPI(client *market.Client) *MarketAPI {
 func (a *MarketAPI) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/market/route", a.handleRoute)
 	mux.HandleFunc("GET /api/market/fish", a.handleFish)
+	mux.HandleFunc("GET /api/market/cities", a.handleCities)
 }
 
 func (a *MarketAPI) handleRoute(w http.ResponseWriter, _ *http.Request) {
@@ -36,4 +37,13 @@ func (a *MarketAPI) handleFish(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, entries)
+}
+
+func (a *MarketAPI) handleCities(w http.ResponseWriter, _ *http.Request) {
+	rankings, err := a.client.BestCities()
+	if err != nil {
+		writeJSON(w, http.StatusBadGateway, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, rankings)
 }

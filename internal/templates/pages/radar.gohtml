@@ -75,11 +75,15 @@
         <div class="card-body">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <h3 class="text-xl font-semibold text-base-content">Rota de Mercado</h3>
-                <button id="calcRouteBtn" class="btn btn-primary btn-sm">Calcular Rota</button>
+                <div class="flex gap-2">
+                    <button id="calcRouteBtn" class="btn btn-primary btn-sm">Calcular Rota</button>
+                    <button id="calcCitiesBtn" class="btn btn-outline btn-sm">Melhor Cidade</button>
+                </div>
             </div>
             <p class="text-xs text-base-content/50 mt-1">
                 Preço de venda em Thetford, Fort Sterling, Lymhurst, Bridgewatch, Martlock e Caerleon
-                (T3-T5, incluindo T4.1/T5.1), via Albion Online Data Project.
+                (T2-T8, incluindo T4.1-T8.1), via Albion Online Data Project.
+                "Melhor Cidade" usa a mesma busca, mas agrupa pela média geral por cidade.
             </p>
             <div id="marketRouteFilters" class="flex flex-wrap items-center gap-3 mt-3 hidden">
                 <label class="flex items-center gap-1.5 text-xs text-base-content/60">
@@ -97,11 +101,18 @@
                     Tier:
                     <select id="marketRouteTierFilter" class="select select-bordered select-xs">
                         <option value="">Todos</option>
+                        <option value="2.0">T2</option>
                         <option value="3.0">T3</option>
                         <option value="4.0">T4</option>
                         <option value="4.1">T4.1</option>
                         <option value="5.0">T5</option>
                         <option value="5.1">T5.1</option>
+                        <option value="6.0">T6</option>
+                        <option value="6.1">T6.1</option>
+                        <option value="7.0">T7</option>
+                        <option value="7.1">T7.1</option>
+                        <option value="8.0">T8</option>
+                        <option value="8.1">T8.1</option>
                     </select>
                 </label>
             </div>
@@ -116,6 +127,19 @@
                         </tr>
                     </thead>
                     <tbody id="marketRouteTableBody"></tbody>
+                </table>
+            </div>
+            <div id="bestCitiesStatus" class="text-sm text-base-content/60 mt-3 hidden"></div>
+            <div id="bestCitiesResults" class="mt-3 overflow-x-auto hidden">
+                <table class="table table-zebra table-sm">
+                    <thead>
+                        <tr>
+                            <th>Cidade</th>
+                            <th>Preço médio</th>
+                            <th>Amostras</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bestCitiesTableBody"></tbody>
                 </table>
             </div>
         </div>
@@ -292,8 +316,11 @@ window.onGlobalsReady(function() {
 
     function renderPriceTable(tableBody, entries) {
         tableBody.innerHTML = '';
-        for (const entry of entries) {
+        entries.forEach((entry, index) => {
             const row = document.createElement('tr');
+            // Entries arrive sorted highest price first — highlight the top
+            // result so the best price doesn't require reading every row.
+            if (index === 0) row.classList.add('bg-warning/20', 'font-semibold');
             const resourceCell = document.createElement('td');
             resourceCell.textContent = formatResourceLabel(entry);
             const priceCell = document.createElement('td');
@@ -302,7 +329,23 @@ window.onGlobalsReady(function() {
             cityCell.textContent = entry.city;
             row.append(resourceCell, priceCell, cityCell);
             tableBody.appendChild(row);
-        }
+        });
+    }
+
+    function renderCityTable(tableBody, rankings) {
+        tableBody.innerHTML = '';
+        rankings.forEach((ranking, index) => {
+            const row = document.createElement('tr');
+            if (index === 0) row.classList.add('bg-warning/20', 'font-semibold');
+            const cityCell = document.createElement('td');
+            cityCell.textContent = ranking.city;
+            const priceCell = document.createElement('td');
+            priceCell.textContent = Math.round(ranking.averagePrice);
+            const samplesCell = document.createElement('td');
+            samplesCell.textContent = ranking.sampleCount;
+            row.append(cityCell, priceCell, samplesCell);
+            tableBody.appendChild(row);
+        });
     }
 
     // Market route ("Calcular Rota")
@@ -317,7 +360,7 @@ window.onGlobalsReady(function() {
 
     function applyRouteFilters() {
         const resource = marketRouteResourceFilter.value;
-        const tierFilter = marketRouteTierFilter.value; // "" | "3.0" | "4.0" | "4.1" | "5.0" | "5.1"
+        const tierFilter = marketRouteTierFilter.value; // "" | "2.0" | "3.0" | "4.0" | "4.1" | ... | "8.1"
 
         const filtered = lastRouteEntries.filter(entry => {
             if (resource && entry.resource !== resource) return false;
@@ -344,6 +387,8 @@ window.onGlobalsReady(function() {
         calcRouteBtn.disabled = true;
         marketRouteFilters.classList.add('hidden');
         marketRouteResults.classList.add('hidden');
+        bestCitiesResults.classList.add('hidden');
+        bestCitiesStatus.classList.add('hidden');
         marketRouteStatus.classList.remove('hidden');
         marketRouteStatus.textContent = 'Buscando preços...';
         try {
@@ -372,6 +417,45 @@ window.onGlobalsReady(function() {
     addListener(calcRouteBtn, 'click', calculateRoute);
     addListener(marketRouteResourceFilter, 'change', applyRouteFilters);
     addListener(marketRouteTierFilter, 'change', applyRouteFilters);
+
+    // Best cities ("Melhor Cidade") — same underlying data, grouped by city average
+    const calcCitiesBtn = document.getElementById('calcCitiesBtn');
+    const bestCitiesStatus = document.getElementById('bestCitiesStatus');
+    const bestCitiesResults = document.getElementById('bestCitiesResults');
+    const bestCitiesTableBody = document.getElementById('bestCitiesTableBody');
+
+    async function calculateBestCities() {
+        if (!calcCitiesBtn) return;
+        calcCitiesBtn.disabled = true;
+        marketRouteFilters.classList.add('hidden');
+        marketRouteResults.classList.add('hidden');
+        bestCitiesResults.classList.add('hidden');
+        bestCitiesStatus.classList.remove('hidden');
+        bestCitiesStatus.textContent = 'Calculando média por cidade...';
+        try {
+            const response = await fetch('/api/market/cities');
+            if (!response.ok) throw new Error(`status ${response.status}`);
+            const rankings = await response.json();
+
+            if (!rankings || rankings.length === 0) {
+                bestCitiesStatus.textContent = 'Nenhum preço disponível agora.';
+                return;
+            }
+
+            renderCityTable(bestCitiesTableBody, rankings);
+            bestCitiesStatus.classList.add('hidden');
+            bestCitiesResults.classList.remove('hidden');
+        } catch (error) {
+            bestCitiesStatus.textContent = 'Erro ao buscar preços. Tente novamente em instantes.';
+            window.logger?.error('SYSTEM', 'BestCitiesFetchFailed', {
+                error: error?.message || String(error),
+            });
+        } finally {
+            calcCitiesBtn.disabled = false;
+        }
+    }
+
+    addListener(calcCitiesBtn, 'click', calculateBestCities);
 
     // Fish prices ("Buscar Peixe")
     const calcFishBtn = document.getElementById('calcFishBtn');
