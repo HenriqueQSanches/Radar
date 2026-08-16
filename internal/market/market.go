@@ -1,6 +1,6 @@
-// Package market fetches raw-resource sell prices from the Albion Online
-// Data Project's public API (no local Albion Data Client needed — that app
-// only contributes data, it doesn't gate reading it).
+// Package market fetches raw-resource and fish sell prices from the Albion
+// Online Data Project's public API (no local Albion Data Client needed —
+// that app only contributes data, it doesn't gate reading it).
 package market
 
 import (
@@ -41,6 +41,20 @@ var resources = []resourceDef{
 	{"ORE", "Minério"},
 }
 
+// fishDef is one fish family; tiers 4-8 are queried for each, at enchant 0
+// only (fish doesn't carry enchantment).
+type fishDef struct {
+	code string // wire code suffix, e.g. "FRESHWATER_ALL_COMMON"
+	name string // PT-BR display name
+}
+
+var fishTypes = []fishDef{
+	{"FRESHWATER_ALL_COMMON", "Peixe de Água Doce"},
+	{"FRESHWATER_ALL_RARE", "Peixe de Água Doce Raro"},
+	{"SALTWATER_ALL_COMMON", "Peixe de Água Salgada"},
+	{"SALTWATER_ALL_RARE", "Peixe de Água Salgada Raro"},
+}
+
 // itemMeta maps an Albion Online Data Project item_id back to the
 // resource/tier/enchant it represents.
 type itemMeta struct {
@@ -49,9 +63,10 @@ type itemMeta struct {
 	enchant  int
 }
 
-// buildItems returns every item id to query — T3-T5 base resources, plus the
-// @1 (enchant 1) variant for T4 and T5 only, per the feature's scope — and a
-// lookup from item id back to resource/tier/enchant for reading the response.
+// buildItems returns every raw-resource item id to query — T3-T5 base
+// resources, plus the @1 (enchant 1) variant for T4 and T5 only, per the
+// feature's scope — and a lookup from item id back to resource/tier/enchant
+// for reading the response.
 func buildItems() (ids []string, meta map[string]itemMeta) {
 	ids = make([]string, 0, 25)
 	meta = make(map[string]itemMeta, 25)
@@ -65,6 +80,22 @@ func buildItems() (ids []string, meta map[string]itemMeta) {
 				ids = append(ids, enchantedID)
 				meta[enchantedID] = itemMeta{resource: r.name, tier: tier, enchant: 1}
 			}
+		}
+	}
+	return ids, meta
+}
+
+// buildFishItems returns every fish item id to query — T4-T8, freshwater and
+// saltwater, common and rare — and its resource/tier lookup.
+func buildFishItems() (ids []string, meta map[string]itemMeta) {
+	const tierCount = 5 // T4-T8
+	ids = make([]string, 0, len(fishTypes)*tierCount)
+	meta = make(map[string]itemMeta, len(fishTypes)*tierCount)
+	for _, f := range fishTypes {
+		for tier := 4; tier <= 8; tier++ {
+			id := fmt.Sprintf("T%d_FISH_%s", tier, f.code)
+			ids = append(ids, id)
+			meta[id] = itemMeta{resource: f.name, tier: tier}
 		}
 	}
 	return ids, meta
@@ -93,7 +124,7 @@ const cacheTTL = 60 * time.Second
 
 const requestTimeout = 10 * time.Second
 
-// Client fetches and caches the best-route price list for one region.
+// Client fetches and caches price lists for one region.
 type Client struct {
 	region     Region
 	httpClient *http.Client
@@ -101,9 +132,11 @@ type Client struct {
 	// at an httptest.Server instead of the live API.
 	baseURL string
 
-	mu       sync.Mutex
-	cache    []Entry
-	cachedAt time.Time
+	mu           sync.Mutex
+	routeCache   []Entry
+	routeCached  time.Time
+	fishCache    []Entry
+	fishCachedAt time.Time
 }
 
 func NewClient(region Region) *Client {
@@ -114,20 +147,11 @@ func NewClient(region Region) *Client {
 	}
 }
 
-// BestRoute returns every T3-T5 (and T4.1/T5.1) resource's sell price across
-// the standard trade cities, highest price first. Zero-price entries (no
-// active sell orders) are dropped. Results are cached for cacheTTL.
-func (c *Client) BestRoute() ([]Entry, error) {
-	c.mu.Lock()
-	if c.cache != nil && time.Since(c.cachedAt) < cacheTTL {
-		cached := c.cache
-		c.mu.Unlock()
-		return cached, nil
-	}
-	c.mu.Unlock()
-
-	ids, meta := buildItems()
-
+// fetchEntries queries the Data Project for the given items across the
+// standard cities and returns one Entry per (item, city) with an active sell
+// order, resolved through meta. Unlisted item ids (not present in meta) and
+// zero-price rows (no active sell orders) are dropped.
+func (c *Client) fetchEntries(ids []string, meta map[string]itemMeta) ([]Entry, error) {
 	// City names contain spaces ("Fort Sterling") that must be percent-encoded;
 	// item ids don't need it ("@" and "," are both valid unencoded in a query).
 	encodedCities := make([]string, len(Cities))
@@ -179,11 +203,60 @@ func (c *Client) BestRoute() ([]Entry, error) {
 		})
 	}
 
+	return entries, nil
+}
+
+// BestRoute returns every T3-T5 (and T4.1/T5.1) resource's sell price across
+// the standard trade cities, highest price first. Results are cached for
+// cacheTTL.
+func (c *Client) BestRoute() ([]Entry, error) {
+	c.mu.Lock()
+	if c.routeCache != nil && time.Since(c.routeCached) < cacheTTL {
+		cached := c.routeCache
+		c.mu.Unlock()
+		return cached, nil
+	}
+	c.mu.Unlock()
+
+	ids, meta := buildItems()
+	entries, err := c.fetchEntries(ids, meta)
+	if err != nil {
+		return nil, err
+	}
+
 	sort.Slice(entries, func(i, j int) bool { return entries[i].Price > entries[j].Price })
 
 	c.mu.Lock()
-	c.cache = entries
-	c.cachedAt = time.Now()
+	c.routeCache = entries
+	c.routeCached = time.Now()
+	c.mu.Unlock()
+
+	return entries, nil
+}
+
+// FishPrices returns every T4-T8 fish family's sell price across the
+// standard trade cities, highest price first — same shape as BestRoute, just
+// for fish instead of raw resources. Results are cached for cacheTTL.
+func (c *Client) FishPrices() ([]Entry, error) {
+	c.mu.Lock()
+	if c.fishCache != nil && time.Since(c.fishCachedAt) < cacheTTL {
+		cached := c.fishCache
+		c.mu.Unlock()
+		return cached, nil
+	}
+	c.mu.Unlock()
+
+	ids, meta := buildFishItems()
+	entries, err := c.fetchEntries(ids, meta)
+	if err != nil {
+		return nil, err
+	}
+
+	sort.Slice(entries, func(i, j int) bool { return entries[i].Price > entries[j].Price })
+
+	c.mu.Lock()
+	c.fishCache = entries
+	c.fishCachedAt = time.Now()
 	c.mu.Unlock()
 
 	return entries, nil

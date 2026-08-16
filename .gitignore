@@ -101,6 +101,7 @@ HELPER PACKAGE/
 
 # Claude-specific files (local only, never commit)
 /CLAUDE.md
+/dev-run.bat
 
 # Local full-session Photon captures (never committed, always anonymized then split)
 captures/

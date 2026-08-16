@@ -81,6 +81,30 @@
                 Preço de venda em Thetford, Fort Sterling, Lymhurst, Bridgewatch, Martlock e Caerleon
                 (T3-T5, incluindo T4.1/T5.1), via Albion Online Data Project.
             </p>
+            <div id="marketRouteFilters" class="flex flex-wrap items-center gap-3 mt-3 hidden">
+                <label class="flex items-center gap-1.5 text-xs text-base-content/60">
+                    Recurso:
+                    <select id="marketRouteResourceFilter" class="select select-bordered select-xs">
+                        <option value="">Todos</option>
+                        <option value="Madeira">Madeira</option>
+                        <option value="Pedra">Pedra</option>
+                        <option value="Fibra">Fibra</option>
+                        <option value="Couro">Couro</option>
+                        <option value="Minério">Minério</option>
+                    </select>
+                </label>
+                <label class="flex items-center gap-1.5 text-xs text-base-content/60">
+                    Tier:
+                    <select id="marketRouteTierFilter" class="select select-bordered select-xs">
+                        <option value="">Todos</option>
+                        <option value="3.0">T3</option>
+                        <option value="4.0">T4</option>
+                        <option value="4.1">T4.1</option>
+                        <option value="5.0">T5</option>
+                        <option value="5.1">T5.1</option>
+                    </select>
+                </label>
+            </div>
             <div id="marketRouteStatus" class="text-sm text-base-content/60 mt-3 hidden"></div>
             <div id="marketRouteResults" class="mt-3 overflow-x-auto hidden">
                 <table class="table table-zebra table-sm">
@@ -92,6 +116,56 @@
                         </tr>
                     </thead>
                     <tbody id="marketRouteTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fish Hotspots Section -->
+    <div id="fishHotspotsSection" class="card bg-base-200">
+        <div class="card-body">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <h3 class="text-xl font-semibold text-base-content">Peixe</h3>
+                <button id="calcFishBtn" class="btn btn-primary btn-sm">Buscar Peixe</button>
+            </div>
+            <p class="text-xs text-base-content/50 mt-1">
+                Preço de venda de peixe (T4-T8) em Thetford, Fort Sterling, Lymhurst, Bridgewatch,
+                Martlock e Caerleon, via Albion Online Data Project.
+            </p>
+            <div id="fishFilters" class="flex flex-wrap items-center gap-3 mt-3 hidden">
+                <label class="flex items-center gap-1.5 text-xs text-base-content/60">
+                    Peixe:
+                    <select id="fishResourceFilter" class="select select-bordered select-xs">
+                        <option value="">Todos</option>
+                        <option value="Peixe de Água Doce">Água Doce</option>
+                        <option value="Peixe de Água Doce Raro">Água Doce Raro</option>
+                        <option value="Peixe de Água Salgada">Água Salgada</option>
+                        <option value="Peixe de Água Salgada Raro">Água Salgada Raro</option>
+                    </select>
+                </label>
+                <label class="flex items-center gap-1.5 text-xs text-base-content/60">
+                    Tier:
+                    <select id="fishTierFilter" class="select select-bordered select-xs">
+                        <option value="">Todos</option>
+                        <option value="4">T4</option>
+                        <option value="5">T5</option>
+                        <option value="6">T6</option>
+                        <option value="7">T7</option>
+                        <option value="8">T8</option>
+                    </select>
+                </label>
+            </div>
+            <div id="fishHotspotsStatus" class="text-sm text-base-content/60 mt-3 hidden"></div>
+            <div id="fishHotspotsResults" class="mt-3 overflow-x-auto hidden">
+                <table class="table table-zebra table-sm">
+                    <thead>
+                        <tr>
+                            <th>Peixe</th>
+                            <th>Preço</th>
+                            <th>Cidade</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fishHotspotsTableBody"></tbody>
                 </table>
             </div>
         </div>
@@ -211,20 +285,64 @@ window.onGlobalsReady(function() {
     }
     document.body.addEventListener('htmx:beforeSwap', htmxCleanupHandler);
 
-    // Market route ("Calcular Rota")
-    const calcRouteBtn = document.getElementById('calcRouteBtn');
-    const marketRouteStatus = document.getElementById('marketRouteStatus');
-    const marketRouteResults = document.getElementById('marketRouteResults');
-    const marketRouteTableBody = document.getElementById('marketRouteTableBody');
-
     function formatResourceLabel(entry) {
         const enchantSuffix = entry.enchant > 0 ? `.${entry.enchant}` : '';
         return `${entry.resource} T${entry.tier}${enchantSuffix}`;
     }
 
+    function renderPriceTable(tableBody, entries) {
+        tableBody.innerHTML = '';
+        for (const entry of entries) {
+            const row = document.createElement('tr');
+            const resourceCell = document.createElement('td');
+            resourceCell.textContent = formatResourceLabel(entry);
+            const priceCell = document.createElement('td');
+            priceCell.textContent = entry.price;
+            const cityCell = document.createElement('td');
+            cityCell.textContent = entry.city;
+            row.append(resourceCell, priceCell, cityCell);
+            tableBody.appendChild(row);
+        }
+    }
+
+    // Market route ("Calcular Rota")
+    const calcRouteBtn = document.getElementById('calcRouteBtn');
+    const marketRouteFilters = document.getElementById('marketRouteFilters');
+    const marketRouteResourceFilter = document.getElementById('marketRouteResourceFilter');
+    const marketRouteTierFilter = document.getElementById('marketRouteTierFilter');
+    const marketRouteStatus = document.getElementById('marketRouteStatus');
+    const marketRouteResults = document.getElementById('marketRouteResults');
+    const marketRouteTableBody = document.getElementById('marketRouteTableBody');
+    let lastRouteEntries = [];
+
+    function applyRouteFilters() {
+        const resource = marketRouteResourceFilter.value;
+        const tierFilter = marketRouteTierFilter.value; // "" | "3.0" | "4.0" | "4.1" | "5.0" | "5.1"
+
+        const filtered = lastRouteEntries.filter(entry => {
+            if (resource && entry.resource !== resource) return false;
+            if (tierFilter) {
+                const [tier, enchant] = tierFilter.split('.').map(Number);
+                if (entry.tier !== tier || entry.enchant !== enchant) return false;
+            }
+            return true;
+        });
+
+        if (filtered.length === 0) {
+            marketRouteResults.classList.add('hidden');
+            marketRouteStatus.classList.remove('hidden');
+            marketRouteStatus.textContent = 'Nenhum resultado com esse filtro.';
+            return;
+        }
+        renderPriceTable(marketRouteTableBody, filtered);
+        marketRouteStatus.classList.add('hidden');
+        marketRouteResults.classList.remove('hidden');
+    }
+
     async function calculateRoute() {
         if (!calcRouteBtn) return;
         calcRouteBtn.disabled = true;
+        marketRouteFilters.classList.add('hidden');
         marketRouteResults.classList.add('hidden');
         marketRouteStatus.classList.remove('hidden');
         marketRouteStatus.textContent = 'Buscando preços...';
@@ -232,26 +350,15 @@ window.onGlobalsReady(function() {
             const response = await fetch('/api/market/route');
             if (!response.ok) throw new Error(`status ${response.status}`);
             const entries = await response.json();
+            lastRouteEntries = entries || [];
 
-            if (!entries || entries.length === 0) {
+            if (lastRouteEntries.length === 0) {
                 marketRouteStatus.textContent = 'Nenhum preço disponível agora.';
                 return;
             }
 
-            marketRouteTableBody.innerHTML = '';
-            for (const entry of entries) {
-                const row = document.createElement('tr');
-                const resourceCell = document.createElement('td');
-                resourceCell.textContent = formatResourceLabel(entry);
-                const priceCell = document.createElement('td');
-                priceCell.textContent = entry.price;
-                const cityCell = document.createElement('td');
-                cityCell.textContent = entry.city;
-                row.append(resourceCell, priceCell, cityCell);
-                marketRouteTableBody.appendChild(row);
-            }
-            marketRouteStatus.classList.add('hidden');
-            marketRouteResults.classList.remove('hidden');
+            marketRouteFilters.classList.remove('hidden');
+            applyRouteFilters();
         } catch (error) {
             marketRouteStatus.textContent = 'Erro ao buscar preços. Tente novamente em instantes.';
             window.logger?.error('SYSTEM', 'MarketRouteFetchFailed', {
@@ -263,6 +370,73 @@ window.onGlobalsReady(function() {
     }
 
     addListener(calcRouteBtn, 'click', calculateRoute);
+    addListener(marketRouteResourceFilter, 'change', applyRouteFilters);
+    addListener(marketRouteTierFilter, 'change', applyRouteFilters);
+
+    // Fish prices ("Buscar Peixe")
+    const calcFishBtn = document.getElementById('calcFishBtn');
+    const fishFilters = document.getElementById('fishFilters');
+    const fishResourceFilter = document.getElementById('fishResourceFilter');
+    const fishTierFilter = document.getElementById('fishTierFilter');
+    const fishHotspotsStatus = document.getElementById('fishHotspotsStatus');
+    const fishHotspotsResults = document.getElementById('fishHotspotsResults');
+    const fishHotspotsTableBody = document.getElementById('fishHotspotsTableBody');
+    let lastFishEntries = [];
+
+    function applyFishFilters() {
+        const resource = fishResourceFilter.value;
+        const tier = fishTierFilter.value;
+
+        const filtered = lastFishEntries.filter(entry => {
+            if (resource && entry.resource !== resource) return false;
+            if (tier && entry.tier !== Number(tier)) return false;
+            return true;
+        });
+
+        if (filtered.length === 0) {
+            fishHotspotsResults.classList.add('hidden');
+            fishHotspotsStatus.classList.remove('hidden');
+            fishHotspotsStatus.textContent = 'Nenhum resultado com esse filtro.';
+            return;
+        }
+        renderPriceTable(fishHotspotsTableBody, filtered);
+        fishHotspotsStatus.classList.add('hidden');
+        fishHotspotsResults.classList.remove('hidden');
+    }
+
+    async function calculateFishPrices() {
+        if (!calcFishBtn) return;
+        calcFishBtn.disabled = true;
+        fishFilters.classList.add('hidden');
+        fishHotspotsResults.classList.add('hidden');
+        fishHotspotsStatus.classList.remove('hidden');
+        fishHotspotsStatus.textContent = 'Buscando preços...';
+        try {
+            const response = await fetch('/api/market/fish');
+            if (!response.ok) throw new Error(`status ${response.status}`);
+            const entries = await response.json();
+            lastFishEntries = entries || [];
+
+            if (lastFishEntries.length === 0) {
+                fishHotspotsStatus.textContent = 'Nenhum preço disponível agora.';
+                return;
+            }
+
+            fishFilters.classList.remove('hidden');
+            applyFishFilters();
+        } catch (error) {
+            fishHotspotsStatus.textContent = 'Erro ao buscar preços. Tente novamente em instantes.';
+            window.logger?.error('SYSTEM', 'FishPricesFetchFailed', {
+                error: error?.message || String(error),
+            });
+        } finally {
+            calcFishBtn.disabled = false;
+        }
+    }
+
+    addListener(calcFishBtn, 'click', calculateFishPrices);
+    addListener(fishResourceFilter, 'change', applyFishFilters);
+    addListener(fishTierFilter, 'change', applyFishFilters);
 
     // Bind display checkboxes
     ['settingResourceCount', 'settingResourceDistance', 'settingResourceClusters'].forEach(id => {
