@@ -13,6 +13,7 @@ import (
 
 	"github.com/nospy/albion-openradar/internal/capture"
 	"github.com/nospy/albion-openradar/internal/logger"
+	"github.com/nospy/albion-openradar/internal/market"
 	"github.com/nospy/albion-openradar/internal/templates"
 )
 
@@ -35,6 +36,7 @@ type HTTPServer struct {
 	devMode     bool
 	networkAPI  *NetworkAPI
 	settingsAPI *SettingsAPI
+	marketAPI   *MarketAPI
 }
 
 // NewHTTPServer creates a new HTTP server with embedded assets (production mode)
@@ -96,6 +98,7 @@ func NewHTTPServer(
 		s.networkAPI = NewNetworkAPI(mgr, allInterfaces, appDir, capture.LANAddresses)
 	}
 	s.settingsAPI = NewSettingsAPI(appDir, log, recorder, captureDir)
+	s.marketAPI = NewMarketAPI(market.NewClient(market.RegionAmericas))
 	s.setupRoutes()
 	return s, nil
 }
@@ -138,6 +141,7 @@ func NewHTTPServerDev(
 		s.networkAPI = NewNetworkAPI(mgr, allInterfaces, appDir, capture.LANAddresses)
 	}
 	s.settingsAPI = NewSettingsAPI(appDir, log, recorder, captureDir)
+	s.marketAPI = NewMarketAPI(market.NewClient(market.RegionAmericas))
 	s.setupRoutes()
 	return s, nil
 }
@@ -199,6 +203,7 @@ func (s *HTTPServer) setupRoutes() {
 
 	// API endpoints
 	s.settingsAPI.Register(s.mux)
+	s.marketAPI.Register(s.mux)
 	if s.networkAPI != nil {
 		s.networkAPI.Register(s.mux)
 	}

@@ -39,6 +39,9 @@ Recurso estático usa uma faixa fixa de números pra decidir se é Madeira/Pedra
 ### Download em um clique só (Windows)
 Baixar o `.exe` direto da página de release confundia quem não é da área (tinha checksum, README, binário Linux, tudo junto). Agora tem um `IniciarRadar.bat`: baixa o Radar sozinho na primeira vez, abre o programa e já deixa o navegador aberto em `localhost:5001` — só dar duplo clique.
 
+### Calcular Rota (preço de recursos)
+Botão novo na página do radar: busca o preço de venda de Madeira/Pedra/Fibra/Couro/Minério (T3-T5, incluindo T4.1/T5.1) nas 6 principais cidades de mercado (Thetford, Fort Sterling, Lymhurst, Bridgewatch, Martlock, Caerleon), via [Albion Online Data Project](https://www.albion-online-data.com/) — não precisa instalar o Albion Data Client, essa API pública já é alimentada por quem usa esse app. Resultado ordenado do preço mais alto pro mais baixo, servidor Americas.
+
 ## Como rodar
 
 Precisa de [Go](https://go.dev/) e [Node.js](https://nodejs.org/) instalados, e do [Npcap](https://npcap.com/) pra capturar o tráfego.

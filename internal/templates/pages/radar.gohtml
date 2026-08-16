@@ -70,6 +70,33 @@
         </div>
     </div>
 
+    <!-- Market Route Section -->
+    <div id="marketRouteSection" class="card bg-base-200">
+        <div class="card-body">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <h3 class="text-xl font-semibold text-base-content">Rota de Mercado</h3>
+                <button id="calcRouteBtn" class="btn btn-primary btn-sm">Calcular Rota</button>
+            </div>
+            <p class="text-xs text-base-content/50 mt-1">
+                Preço de venda em Thetford, Fort Sterling, Lymhurst, Bridgewatch, Martlock e Caerleon
+                (T3-T5, incluindo T4.1/T5.1), via Albion Online Data Project.
+            </p>
+            <div id="marketRouteStatus" class="text-sm text-base-content/60 mt-3 hidden"></div>
+            <div id="marketRouteResults" class="mt-3 overflow-x-auto hidden">
+                <table class="table table-zebra table-sm">
+                    <thead>
+                        <tr>
+                            <th>Recurso</th>
+                            <th>Preço</th>
+                            <th>Cidade</th>
+                        </tr>
+                    </thead>
+                    <tbody id="marketRouteTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <!-- Detected Players Section -->
     <div id="playersSection" class="card bg-base-200">
         <div class="card-body">
@@ -183,6 +210,59 @@ window.onGlobalsReady(function() {
         }
     }
     document.body.addEventListener('htmx:beforeSwap', htmxCleanupHandler);
+
+    // Market route ("Calcular Rota")
+    const calcRouteBtn = document.getElementById('calcRouteBtn');
+    const marketRouteStatus = document.getElementById('marketRouteStatus');
+    const marketRouteResults = document.getElementById('marketRouteResults');
+    const marketRouteTableBody = document.getElementById('marketRouteTableBody');
+
+    function formatResourceLabel(entry) {
+        const enchantSuffix = entry.enchant > 0 ? `.${entry.enchant}` : '';
+        return `${entry.resource} T${entry.tier}${enchantSuffix}`;
+    }
+
+    async function calculateRoute() {
+        if (!calcRouteBtn) return;
+        calcRouteBtn.disabled = true;
+        marketRouteResults.classList.add('hidden');
+        marketRouteStatus.classList.remove('hidden');
+        marketRouteStatus.textContent = 'Buscando preços...';
+        try {
+            const response = await fetch('/api/market/route');
+            if (!response.ok) throw new Error(`status ${response.status}`);
+            const entries = await response.json();
+
+            if (!entries || entries.length === 0) {
+                marketRouteStatus.textContent = 'Nenhum preço disponível agora.';
+                return;
+            }
+
+            marketRouteTableBody.innerHTML = '';
+            for (const entry of entries) {
+                const row = document.createElement('tr');
+                const resourceCell = document.createElement('td');
+                resourceCell.textContent = formatResourceLabel(entry);
+                const priceCell = document.createElement('td');
+                priceCell.textContent = entry.price;
+                const cityCell = document.createElement('td');
+                cityCell.textContent = entry.city;
+                row.append(resourceCell, priceCell, cityCell);
+                marketRouteTableBody.appendChild(row);
+            }
+            marketRouteStatus.classList.add('hidden');
+            marketRouteResults.classList.remove('hidden');
+        } catch (error) {
+            marketRouteStatus.textContent = 'Erro ao buscar preços. Tente novamente em instantes.';
+            window.logger?.error('SYSTEM', 'MarketRouteFetchFailed', {
+                error: error?.message || String(error),
+            });
+        } finally {
+            calcRouteBtn.disabled = false;
+        }
+    }
+
+    addListener(calcRouteBtn, 'click', calculateRoute);
 
     // Bind display checkboxes
     ['settingResourceCount', 'settingResourceDistance', 'settingResourceClusters'].forEach(id => {
