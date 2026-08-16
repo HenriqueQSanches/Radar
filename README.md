@@ -39,8 +39,12 @@ Recurso estático usa uma faixa fixa de números pra decidir se é Madeira/Pedra
 ### Download em um clique só (Windows)
 Baixar o `.exe` direto da página de release confundia quem não é da área (tinha checksum, README, binário Linux, tudo junto). Agora tem um `IniciarRadar.bat`: baixa o Radar sozinho na primeira vez, abre o programa e já deixa o navegador aberto em `localhost:5001` — só dar duplo clique.
 
-### Calcular Rota (preço de recursos)
-Botão novo na página do radar: busca o preço de venda de Madeira/Pedra/Fibra/Couro/Minério (T3-T5, incluindo T4.1/T5.1) nas 6 principais cidades de mercado (Thetford, Fort Sterling, Lymhurst, Bridgewatch, Martlock, Caerleon), via [Albion Online Data Project](https://www.albion-online-data.com/) — não precisa instalar o Albion Data Client, essa API pública já é alimentada por quem usa esse app. Resultado ordenado do preço mais alto pro mais baixo, servidor Americas.
+### Calcular Rota (preço de recursos, peixe e ranking de cidade)
+Três botões novos na página do radar, todos via [Albion Online Data Project](https://www.albion-online-data.com/) (não precisa instalar o Albion Data Client — essa API pública já é alimentada por quem usa esse app), nas 6 principais cidades de mercado (Thetford, Fort Sterling, Lymhurst, Bridgewatch, Martlock, Caerleon), servidor Americas:
+
+- **Calcular Rota**: preço de venda de Madeira/Pedra/Fibra/Couro/Minério, T2-T8 (incluindo T4.1-T8.1 encantado), do mais caro pro mais barato. Filtro por recurso e por tier.
+- **Melhor Cidade**: mesma busca da Rota, mas agrupada pela média de preço por cidade — pra saber onde os recursos em geral estão vendendo mais caro, sem precisar olhar item por item.
+- **Buscar Peixe**: preço de venda de peixe (água doce/salgada, comum/raro), T4-T8. Também com filtro por tipo e tier.
 
 ## Como rodar
 
