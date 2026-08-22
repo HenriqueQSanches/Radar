@@ -9,6 +9,22 @@ export class MobsDrawing extends DrawingUtils
     constructor() {
         super();
         this.lastVisibleCount = 0;
+        this._filterStateById = new Map();
+    }
+
+    // Same rationale as the living-resource verdict logs: only log on the first
+    // check or when the verdict flips, so this loop (every frame) doesn't flood
+    // the file. Records which specific setting/threshold was responsible so a
+    // "boss/enemy not showing" report doesn't need to be reproduced live.
+    _logVerdictOnChange(mobOne, accepted, extra) {
+        const previouslyAccepted = this._filterStateById.get(mobOne.id);
+        if (previouslyAccepted === accepted) return;
+        this._filterStateById.set(mobOne.id, accepted);
+        window.logger?.debug(CATEGORIES.MOBS, 'HostileMobFilterVerdict', {
+            id: mobOne.id, typeId: mobOne.typeId, enemyType: mobOne.type,
+            name: mobOne.name, tier: mobOne.tier, identified: mobOne.identified,
+            maxHealth: mobOne.maxHealth, accepted, ...extra,
+        });
     }
 
     interpolate(mobs, lpX, lpY, t)
@@ -57,17 +73,31 @@ export class MobsDrawing extends DrawingUtils
             }
             else if (mobOne.type >= EnemyType.Enemy && mobOne.type <= EnemyType.Boss)
             {
+                let settingName;
+                let settingValue;
+                let accepted;
+
                 if (!mobOne.identified) {
-                    if (settingsSync.getBool("settingShowUnmanagedEnemies") === false) continue;
+                    settingName = 'settingShowUnmanagedEnemies';
+                    settingValue = settingsSync.getBool(settingName);
+                    accepted = settingValue !== false;
                 } else {
-                    const settingName = getSettingNameForEnemyType(mobOne.type);
-                    if (settingName && settingsSync.getBool(settingName) === false) continue;
+                    settingName = getSettingNameForEnemyType(mobOne.type);
+                    settingValue = settingName ? settingsSync.getBool(settingName) : null;
+                    accepted = !settingName || settingValue !== false;
                 }
 
-                if (settingsSync.getBool("settingShowMinimumHealthEnemies")) {
+                let healthFiltered = false;
+                if (accepted && settingsSync.getBool("settingShowMinimumHealthEnemies")) {
                     const threshold = settingsSync.getNumber("settingTextMinimumHealthEnemies", 2100);
-                    if ((mobOne.maxHealth ?? 0) < threshold) continue;
+                    if ((mobOne.maxHealth ?? 0) < threshold) {
+                        accepted = false;
+                        healthFiltered = true;
+                    }
                 }
+
+                this._logVerdictOnChange(mobOne, accepted, {gate: 'enemy', settingName, settingValue, healthFiltered});
+                if (!accepted) continue;
 
                 // Use color-coded circles for hostile mobs (not images)
                 // imageName stays undefined to trigger the colored circle rendering below
@@ -77,7 +107,9 @@ export class MobsDrawing extends DrawingUtils
             }
             else if (mobOne.type == EnemyType.Drone)
             {
-                if (!settingsSync.getBool("settingAvaloneDrones")) continue;
+                const accepted = settingsSync.getBool("settingAvaloneDrones");
+                this._logVerdictOnChange(mobOne, accepted, {gate: 'drone', settingName: 'settingAvaloneDrones'});
+                if (!accepted) continue;
 
                 // Use color-coded circles for drones (not images)
                 // imageName stays undefined to trigger the colored circle rendering below
@@ -86,6 +118,10 @@ export class MobsDrawing extends DrawingUtils
             }
             else if (mobOne.type == EnemyType.MistBoss)
             {
+                // No settings gate exists for Mist bosses today — logged as always-accepted so a
+                // report of "mist boss not showing" is distinguishable from "never reaches here".
+                this._logVerdictOnChange(mobOne, true, {gate: 'mistBoss'});
+
                 // Only set imageName if mob has been identified (has name from mobinfo)
                 // Otherwise leave undefined and fallback blue circle will be drawn
                 if (mobOne.name) {
@@ -97,7 +133,9 @@ export class MobsDrawing extends DrawingUtils
             }
             else if (mobOne.type == EnemyType.Events)
             {
-                if (!settingsSync.getBool("settingShowEventEnemies")) continue;
+                const accepted = settingsSync.getBool("settingShowEventEnemies");
+                this._logVerdictOnChange(mobOne, accepted, {gate: 'events', settingName: 'settingShowEventEnemies'});
+                if (!accepted) continue;
 
                 // Only set imageName if mob has been identified (has name from mobinfo)
                 // Otherwise leave undefined and fallback blue circle will be drawn

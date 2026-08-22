@@ -104,16 +104,35 @@ export class DungeonsHandler
         // eslint-disable-next-line no-useless-assignment
         let dungeonType = undefined;
 
+        // The settings gates below only run once per portal id (dungeons/mists don't get
+        // re-evaluated every frame like living resources do), so a rejection is logged right
+        // here instead of via a transition-based verdict — otherwise a "dungeon/mist not
+        // showing" report has nothing to point at besides silence.
+        const reject = (kind, settingsChecked) => {
+            window.logger?.debug(CATEGORIES.DUNGEONS, 'DungeonFilterRejected', {
+                id, name, enchant, kind,
+                settingsChecked: settingsChecked.map(key => ({key, value: settingsSync.getBool(key)})),
+            });
+        };
+
         // MISTS portals route through the Mists settings, not Dungeon settings.
         if (upperCaseName.startsWith("MISTS_"))
         {
             const isSolo = upperCaseName.includes("_SOLO_");
 
             if (isSolo) {
-                if (!settingsSync.getBool("settingMistSolo") || !settingsSync.getBool("settingMistE" + enchant)) return;
+                const keys = ["settingMistSolo", "settingMistE" + enchant];
+                if (!settingsSync.getBool("settingMistSolo") || !settingsSync.getBool("settingMistE" + enchant)) {
+                    reject('mist_solo', keys);
+                    return;
+                }
                 dungeonType = DungeonType.Solo;
             } else {
-                if (!settingsSync.getBool("settingMistDuo") || !settingsSync.getBool("settingMistE" + enchant)) return;
+                const keys = ["settingMistDuo", "settingMistE" + enchant];
+                if (!settingsSync.getBool("settingMistDuo") || !settingsSync.getBool("settingMistE" + enchant)) {
+                    reject('mist_duo', keys);
+                    return;
+                }
                 dungeonType = DungeonType.Group;
             }
         }
@@ -123,31 +142,46 @@ export class DungeonsHandler
         else if (lowerCaseName.includes("corrupted")) // corrupt
         {
             // Test if corrupt checkbox
-            if (!settingsSync.getBool("settingDungeonCorrupted")) return;
+            if (!settingsSync.getBool("settingDungeonCorrupted")) {
+                reject('corrupted', ["settingDungeonCorrupted"]);
+                return;
+            }
 
             dungeonType = DungeonType.Corrupted;
         }
         else if (lowerCaseName.includes("solo")) // solo
         {
             // Test if solo checkbox
-            if (!settingsSync.getBool("settingDungeonSolo") || !settingsSync.getBool('settingDungeonE'+enchant)) return;
+            const keys = ["settingDungeonSolo", "settingDungeonE" + enchant];
+            if (!settingsSync.getBool("settingDungeonSolo") || !settingsSync.getBool('settingDungeonE'+enchant)) {
+                reject('solo', keys);
+                return;
+            }
 
             dungeonType = DungeonType.Solo;
         }
         // "HELLGATE_2V2_NON_LETHAL"
         else if (lowerCaseName.includes("hellgate")) // hellgate
         {
-            if (!settingsSync.getBool('settingDungeonHellgate')) return;
+            if (!settingsSync.getBool('settingDungeonHellgate')) {
+                reject('hellgate', ["settingDungeonHellgate"]);
+                return;
+            }
 
             dungeonType = DungeonType.Hellgate
 
         }
         else // group
         {
-            if (!settingsSync.getBool('settingDungeonDuo') || !settingsSync.getBool('settingDungeonE'+enchant)) return;
+            const keys = ["settingDungeonDuo", "settingDungeonE" + enchant];
+            if (!settingsSync.getBool('settingDungeonDuo') || !settingsSync.getBool('settingDungeonE'+enchant)) {
+                reject('duo', keys);
+                return;
+            }
             dungeonType = DungeonType.Group;
         }
 
+        window.logger?.debug(CATEGORIES.DUNGEONS, 'DungeonAdded', {id, name, enchant, dungeonType});
         const d = new Dungeon(id, posX, posY, name, dungeonType, enchant);
         this.dungeonList.push(d);
     }

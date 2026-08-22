@@ -279,6 +279,21 @@
                 }
             };
 
+            // Mists/Dungeons visibility gates default to unset (false) the first time this page
+            // ever binds them, which silently hides every dungeon/mist portal until the user opens
+            // this page and checks each box by hand. Seed them on so they show by default, same as
+            // the always-on logging categories in Settings.
+            const visibilityDefaults = [
+                "settingMistSolo", "settingMistDuo", "settingMistE0", "settingMistE1", "settingMistE2",
+                "settingMistE3", "settingMistE4", "settingCage", "settingWispSpawn",
+                "settingDungeonSolo", "settingDungeonDuo", "settingDungeonE0", "settingDungeonE1",
+                "settingDungeonE2", "settingDungeonE3", "settingDungeonE4", "settingDungeonCorrupted",
+                "settingDungeonHellgate",
+            ];
+            visibilityDefaults.forEach(key => {
+                if (settingsSync.get(key) === null) settingsSync.setBool(key, true);
+            });
+
             // Chests
             ["settingChestGreen", "settingChestBlue", "settingChestPurple", "settingChestYellow"].forEach(bindCheckbox);
 

@@ -470,6 +470,8 @@
             // exact moment they happen.
             if (settingsSync.get("categoryMobs") === null) settingsSync.setBool("categoryMobs", true);
             if (settingsSync.get("categoryHarvestables") === null) settingsSync.setBool("categoryHarvestables", true);
+            if (settingsSync.get("categoryDungeons") === null) settingsSync.setBool("categoryDungeons", true);
+            if (settingsSync.get("categoryFishing") === null) settingsSync.setBool("categoryFishing", true);
             bindCheckbox("categoryMobs");
             bindCheckbox("categoryHarvestables");
             bindCheckbox("categoryDungeons");

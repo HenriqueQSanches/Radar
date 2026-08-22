@@ -302,6 +302,17 @@
                 }
             });
 
+            // These visibility gates default to unset (false) the first time this page ever binds
+            // them, which silently hides every enemy/drone/event mob until the user opens this
+            // page and checks each box by hand. Seed them on so they show by default, same as the
+            // always-on logging categories in Settings.
+            [
+                "settingAllEnemies", "settingNormalEnemy", "settingEnchantedEnemy", "settingMiniBossEnemy",
+                "settingBossEnemy", "settingShowUnmanagedEnemies", "settingAvaloneDrones", "settingShowEventEnemies",
+            ].forEach(key => {
+                if (settingsSync.get(key) === null) settingsSync.setBool(key, true);
+            });
+
             // Classic enemies with "All" checkbox logic
             const settingNormalEnemy = document.getElementById("settingNormalEnemy");
             const settingEnchantedEnemy = document.getElementById("settingEnchantedEnemy");

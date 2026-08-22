@@ -18,7 +18,7 @@ const INITIAL_RECONNECT_DELAY = 1000;
 // can still turn any of this off/down from the Logging section.
 const DEFAULT_LOG_LEVEL = 'DEBUG';
 const DEFAULT_LOG_TO_SERVER = true;
-const CATEGORIES_ON_BY_DEFAULT = new Set(['MOBS', 'HARVESTABLES']);
+const CATEGORIES_ON_BY_DEFAULT = new Set(['MOBS', 'HARVESTABLES', 'DUNGEONS', 'FISHING']);
 
 class Logger {
     constructor() {
