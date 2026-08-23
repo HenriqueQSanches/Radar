@@ -23,6 +23,7 @@ import {CATEGORIES} from '../constants/LoggerConstants.js';
 import {createRadarRenderer} from './RadarRenderer.js';
 import {destroyEventQueue, getEventQueue} from './WebSocketEventQueue.js';
 import pictureInPictureManager from './PictureInPictureManager.js';
+import settingsSync from './SettingsSync.js';
 
 import * as WebSocketManager from '../core/WebSocketManager.js';
 import * as DatabaseLoader from '../core/DatabaseLoader.js';
@@ -35,6 +36,8 @@ let radarRenderer = null;
 let eventQueue = null;
 let playerListIntervalId = null;
 let cleanupIntervalId = null;
+let settingsSnapshotIntervalId = null;
+let lastSettingsSnapshotJSON = null;
 let buttonClickHandler = null;
 let lastPlayerListHash = '';
 
@@ -53,6 +56,32 @@ let drawingUtils = null;
 let map = null;
 
 const STALE_ENTITY_MAX_AGE = 300000;
+
+// Every visibility toggle that gates whether something renders on the radar. Logged
+// automatically (once at startup, then only when it actually changes) so a "X isn't
+// showing" report can be diagnosed straight from the debug log, without asking the
+// player to open devtools mid-session — the checked/unchecked state at the exact
+// moment something failed to render is what actually matters, not what it is later.
+const VISIBILITY_SETTINGS_KEYS = [
+    'settingNormalEnemy', 'settingEnchantedEnemy', 'settingMiniBossEnemy', 'settingBossEnemy',
+    'settingShowUnmanagedEnemies', 'settingAvaloneDrones', 'settingShowEventEnemies',
+    'settingShowMinimumHealthEnemies',
+    'settingFishing',
+    'settingDungeonSolo', 'settingDungeonDuo', 'settingDungeonCorrupted', 'settingDungeonHellgate',
+    'settingMistSolo', 'settingMistDuo',
+    'categoryMobs', 'categoryHarvestables', 'categoryDungeons', 'categoryFishing',
+];
+
+function logVisibilitySettingsSnapshotIfChanged() {
+    const snapshot = {};
+    for (const key of VISIBILITY_SETTINGS_KEYS) {
+        snapshot[key] = settingsSync.getBool(key);
+    }
+    const json = JSON.stringify(snapshot);
+    if (json === lastSettingsSnapshotJSON) return;
+    lastSettingsSnapshotJSON = json;
+    window.logger?.info(CATEGORIES.SYSTEM, 'VisibilitySettingsSnapshot', snapshot);
+}
 
 function cleanupStaleEntities() {
     const cleanedPlayers = handlers.players?.cleanupStaleEntities?.(STALE_ENTITY_MAX_AGE) || 0;
@@ -233,6 +262,8 @@ export async function initRadar() {
             }
         }, 1500);
         cleanupIntervalId = setInterval(cleanupStaleEntities, 60000);
+        logVisibilitySettingsSnapshotIfChanged();
+        settingsSnapshotIntervalId = setInterval(logVisibilitySettingsSnapshotIfChanged, 15000);
 
         const buttonElement = document.getElementById('button');
         if (buttonElement) {
@@ -279,6 +310,10 @@ export function destroyRadar() {
     if (cleanupIntervalId) {
         clearInterval(cleanupIntervalId);
         cleanupIntervalId = null;
+    }
+    if (settingsSnapshotIntervalId) {
+        clearInterval(settingsSnapshotIntervalId);
+        settingsSnapshotIntervalId = null;
     }
 
     if (window.pipManager) {

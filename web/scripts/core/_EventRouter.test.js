@@ -973,7 +973,9 @@ describe('EventRouter', () => {
 
             EventRouter.onEvent(p);
 
-            expect(handlers.fishingHandler.newFishEvent).toHaveBeenCalledWith(p);
+            // Second arg is the position-cache lookup (event 19) for this id — undefined
+            // here since no such event preceded it in this synthetic call.
+            expect(handlers.fishingHandler.newFishEvent).toHaveBeenCalledWith(p, undefined);
         });
 
         // @verified 2026-04-18: FishingNodeFish variant, dispatch verified after EventCodes refresh.
@@ -984,7 +986,18 @@ describe('EventRouter', () => {
 
             EventRouter.onEvent(p);
 
-            expect(handlers.fishingHandler.newFishEvent).toHaveBeenCalledWith(p);
+            expect(handlers.fishingHandler.newFishEvent).toHaveBeenCalledWith(p, undefined);
+        });
+
+        // @verified 2026-08-23: after a game update, event 359 stopped carrying [x,y] itself;
+        // position now arrives earlier via a generic event 19 broadcast for the same id.
+        test('onEvent forwards a position cached from an earlier event 19 for the same id', () => {
+            EventRouter.onEvent({0: 555, 2: [12.5, -34.5], 252: 19});
+            const p = {0: 555, 1: 9, 252: 359};
+
+            EventRouter.onEvent(p);
+
+            expect(handlers.fishingHandler.newFishEvent).toHaveBeenCalledWith(p, [12.5, -34.5]);
         });
     });
 

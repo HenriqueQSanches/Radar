@@ -28,19 +28,34 @@ export class FishingHandler
         this.fishes = [];
     }
 
-    newFishEvent(Parameters)
+    // cachedPosition: [x, y] from EventRouter's event-19 position cache, used when this
+    // event no longer carries its own coordinates (see below).
+    newFishEvent(Parameters, cachedPosition)
     {
         const id = Parameters[0];
-        const type = Parameters[4];
-        const coor = Parameters[1];
-        const sizeSpawned = Parameters[2];
-        const sizeLeftToSpawn = Parameters[3];
+        let posX, posY, type, sizeSpawned, sizeLeftToSpawn;
 
-        if (!type) return;
-        if (!coor) return;
+        if (Array.isArray(Parameters[1])) {
+            // Original shape (pre game-update): id, [x,y], sizeSpawned, sizeLeftToSpawn, type.
+            type = Parameters[4];
+            if (!type) return;
+            [posX, posY] = Parameters[1];
+            sizeSpawned = Parameters[2];
+            sizeLeftToSpawn = Parameters[3];
+        } else if (cachedPosition) {
+            // Current shape: id, chargesRemaining — no position, no type. The game now
+            // sends this entity's position earlier via a generic event 19 broadcast;
+            // EventRouter caches it by id and hands it to us here.
+            [posX, posY] = cachedPosition;
+            type = '';
+            sizeSpawned = 0;
+            sizeLeftToSpawn = Parameters[1];
+        } else {
+            // No cached position for this id yet — nothing to draw.
+            return;
+        }
 
-        const posX = coor[0];
-        const posY = coor[1];
+        if (!Number.isFinite(posX) || !Number.isFinite(posY)) return;
 
         window.logger?.debug(CATEGORIES.FISHING, 'fish_spawn', {
             id, type, posX, posY, sizeSpawned, sizeLeftToSpawn,

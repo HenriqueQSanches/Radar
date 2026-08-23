@@ -100,6 +100,34 @@ describe('FishingHandler', () => {
 
             expect(handler.fishes).toHaveLength(0);
         });
+
+        // @verified 2026-08-23: post-update shape (Parameters[1] is a number, not [x,y]) —
+        // position comes from the event-19 cache EventRouter passes in as cachedPosition.
+        describe('post-update shape (no position/type in Parameters, id-only ticks)', () => {
+            test('adds a fish using the cached position when Parameters[1] is a bare number', () => {
+                handler.newFishEvent({0: 555, 1: 9, 252: 359}, [12.5, -34.5]);
+
+                expect(handler.fishes).toHaveLength(1);
+                expect(handler.fishes[0].id).toBe(555);
+                expect(handler.fishes[0].posX).toBe(12.5);
+                expect(handler.fishes[0].posY).toBe(-34.5);
+                expect(handler.fishes[0].sizeLeftToSpawn).toBe(9);
+            });
+
+            test('skips silently when no cached position is available for this id', () => {
+                handler.newFishEvent({0: 555, 1: 9, 252: 359}, undefined);
+
+                expect(handler.fishes).toHaveLength(0);
+            });
+
+            test('a later tick for the same id updates its remaining count in place', () => {
+                handler.newFishEvent({0: 555, 1: 9, 252: 359}, [12.5, -34.5]);
+                handler.newFishEvent({0: 555, 1: 4, 252: 359}, [12.5, -34.5]);
+
+                expect(handler.fishes).toHaveLength(1);
+                expect(handler.fishes[0].sizeLeftToSpawn).toBe(4);
+            });
+        });
     });
 
     describe('fishingEnd (event 356)', () => {

@@ -21,6 +21,26 @@ let pendingMistChoice = null;
 const MIST_CHAIN_TTL_MS = 30 * 60 * 1000;
 let lastActiveMistOverride = null;
 
+// Position cache fed by event 19, a generic per-entity broadcast (stats/buffs, fired in a
+// burst of several "type" values the instant an entity enters visibility range). After a
+// game update, event 359 (fishing) stopped carrying its own [x,y] — it's now just an id and
+// a remaining-charges number — but ids that get a 359 tick reliably show up in one of these
+// 19 bursts first, with position intact. Capped and LRU-evicted since ids get recycled
+// constantly (Photon reuses them across totally unrelated entities within seconds).
+const MAX_TRACKED_POSITIONS = 500;
+const recentPositionsById = new Map();
+
+function rememberPosition(id, pos) {
+    if (typeof id !== 'number' || !Array.isArray(pos) || pos.length !== 2) return;
+    const [x, y] = pos;
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+    recentPositionsById.delete(id); // re-set below to bump recency (Map keeps insertion order)
+    recentPositionsById.set(id, pos);
+    if (recentPositionsById.size > MAX_TRACKED_POSITIONS) {
+        recentPositionsById.delete(recentPositionsById.keys().next().value);
+    }
+}
+
 function isSanctuaryId(mapId) {
     return typeof mapId === 'string' && mapId.startsWith('@MISTSDUNGEON@');
 }
@@ -363,6 +383,10 @@ export function onEvent(Parameters) {
     } = handlers;
 
     switch (eventCode) {
+        case 19:
+            rememberPosition(id, Parameters[2]);
+            break;
+
         case EventCodes.Leave:
             playersHandler.removePlayer(id);
             mobsHandler.removeMist(id);
@@ -494,7 +518,7 @@ export function onEvent(Parameters) {
             break;
 
         case EventCodes.NewFishingZoneObject:
-            fishingHandler.newFishEvent(Parameters);
+            fishingHandler.newFishEvent(Parameters, recentPositionsById.get(id));
             break;
 
         case EventCodes.FishingFinished:
