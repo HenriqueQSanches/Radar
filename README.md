@@ -46,6 +46,15 @@ Três botões novos na página do radar, todos via [Albion Online Data Project](
 - **Melhor Cidade**: mesma busca da Rota, mas agrupada pela média de preço por cidade — pra saber onde os recursos em geral estão vendendo mais caro, sem precisar olhar item por item.
 - **Buscar Peixe**: preço de venda de peixe (água doce/salgada, comum/raro), T4-T8. Também com filtro por tipo e tier.
 
+### Inimigos/Dungeons/Mists/Pesca não apareciam de primeira
+Várias caixinhas de visibilidade (tipos de inimigo, Dungeons, Mists, Fishing) nunca tinham um valor padrão — ficavam desmarcadas até abrir cada página e marcar na mão. Agora vêm ligadas por padrão, mesmo esquema já usado nas categorias de log em Configurações.
+
+### Poça de pesca sumida (o jogo mudou o formato do pacote)
+O evento de spawn de peixe parou de mandar posição num patch recente do Albion — só manda o ID e a carga restante. Descobri que a posição real chega antes, numa rajada de um evento genérico assim que a poça entra no alcance de visão. Agora isso é guardado e reaproveitado na hora de marcar o peixe no mapa.
+
+### Log de diagnóstico ampliado
+Além do log de recursos que já existia, agora também registra o veredito de exibição de inimigo/boss/dungeon/mist/pesca (aceito ou rejeitado, e por qual configuração) e um retrato automático de todas as configurações de visibilidade a cada mudança — para investigar "não está aparecendo" direto pelo log, sem precisar reproduzir ao vivo.
+
 ## Como rodar
 
 Precisa de [Go](https://go.dev/) e [Node.js](https://nodejs.org/) instalados, e do [Npcap](https://npcap.com/) pra capturar o tráfego.
