@@ -33,23 +33,31 @@ export class FishingHandler
     newFishEvent(Parameters, cachedPosition)
     {
         const id = Parameters[0];
-        let posX, posY, type, sizeSpawned, sizeLeftToSpawn;
+        let posX, posY, type, sizeSpawned, sizeLeftToSpawn, trustPositionUpdate;
 
         if (Array.isArray(Parameters[1])) {
             // Original shape (pre game-update): id, [x,y], sizeSpawned, sizeLeftToSpawn, type.
+            // The game sends this id's real position every time, so later updates can be
+            // trusted too.
             type = Parameters[4];
             if (!type) return;
             [posX, posY] = Parameters[1];
             sizeSpawned = Parameters[2];
             sizeLeftToSpawn = Parameters[3];
+            trustPositionUpdate = true;
         } else if (cachedPosition) {
             // Current shape: id, chargesRemaining — no position, no type. The game now
             // sends this entity's position earlier via a generic event 19 broadcast;
-            // EventRouter caches it by id and hands it to us here.
+            // EventRouter caches it by id and hands it to us here. Photon recycles ids
+            // constantly, so a LATER event 19 for this same id could belong to a totally
+            // different, moving entity (a player walking by, say) — trustPositionUpdate=false
+            // tells upsertFish to only use this position while creating the fish, never to
+            // relocate one already on the map.
             [posX, posY] = cachedPosition;
             type = '';
             sizeSpawned = 0;
             sizeLeftToSpawn = Parameters[1];
+            trustPositionUpdate = false;
         } else {
             // No cached position for this id yet — nothing to draw.
             return;
@@ -69,15 +77,22 @@ export class FishingHandler
             type,
             sizeSpawned,
             sizeLeftToSpawn,
+            trustPositionUpdate,
         )
     }
 
-    upsertFish(id, posX, posY, type, sizeSpawned, sizeLeftToSpawn)
+    upsertFish(id, posX, posY, type, sizeSpawned, sizeLeftToSpawn, trustPositionUpdate = true)
     {
         const existing = this.fishes.find(f => f.id === id);
         if (existing) {
-            existing.posX = posX;
-            existing.posY = posY;
+            // Fish don't move — only relocate an already-known one when the caller trusts this
+            // update's position (see newFishEvent). Otherwise keep the position we first saw it
+            // at, since a stale-shape tick's "position" may really belong to whatever this
+            // recycled id now points at.
+            if (trustPositionUpdate) {
+                existing.posX = posX;
+                existing.posY = posY;
+            }
             existing.sizeSpawned = sizeSpawned;
             existing.sizeLeftToSpawn = sizeLeftToSpawn;
             existing.totalSize = sizeSpawned + sizeLeftToSpawn;

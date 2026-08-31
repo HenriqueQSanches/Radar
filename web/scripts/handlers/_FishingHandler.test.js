@@ -127,6 +127,20 @@ describe('FishingHandler', () => {
                 expect(handler.fishes).toHaveLength(1);
                 expect(handler.fishes[0].sizeLeftToSpawn).toBe(4);
             });
+
+            // @verified 2026-08-31: live capture showed the same id's cached position drifting
+            // across ticks (a fish "walking" across the map) — Photon recycles ids, so a later
+            // event 19 for this id can belong to an unrelated moving entity by the time the next
+            // 359 tick arrives. Position must freeze at first sighting.
+            test('a later tick with a different cached position does NOT relocate the fish (Photon id reuse)', () => {
+                handler.newFishEvent({0: 555, 1: 9, 252: 359}, [12.5, -34.5]);
+                handler.newFishEvent({0: 555, 1: 4, 252: 359}, [999, -999]);
+
+                expect(handler.fishes).toHaveLength(1);
+                expect(handler.fishes[0].posX).toBe(12.5);
+                expect(handler.fishes[0].posY).toBe(-34.5);
+                expect(handler.fishes[0].sizeLeftToSpawn).toBe(4);
+            });
         });
     });
 

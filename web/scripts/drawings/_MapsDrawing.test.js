@@ -34,6 +34,7 @@ function buildCtx() {
         width: 500,
         height: 500,
         fillStyle: '',
+        font: '',
         fillRect: vi.fn(),
         save: vi.fn(),
         restore: vi.fn(),
@@ -41,6 +42,8 @@ function buildCtx() {
         translate: vi.fn(),
         rotate: vi.fn(),
         drawImage: vi.fn(),
+        measureText: vi.fn(() => ({width: 100})),
+        fillText: vi.fn(),
     };
 }
 
@@ -164,5 +167,42 @@ describe('MapsDrawing per-zone asset extent', () => {
         drawing.draw(ctx, map);
 
         expect(ctx.drawImage).not.toHaveBeenCalled();
+    });
+});
+
+describe('MapsDrawing unavailable-map fallback (Mist/Avalon procedural zones)', () => {
+    let drawing;
+    let ctx;
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        drawing = new MapDrawing();
+        drawing.getZoomLevel = vi.fn(() => 1.0);
+        drawing.getCanvasCenter = vi.fn(() => 250);
+        drawing.drawText = vi.fn();
+        ctx = buildCtx();
+    });
+
+    // @verified 2026-08-31: a Mist/Avalon zone id (uuid-style, e.g. "@MISTS@...") has no
+    // pre-made map asset — the image fetch 404s every time, so once that's known, draw()
+    // should show an explanatory label instead of a blank rectangle or retrying the fetch.
+    test('shows a label instead of drawImage once this map id is known-unavailable', () => {
+        drawing._unavailableMapIds.add('@MISTS@baae3e2f-8351-4109-93c4-b0e54fccf86c');
+        const map = {id: '@MISTS@baae3e2f-8351-4109-93c4-b0e54fccf86c', hX: 0, hY: 0};
+
+        drawing.draw(ctx, map);
+
+        expect(ctx.drawImage).not.toHaveBeenCalled();
+        expect(drawing.drawText).toHaveBeenCalledWith(250, 250, expect.any(String), ctx);
+    });
+
+    // @verified 2026-08-31: a map id not yet known-unavailable still attempts the normal path
+    // (GetPreloadedImage / preload), not the fallback label.
+    test('does not show the fallback label for a map id that has not failed yet', () => {
+        const map = {id: '0212', hX: 0, hY: 0};
+
+        drawing.draw(ctx, map);
+
+        expect(drawing.drawText).not.toHaveBeenCalled();
     });
 });

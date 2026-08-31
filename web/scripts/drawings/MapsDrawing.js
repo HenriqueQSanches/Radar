@@ -6,6 +6,15 @@ import zonesDatabase from "../data/ZonesDatabase.js";
 
 export class MapDrawing extends DrawingUtils
 {
+    constructor() {
+        super();
+        // Mist/Avalon (Roads of Avalon) zones are randomly generated per instance (their id
+        // is a UUID, e.g. "@MISTS@baae3e2f-..."), so there is no pre-made map image for them —
+        // the /images/Maps/ fetch reliably 404s. Track that per map id so draw() can show an
+        // explanatory label instead of a silent black rectangle that looks broken.
+        this._unavailableMapIds = new Set();
+    }
+
     interpolate(curr_map, lpX, lpY , t)
     {
         const hX = lpX;
@@ -41,6 +50,12 @@ export class MapDrawing extends DrawingUtils
         if (imageName === undefined || imageName == "undefined")
             return;
 
+        if (this._unavailableMapIds.has(imageName)) {
+            const center = this.getCanvasCenter();
+            this.drawText(center, center, "Zona gerada aleatoriamente — sem mapa disponível", ctx);
+            return;
+        }
+
         const src = "/images/Maps/" + imageName + ".webp";
 
         const preloadedImage = imageCache.GetPreloadedImage(src, "Maps");
@@ -68,6 +83,10 @@ export class MapDrawing extends DrawingUtils
                 window.logger?.info(CATEGORIES.MAP, 'map_loaded', {src: src});
             })
             .catch((error) => {
+                // Mist/Avalon zones are procedurally generated per instance (uuid-style id),
+                // so there's genuinely no map image for them — remember that so the next draw
+                // shows an explanatory label instead of retrying the fetch every frame.
+                this._unavailableMapIds.add(imageName);
                 window.logger?.warn(CATEGORIES.MAP, 'map_load_failed', {src: src, error: error?.message});
             });
         }
