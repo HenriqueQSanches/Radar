@@ -323,7 +323,7 @@ export const EventCodes =
 	UseFunction : 320,
 	NewPortalEntrance : 321,
 	NewPortalExit : 322,
-	NewRandomDungeonExit : 323,
+	NewRandomDungeonExit : 325, // moved from 323 in a 2026-08-31 game update; confirmed live (both "T6_PORTAL_SOLO" and "MISTS_SOLO_YELLOW" now arrive on 325)
 	WaitingQueueUpdate : 324,
 	PlayerMovementRateUpdate : 325,
 	ObserveStart : 326,

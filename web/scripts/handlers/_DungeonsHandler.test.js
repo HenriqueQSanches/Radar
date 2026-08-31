@@ -228,6 +228,18 @@ describe('DungeonsHandler', () => {
             expect(handler.dungeonList[0].drawName).toBe('dungeon_0');
         });
 
+        // @verified 2026-08-31: after the 2026-08-31 game update, Parameters[8] on this event
+        // arrives as a boolean (e.g. `true`) instead of a 0-4 enchant number. Falls back to
+        // enchant 0 rather than building an invalid "settingMistEtrue" setting key that would
+        // never match anything and silently hide the portal forever.
+        test('MIST-119: non-numeric Parameters[8] (boolean, post-update shape) falls back to enchant 0', () => {
+            handler.dungeonEvent({0: 3, 1: [0, 0], 3: 'MISTS_SOLO_YELLOW', 6: 2, 8: true, 252: 325});
+
+            expect(handler.dungeonList).toHaveLength(1);
+            expect(handler.dungeonList[0].enchant).toBe(0);
+            expect(handler.dungeonList[0].drawName).toBe('dungeon_0');
+        });
+
         // @verified 2026-04-23: settingMistSolo=false drops MISTS solo portal.
         test('MIST-6: settingMistSolo=false drops MISTS_SOLO portal', () => {
             settingsSync.getBool.mockImplementation(key => key !== 'settingMistSolo');
