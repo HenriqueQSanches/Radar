@@ -48,7 +48,7 @@
 
         // PiP button
         if (pipBtn) {
-            const pipSupported = document.pictureInPictureEnabled === true || 'documentPictureInPicture' in window;
+            const pipSupported = document.pictureInPictureEnabled === true;
             pipBtn.style.display = (onRadar && pipSupported) ? 'flex' : 'none';
             pipBtn.disabled = !onRadar || !window.pipManager;
         }
