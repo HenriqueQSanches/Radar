@@ -1,0 +1,202 @@
+{{define "pages/about"}}
+<div class="space-y-6 stagger">
+    <!-- Page Header -->
+    <div class="card bg-base-200">
+        <div class="card-body">
+            <h1 data-i18n="about.title" class="text-3xl font-bold text-base-content">About</h1>
+            <p data-i18n="about.subtitle" class="text-base-content/60 mt-2">Where this project came from, and what changed since.</p>
+        </div>
+    </div>
+
+    <!-- Origin disclosure -->
+    <div role="alert" class="alert bg-info/10 border border-info/30 items-start">
+        <i data-lucide="git-fork" class="w-5 h-5 text-info mt-0.5"></i>
+        <div>
+            <h3 data-i18n="about.origin.title" class="font-bold text-info">Not my original project</h3>
+            <p data-i18n="about.origin.body" class="text-sm text-base-content/80 mt-1">
+                This is a fork of
+                <a href="https://github.com/Nouuu/Albion-Online-OpenRadar" target="_blank" rel="noopener" class="link link-info">OpenRadar</a>,
+                by Nouuu, MIT licensed. I cloned it, fixed bugs that were getting in my way, and added
+                a few things it was missing. All credit for the foundation goes to the original project —
+                its license is kept in <code>LICENSE</code>.
+            </p>
+        </div>
+    </div>
+
+    <!-- Detection accuracy -->
+    <div class="card bg-base-200">
+        <div class="card-body">
+            <h2 class="text-xl font-semibold text-base-content mb-4 flex items-center gap-2">
+                <i data-lucide="crosshair" class="w-5 h-5 text-primary"></i>
+                <span data-i18n="about.detection.title">Detection accuracy</span>
+            </h2>
+            <div class="space-y-4 text-sm text-base-content/70 leading-relaxed">
+                <p><b data-i18n="about.detection.mobDb.title" class="text-base-content">Outdated mob database</b><br>
+                    <span data-i18n="about.detection.mobDb.body">The radar was marking T3 mobs as T6/T7, and the tiers I selected to display just wouldn't show up. The cause was an outdated mob database: since the last update, the game had gained ~591 new mobs, which shifted every creature's ID unevenly. Updated the mob database to the current game patch so every mob lands on the right tier again.</span>
+                </p>
+                <p><b data-i18n="about.detection.enchanted.title" class="text-base-content">Enchanted mobs with the wrong tier</b><br>
+                    <span data-i18n="about.detection.enchanted.body">An enchanted mob's inflated HP was fooling the HP-based identification (an enchanted T2 coincidentally matched a neighboring T6's HP). Now, when a mob is enchanted, identification uses only the mob's ID and ignores HP, which isn't reliable in that case.</span>
+                </p>
+                <p><b data-i18n="about.detection.calibration.title" class="text-base-content">Calibration corrupted by a common critter</b><br>
+                    <span data-i18n="about.detection.calibration.body">Fixing enchant handling solved only half the problem: when a common critter's HP (a T1/T3 rabbit) happened to match a very different tier (sometimes a boss), the calibration system would vote for it and accumulate error over the session — after that, completely unrelated mobs (including wood logs) would come out with the wrong tier or type. Calibration now only accepts votes from coherent HP windows, and even when the result is ambiguous, always prefers the candidate with confirmed HP over an already-known-wrong guess.</span>
+                </p>
+                <p><b data-i18n="about.detection.ore.title" class="text-base-content">Ore (and other living resources) with the wrong icon</b><br>
+                    <span data-i18n="about.detection.ore.body">Critter bodies (creatures that turn into a resource on death) had their resource type decided with no verification — if the calibration above was slightly off, the icon came out wrong (e.g. ore showing as a different material) even with the correct tier, since tier comes straight from the server. Now that trusted server-side tier is used to confirm/correct identification.</span>
+                </p>
+                <p><b data-i18n="about.detection.cedar.title" class="text-base-content">T5 Cedar Log showing as Stone</b><br>
+                    <span data-i18n="about.detection.cedar.body">Static resources use a fixed number range to decide Wood/Stone/Fiber/Hide/Ore, built by observing game traffic over time. Caught a live T5.1 Cedar Log arriving with number 6, which fell right inside the range marked as Stone — cross-checked the whole log history and only number 7 had ever really shown up as Stone, so moved that boundary so Wood includes 6 too.</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerts -->
+    <div class="card bg-base-200">
+        <div class="card-body">
+            <h2 class="text-xl font-semibold text-base-content mb-4 flex items-center gap-2">
+                <i data-lucide="bell-ring" class="w-5 h-5 text-warning"></i>
+                <span data-i18n="about.alerts.title">Alerts</span>
+            </h2>
+            <div class="space-y-4 text-sm text-base-content/70 leading-relaxed">
+                <p><b data-i18n="about.alerts.sound.title" class="text-base-content">Louder alert sound</b><br>
+                    <span data-i18n="about.alerts.sound.body">The "enemy nearby" alert played at the audio file's max volume, which is too quiet to hear with the game focused. Switched to WebAudio with adjustable gain (6x by default, changeable via settingSoundBoost), and unlocked audio on the page's first click, since it wouldn't play with the tab in the background (PiP mode).</span>
+                </p>
+                <p><b data-i18n="about.alerts.movement.title" class="text-base-content">Movement-triggered alert</b><br>
+                    <span data-i18n="about.alerts.movement.body">Previously the sound only fired when an enemy first appeared. Now it also fires when an already-detected enemy moves nearby — but only one chirp per enemy (resets if they leave and come back), so it doesn't turn into a siren.</span>
+                </p>
+                <p><b data-i18n="about.alerts.player.title" class="text-base-content">More visible player alert</b><br>
+                    <span data-i18n="about.alerts.player.body">Other players' positions are encrypted by Albion itself (anti-radar protection), so they never appear "walking" on the map — you can only know one is nearby. To make up for that, on top of the existing screen flash and sound, an on-screen warning now shows the hostile player's name and guild for a few seconds (not just a quick flash you can miss).</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dungeons & Mists -->
+    <div class="card bg-base-200">
+        <div class="card-body">
+            <h2 class="text-xl font-semibold text-base-content mb-4 flex items-center gap-2">
+                <i data-lucide="cloud-fog" class="w-5 h-5 text-secondary"></i>
+                <span data-i18n="about.dungeons.title">Dungeons & Mists</span>
+            </h2>
+            <div class="space-y-4 text-sm text-base-content/70 leading-relaxed">
+                <p><b data-i18n="about.dungeons.eventCode.title" class="text-base-content">Dungeons/Mists disappeared after a game update</b><br>
+                    <span data-i18n="about.dungeons.eventCode.body">The game moved the dungeon-exit network event to a different code without warning, so nothing showed up anymore. Fixed, and network-event logging is now on by default so the next protocol change like this gets caught faster.</span>
+                </p>
+                <p><b data-i18n="about.dungeons.icon.title" class="text-base-content">Mist portals using the wrong icon</b><br>
+                    <span data-i18n="about.dungeons.icon.body">Mist portals were rendering with the same icon as a regular dungeon, indistinguishable on the map. Now they use their own dedicated icon set, which already shipped with the game assets but was never wired up.</span>
+                </p>
+                <p><b data-i18n="about.dungeons.wisp.title" class="text-base-content">Mist exit marker (Will-o'-Wisp) invisible</b><br>
+                    <span data-i18n="about.dungeons.wisp.body">The Mist portal's exit marker was misclassified as a regular enemy, so it was hidden behind the "Enchanted Enemy" checkbox by mistake — a navigation aid shouldn't depend on a combat setting. It's now always shown.</span>
+                </p>
+                <p><b data-i18n="about.dungeons.blackMap.title" class="text-base-content">Black map in Mists/Avalon with no explanation</b><br>
+                    <span data-i18n="about.dungeons.blackMap.body">Mist and Avalon zones are procedurally generated per instance and genuinely have no fixed map image — that's not a bug. The radar now shows a label explaining that instead of a confusing black square.</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fishing -->
+    <div class="card bg-base-200">
+        <div class="card-body">
+            <h2 class="text-xl font-semibold text-base-content mb-4 flex items-center gap-2">
+                <i data-lucide="fish" class="w-5 h-5 text-info"></i>
+                <span data-i18n="about.fishing.title">Fishing</span>
+            </h2>
+            <div class="space-y-4 text-sm text-base-content/70 leading-relaxed">
+                <p><b data-i18n="about.fishing.missing.title" class="text-base-content">Fishing spots disappeared (game changed the packet)</b><br>
+                    <span data-i18n="about.fishing.missing.body">A recent Albion patch stopped sending position in the fish-spawn event — only the id and remaining charge. Found that the real position actually arrives earlier, in a burst of a generic event as soon as the spot enters view range. That's now cached and reused when placing the fish on the map.</span>
+                </p>
+                <p><b data-i18n="about.fishing.drift.title" class="text-base-content">Fish "walking" to the wrong spot</b><br>
+                    <span data-i18n="about.fishing.drift.body">The game recycles its internal ids within seconds across completely unrelated objects, which was causing a fish marker to jump to whatever that id now pointed to. Position is now locked in the first time a spot is seen and never overwritten afterwards.</span>
+                </p>
+                <p><b data-i18n="about.fishing.count.title" class="text-base-content">Confusing "0/5" count on a freshly spotted pool</b><br>
+                    <span data-i18n="about.fishing.count.body">A newly spotted, untouched fishing spot showed "0/5" — technically accurate but read like an empty pool. It now shows the real capacity instead of a fraction that misleads.</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Market -->
+    <div class="card bg-base-200">
+        <div class="card-body">
+            <h2 class="text-xl font-semibold text-base-content mb-4 flex items-center gap-2">
+                <i data-lucide="coins" class="w-5 h-5 text-accent"></i>
+                <span data-i18n="about.market.title">Market</span>
+            </h2>
+            <p data-i18n="about.market.body" class="text-sm text-base-content/70 leading-relaxed">
+                Added a dedicated Market tab with three tools, all via the
+                <a href="https://www.albion-online-data.com/" target="_blank" rel="noopener" class="link">Albion Online Data Project</a>
+                (no need to install the Albion Data Client — that public API is already fed by people using this
+                app), across the 6 main market cities: <b>Calculate Route</b> (sell price of raw resources, cheapest
+                to priciest, filterable by resource and tier), <b>Best City</b> (same data grouped by overall city
+                average, to spot where things are generally selling higher without checking item by item), and
+                <b>Search Fish</b> (fish sell prices, filterable by type and tier).
+            </p>
+        </div>
+    </div>
+
+    <!-- Interface -->
+    <div class="card bg-base-200">
+        <div class="card-body">
+            <h2 class="text-xl font-semibold text-base-content mb-4 flex items-center gap-2">
+                <i data-lucide="palette" class="w-5 h-5 text-primary"></i>
+                <span data-i18n="about.interface.title">Interface</span>
+            </h2>
+            <div class="space-y-4 text-sm text-base-content/70 leading-relaxed">
+                <p><b data-i18n="about.interface.theme.title" class="text-base-content">"Rust" theme and compact rail sidebar</b><br>
+                    <span data-i18n="about.interface.theme.body">Replaced the old blue theme with a warm charcoal-and-burnt-orange palette, and traded the expandable sidebar for a fixed icon-only rail — each item's name shows in a tooltip on hover, and there's more room for the content itself.</span>
+                </p>
+                <p><b data-i18n="about.interface.i18n.title" class="text-base-content">English/Portuguese translation</b><br>
+                    <span data-i18n="about.interface.i18n.body">The app's native language is English, so a language toggle was added (the button at the bottom of the sidebar) covering navigation, the radar page, the market, and settings — saved per browser, so it stays picked next time.</span>
+                </p>
+                <p><b data-i18n="about.interface.pip.title" class="text-base-content">Circular PiP crop</b><br>
+                    <span data-i18n="about.interface.pip.body">The floating PiP window's content now crops to a circle with a ring in the current theme's accent color, instead of copying the square radar canvas with dead corners.</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Diagnostics -->
+    <div class="card bg-base-200">
+        <div class="card-body">
+            <h2 class="text-xl font-semibold text-base-content mb-4 flex items-center gap-2">
+                <i data-lucide="scroll-text" class="w-5 h-5 text-info"></i>
+                <span data-i18n="about.diagnostics.title">Diagnostics</span>
+            </h2>
+            <div class="space-y-4 text-sm text-base-content/70 leading-relaxed">
+                <p><b data-i18n="about.diagnostics.defaults.title" class="text-base-content">On by default</b><br>
+                    <span data-i18n="about.diagnostics.defaults.body">Detailed logging for mobs, resources, dungeons, fishing and raw network events now ships enabled by default (Settings &gt; Logging) — no need to open DevTools at the exact moment something goes wrong. Turn it off there if the log volume bothers you.</span>
+                </p>
+                <p><b data-i18n="about.diagnostics.verdicts.title" class="text-base-content">Expanded diagnostic log</b><br>
+                    <span data-i18n="about.diagnostics.verdicts.body">Also records the show/hide verdict for enemies, bosses, dungeons, mists and fishing (accepted or rejected, and by which setting), plus an automatic snapshot of every visibility setting whenever one changes — enough to investigate a "not showing up" report straight from the log, without needing to reproduce it live.</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Install -->
+    <div class="card bg-base-200">
+        <div class="card-body">
+            <h2 class="text-xl font-semibold text-base-content mb-4 flex items-center gap-2">
+                <i data-lucide="download" class="w-5 h-5 text-success"></i>
+                <span data-i18n="about.install.title">One-click download (Windows)</span>
+            </h2>
+            <p data-i18n="about.install.body" class="text-sm text-base-content/70 leading-relaxed">
+                Downloading the .exe straight from the release page was confusing for anyone outside the field
+                (checksum, README, Linux binary, all bundled together). Now there's an <code>IniciarRadar.bat</code>:
+                it downloads the Radar by itself the first time, opens the program, and leaves the browser open at
+                <code>localhost:5001</code> — just double-click it.
+            </p>
+        </div>
+    </div>
+
+    <!-- License footer -->
+    <div class="card bg-base-200/50 border border-dashed border-base-content/10">
+        <div class="card-body py-4">
+            <p data-i18n="about.license" class="text-xs text-base-content/50">
+                MIT license, kept from the original project. See <code>LICENSE</code>.
+            </p>
+        </div>
+    </div>
+</div>
+{{end}}

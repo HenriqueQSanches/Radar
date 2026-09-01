@@ -55,6 +55,30 @@ O evento de spawn de peixe parou de mandar posição num patch recente do Albion
 ### Log de diagnóstico ampliado
 Além do log de recursos que já existia, agora também registra o veredito de exibição de inimigo/boss/dungeon/mist/pesca (aceito ou rejeitado, e por qual configuração) e um retrato automático de todas as configurações de visibilidade a cada mudança — para investigar "não está aparecendo" direto pelo log, sem precisar reproduzir ao vivo.
 
+### Dungeons/Brumas sumiram depois de uma atualização do jogo
+O jogo mudou o evento de rede da saída de dungeon pra outro código sem aviso, e nada mais aparecia (nem dungeon comum, nem Bruma). Corrigido, e o log de eventos de rede crus agora vem ligado por padrão pra pegar a próxima mudança de protocolo assim mais rápido.
+
+### Portais de Bruma com o ícone errado, e marcador de saída invisível
+Portais de Bruma apareciam com o mesmo ícone de uma dungeon comum — agora usam o próprio conjunto de ícones dedicado, que já vinha com os assets do jogo mas nunca tinha sido ligado. E o marcador de saída da Bruma (o Fogo-Fátuo) estava classificado por engano como inimigo comum, ficando escondido atrás da caixinha de "Inimigo Encantado"; agora aparece sempre.
+
+### Mapa preto nas Brumas/Avalon sem explicação
+Zonas de Bruma e Avalon são geradas proceduralmente por instância e realmente não têm uma imagem de mapa fixa — isso não é bug. O radar agora mostra uma legenda explicando isso em vez de um quadrado preto confuso.
+
+### Peixe "andando" pra posição errada, e contagem "0/5" confusa
+O jogo recicla os ids internos em poucos segundos entre objetos completamente diferentes, o que fazia o marcador de peixe pular pra onde aquele id passava a apontar — a posição agora trava na primeira vez que a poça é vista. Além disso, uma poça recém-avistada mostrava "0/5" (tecnicamente certo, mas lia como vazia); agora mostra a capacidade real.
+
+### Aba de Mercado própria, e tradução Inglês/Português
+Separei "Calcular Rota", "Melhor Cidade" e "Buscar Peixe" numa aba de Mercado própria (antes ficavam meio perdidos na página do Radar). E como o idioma nativo do app é inglês, adicionei um alternador de idioma (o botão no rodapé do menu lateral) cobrindo navegação, radar, mercado e configurações.
+
+### Tema visual novo e menu lateral em trilho compacto
+Troquei o tema azul antigo por uma paleta quente de carvão e laranja queimado ("Ferrugem"), e substituí a sidebar expansível por um trilho fixo só com ícones — o nome de cada item aparece num balão ao passar o mouse.
+
+### Recorte circular no PiP
+O conteúdo da janelinha flutuante do PiP agora é recortado em círculo com um anel na cor de destaque do tema atual, em vez de copiar o quadrado cru do radar com os cantos mortos.
+
+### Página "Sobre"
+Adicionei uma aba explicando que este é um fork (não o projeto original) e listando todas as mudanças feitas aqui, pra quem chega no projeto direto por essa versão.
+
 ## Como rodar
 
 Precisa de [Go](https://go.dev/) e [Node.js](https://nodejs.org/) instalados, e do [Npcap](https://npcap.com/) pra capturar o tráfego.

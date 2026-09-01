@@ -175,6 +175,7 @@ func (s *HTTPServer) setupRoutes() {
 		"/market":     "market",
 		"/ignorelist": "ignorelist",
 		"/settings":   "settings",
+		"/about":      "about",
 	}
 
 	for route, page := range pageRoutes {
@@ -222,6 +223,7 @@ func (s *HTTPServer) renderPage(w http.ResponseWriter, r *http.Request, page str
 		"market":     "Market",
 		"ignorelist": "Ignore List",
 		"settings":   "Settings",
+		"about":      "About",
 	}
 	title := titles[page]
 	if title == "" && page != "" {
