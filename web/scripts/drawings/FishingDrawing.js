@@ -40,7 +40,12 @@ export class FishingDrawing extends DrawingUtils
 
             this.DrawCustomImage(ctx, point.x, point.y, "fish", "Resources", 18);
             if (showCount) {
-                this.drawText(point.x, point.y + this.getMarkerSize(18), `${fish.sizeSpawned}/${fish.totalSize}`, ctx);
+                // The post game-update protocol no longer distinguishes "already caught" from
+                // "left to spawn" reliably (see FishingHandler.newFishEvent) — show a single
+                // capacity count instead of a spawned/total fraction that would misleadingly
+                // read as "0 available" for a fresh, untouched pool.
+                const label = fish.isNewFormat ? `${fish.totalSize}` : `${fish.sizeSpawned}/${fish.totalSize}`;
+                this.drawText(point.x, point.y + this.getMarkerSize(18), label, ctx);
             }
             this.lastVisibleCount++;
         }

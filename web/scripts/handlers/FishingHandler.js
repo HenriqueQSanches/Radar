@@ -2,7 +2,7 @@ import {CATEGORIES} from "../constants/LoggerConstants.js";
 
 class Fish
 {
-    constructor(id, posX, posY, type, sizeSpawned = 0, sizeLeftToSpawn = 0)
+    constructor(id, posX, posY, type, sizeSpawned = 0, sizeLeftToSpawn = 0, isNewFormat = false)
     {
         this.id = id;
         this.posX = posX;
@@ -11,6 +11,10 @@ class Fish
         this.sizeSpawned = sizeSpawned;
         this.sizeLeftToSpawn = sizeLeftToSpawn;
         this.totalSize = this.sizeSpawned + this.sizeLeftToSpawn;
+        // New (post game-update) protocol shape doesn't carry a spawned/left split we can
+        // trust (see newFishEvent) — the drawing layer shows a single count instead of a
+        // "spawned/total" fraction for these.
+        this.isNewFormat = isNewFormat;
         this.hX = 0;
         this.hY = 0;
         this.lastUpdateTime = Date.now();
@@ -33,7 +37,7 @@ export class FishingHandler
     newFishEvent(Parameters, cachedPosition)
     {
         const id = Parameters[0];
-        let posX, posY, type, sizeSpawned, sizeLeftToSpawn, trustPositionUpdate;
+        let posX, posY, type, sizeSpawned, sizeLeftToSpawn, trustPositionUpdate, isNewFormat;
 
         if (Array.isArray(Parameters[1])) {
             // Original shape (pre game-update): id, [x,y], sizeSpawned, sizeLeftToSpawn, type.
@@ -45,8 +49,9 @@ export class FishingHandler
             sizeSpawned = Parameters[2];
             sizeLeftToSpawn = Parameters[3];
             trustPositionUpdate = true;
+            isNewFormat = false;
         } else if (cachedPosition) {
-            // Current shape: id, chargesRemaining — no position, no type. The game now
+            // Current shape: id, capacity, alreadyCaught — no position, no type. The game now
             // sends this entity's position earlier via a generic event 19 broadcast;
             // EventRouter caches it by id and hands it to us here. Photon recycles ids
             // constantly, so a LATER event 19 for this same id could belong to a totally
@@ -55,9 +60,11 @@ export class FishingHandler
             // relocate one already on the map.
             [posX, posY] = cachedPosition;
             type = '';
-            sizeSpawned = 0;
-            sizeLeftToSpawn = Parameters[1];
+            const capacity = Number.isFinite(Parameters[1]) ? Parameters[1] : 0;
+            sizeSpawned = Number.isFinite(Parameters[2]) ? Parameters[2] : 0;
+            sizeLeftToSpawn = Math.max(0, capacity - sizeSpawned);
             trustPositionUpdate = false;
+            isNewFormat = true;
         } else {
             // No cached position for this id yet — nothing to draw.
             return;
@@ -78,10 +85,11 @@ export class FishingHandler
             sizeSpawned,
             sizeLeftToSpawn,
             trustPositionUpdate,
+            isNewFormat,
         )
     }
 
-    upsertFish(id, posX, posY, type, sizeSpawned, sizeLeftToSpawn, trustPositionUpdate = true)
+    upsertFish(id, posX, posY, type, sizeSpawned, sizeLeftToSpawn, trustPositionUpdate = true, isNewFormat = false)
     {
         const existing = this.fishes.find(f => f.id === id);
         if (existing) {
@@ -96,11 +104,12 @@ export class FishingHandler
             existing.sizeSpawned = sizeSpawned;
             existing.sizeLeftToSpawn = sizeLeftToSpawn;
             existing.totalSize = sizeSpawned + sizeLeftToSpawn;
+            existing.isNewFormat = isNewFormat;
             existing.touch();
             return;
         }
 
-        const fish = new Fish(id, posX, posY, type, sizeSpawned, sizeLeftToSpawn);
+        const fish = new Fish(id, posX, posY, type, sizeSpawned, sizeLeftToSpawn, isNewFormat);
         this.fishes.push(fish);
     }
 

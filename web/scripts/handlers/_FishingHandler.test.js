@@ -112,6 +112,22 @@ describe('FishingHandler', () => {
                 expect(handler.fishes[0].posX).toBe(12.5);
                 expect(handler.fishes[0].posY).toBe(-34.5);
                 expect(handler.fishes[0].sizeLeftToSpawn).toBe(9);
+                expect(handler.fishes[0].isNewFormat).toBe(true);
+            });
+
+            // @verified 2026-09-01: live capture of a real, freshly-spotted pool
+            // ({"0":3120,"1":5,"2":1,"252":359}) showed the new-format tick DOES carry a second
+            // numeric field (Parameters[2]) — the previous code silently discarded it, always
+            // showing sizeSpawned=0 and rendering a confusing "0/5" for pools that aren't empty.
+            // Parameters[1] is treated as total capacity and Parameters[2] as already-caught.
+            test('uses Parameters[2] as sizeSpawned and derives sizeLeftToSpawn from capacity', () => {
+                handler.newFishEvent({0: 3120, 1: 5, 2: 1, 252: 359}, [-121.75001, -218.68742]);
+
+                expect(handler.fishes).toHaveLength(1);
+                expect(handler.fishes[0].sizeSpawned).toBe(1);
+                expect(handler.fishes[0].sizeLeftToSpawn).toBe(4);
+                expect(handler.fishes[0].totalSize).toBe(5);
+                expect(handler.fishes[0].isNewFormat).toBe(true);
             });
 
             test('skips silently when no cached position is available for this id', () => {

@@ -13,8 +13,8 @@ vi.mock('../utils/SettingsSync.js', () => ({
 const {FishingDrawing} = await import('./FishingDrawing.js');
 const settingsSync = (await import('../utils/SettingsSync.js')).default;
 
-function makePool({id = 1, sizeSpawned = 1, total = 5} = {}) {
-    return {id, hX: 10, hY: 20, sizeSpawned, sizeLeftToSpawn: total - sizeSpawned, totalSize: total, type: 'FishingNodeSwarm'};
+function makePool({id = 1, sizeSpawned = 1, total = 5, isNewFormat = false} = {}) {
+    return {id, hX: 10, hY: 20, sizeSpawned, sizeLeftToSpawn: total - sizeSpawned, totalSize: total, type: 'FishingNodeSwarm', isNewFormat};
 }
 
 describe('FishingDrawing render-time filter', () => {
@@ -57,6 +57,15 @@ describe('FishingDrawing render-time filter', () => {
         settingsSync.getBool.mockImplementation(key => key === 'settingFishing' || key === 'settingResourceCount');
         drawing.draw(ctx, [makePool({id: 1, sizeSpawned: 3, total: 5})]);
         expect(drawing.drawText).toHaveBeenCalledWith(10, 38, '3/5', ctx);
+    });
+
+    // @verified 2026-09-01: new-format pools (post game-update, no reliable spawned/left
+    // split — see FishingHandler) show a single capacity count instead of a "0/5"-style
+    // fraction that misleadingly reads as an empty pool.
+    test('settingResourceCount=true shows a single number for new-format pools', () => {
+        settingsSync.getBool.mockImplementation(key => key === 'settingFishing' || key === 'settingResourceCount');
+        drawing.draw(ctx, [makePool({id: 1, sizeSpawned: 0, total: 5, isNewFormat: true})]);
+        expect(drawing.drawText).toHaveBeenCalledWith(10, 38, '5', ctx);
     });
 
     // @verified 2026-04-24: lastVisibleCount reflects rendered pools; zero when settingFishing is off.
