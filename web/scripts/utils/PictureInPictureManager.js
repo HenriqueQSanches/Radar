@@ -168,12 +168,43 @@ class PictureInPictureManager {
             this.size = sourceSize;
         }
 
-        this.pipCtx.clearRect(0, 0, this.size, this.size);
+        const ctx = this.pipCtx;
+        const center = this.size / 2;
+        // Leave room for the ring stroke so it isn't clipped at the canvas edge.
+        const borderWidth = Math.max(2, Math.round(this.size * 0.012));
+        const radius = center - borderWidth;
 
-        if (mapCanvas) this.pipCtx.drawImage(mapCanvas, 0, 0);
-        if (drawCanvas) this.pipCtx.drawImage(drawCanvas, 0, 0);
-        if (ourPlayerCanvas) this.pipCtx.drawImage(ourPlayerCanvas, 0, 0);
-        if (uiCanvas) this.pipCtx.drawImage(uiCanvas, 0, 0);
+        ctx.clearRect(0, 0, this.size, this.size);
+
+        // The source canvases are square (map/background fills corner-to-corner, not just
+        // the dashed circle guide drawn on top) — clip to a circle so the PiP frame shows
+        // only the round radar instead of a square with dead corners. Clipped-out pixels
+        // stay transparent on the canvas, which captureStream flattens to black, matching
+        // the app's dark theme instead of looking like missing content.
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(center, center, radius, 0, Math.PI * 2);
+        ctx.clip();
+
+        if (mapCanvas) ctx.drawImage(mapCanvas, 0, 0);
+        if (drawCanvas) ctx.drawImage(drawCanvas, 0, 0);
+        if (ourPlayerCanvas) ctx.drawImage(ourPlayerCanvas, 0, 0);
+        if (uiCanvas) ctx.drawImage(uiCanvas, 0, 0);
+
+        ctx.restore();
+
+        ctx.beginPath();
+        ctx.arc(center, center, radius, 0, Math.PI * 2);
+        ctx.lineWidth = borderWidth;
+        ctx.strokeStyle = this._getAccentColor();
+        ctx.stroke();
+    }
+
+    // Reads the active theme's primary color at draw time so the ring always matches
+    // whatever theme is current instead of a hardcoded color that would drift out of sync.
+    _getAccentColor() {
+        const value = getComputedStyle(document.documentElement).getPropertyValue('--color-primary').trim();
+        return value || '#e8823a';
     }
 
     dispatchStatusEvent(status) {
