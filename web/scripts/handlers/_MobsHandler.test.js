@@ -870,6 +870,18 @@ describe('MobsHandler', () => {
             expect(mobs[0].type).toBe(EnemyType.EnchantedEnemy);
         });
 
+        // @verified 2026-09-01: live capture — the Mist exit portal wisp
+        // (MOB_UNIQUE_MISTS_PORTAL_WISP_LEGENDARY, category "rd_solo") was landing on
+        // EnchantedEnemy and going invisible whenever settingEnchantedEnemy was off, even
+        // though it's a 1-HP navigation aid, not a combat encounter. MistBoss has no
+        // visibility setting, so it can't be hidden that way.
+        test("synthetic: uniqueName containing 'MISTS_PORTAL_WISP' -> EnemyType.MistBoss regardless of category", () => {
+            spawnWithDbInfo(1099, {isHarvestable: false, category: 'rd_solo', uniqueName: 'MOB_UNIQUE_MISTS_PORTAL_WISP_LEGENDARY', tier: 4});
+            const mobs = handler.getMobList();
+            expect(mobs).toHaveLength(1);
+            expect(mobs[0].type).toBe(EnemyType.MistBoss);
+        });
+
         // @verified 2026-04-18: uniqueName containing '_ELITE' yields MiniBoss.
         test("synthetic: uniqueName '_ELITE' -> EnemyType.MiniBoss", () => {
             // synthetic: ELITE heuristic test.

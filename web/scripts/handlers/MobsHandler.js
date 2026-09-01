@@ -566,6 +566,14 @@ export class MobsHandler {
         // 🔍 Name-based heuristics (checked FIRST, before category)
         // These override category-based classification
 
+        // Mist exit portal wisp (category="rd_solo" -> would otherwise land on
+        // EnchantedEnemy, gated behind settingEnchantedEnemy). It's a 1-HP navigation aid, not
+        // a combat encounter, and shouldn't be invisible just because the player has enchanted
+        // enemies toggled off for combat-noise reasons. MistBoss has no visibility setting.
+        if (name.includes('MISTS_PORTAL_WISP')) {
+            return EnemyType.MistBoss;
+        }
+
         // VETERAN mobs (elite versions) - MiniBoss tier
         // Example: T6_MOB_MORGANA_CROSSBOWMAN_VETERAN (has category="static" but is elite)
         // Exclude VETERAN_CHAMPION (already handled by category="champion")
