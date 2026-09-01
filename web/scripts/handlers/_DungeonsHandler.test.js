@@ -204,20 +204,22 @@ describe('DungeonsHandler', () => {
 
     describe('MISTS portals (SHARED_MIST_WISP_PORTAL_MOB)', () => {
         // @verified 2026-04-23: dungeonEvent picks Parameters[8] (rarity) over Parameters[6] (variant) for MISTS portals.
+        // @verified 2026-08-31: mist_N is its own icon set (mist_0..mist_4), not dungeon_N —
+        // a mist portal must not render with the plain-dungeon icon.
         test('MIST-6: dungeonEvent on MISTS_SOLO_YELLOW uses Parameters[8] as enchant, not Parameters[6]', () => {
             handler.dungeonEvent({0: 1, 1: [0, 0], 3: 'MISTS_SOLO_YELLOW', 6: 2, 8: 0, 252: 323});
 
             expect(handler.dungeonList).toHaveLength(1);
             expect(handler.dungeonList[0].enchant).toBe(0);
-            expect(handler.dungeonList[0].drawName).toBe('dungeon_0');
+            expect(handler.dungeonList[0].drawName).toBe('mist_0');
         });
 
-        // @verified 2026-04-23: same MISTS_SOLO_YELLOW name with Parameters[8]=1 renders dungeon_1 (Peu commun).
-        test('MIST-6: Parameters[8]=1 with same MISTS_SOLO_YELLOW name renders dungeon_1', () => {
+        // @verified 2026-04-23: same MISTS_SOLO_YELLOW name with Parameters[8]=1 renders mist_1 (Peu commun).
+        test('MIST-6: Parameters[8]=1 with same MISTS_SOLO_YELLOW name renders mist_1', () => {
             handler.dungeonEvent({0: 1, 1: [0, 0], 3: 'MISTS_SOLO_YELLOW', 6: 2, 8: 1, 252: 323});
 
             expect(handler.dungeonList[0].enchant).toBe(1);
-            expect(handler.dungeonList[0].drawName).toBe('dungeon_1');
+            expect(handler.dungeonList[0].drawName).toBe('mist_1');
         });
 
         // @verified 2026-04-23: non-MISTS dungeon also reads Parameters[8] (universal enchant source).
@@ -237,7 +239,7 @@ describe('DungeonsHandler', () => {
 
             expect(handler.dungeonList).toHaveLength(1);
             expect(handler.dungeonList[0].enchant).toBe(0);
-            expect(handler.dungeonList[0].drawName).toBe('dungeon_0');
+            expect(handler.dungeonList[0].drawName).toBe('mist_0');
         });
 
         // @verified 2026-04-23: settingMistSolo=false drops MISTS solo portal.
@@ -277,13 +279,27 @@ describe('DungeonsHandler', () => {
         });
 
         // @verified 2026-04-23: MISTS_DUO_<TYPE> maps to Group type (DungeonType.Group=1) and uses settingMistDuo.
+        // @verified 2026-08-31: mist duo still uses the mist_N icon (there's no separate
+        // "mist group" asset — solo and duo mist portals share the same mist_0..mist_4 set).
         test('MIST-6: MISTS_DUO_YELLOW routes to Group type gated by settingMistDuo', () => {
             handler.addDungeon(1, 0, 0, 'MISTS_DUO_YELLOW', 2);
 
             expect(handler.dungeonList).toHaveLength(1);
             expect(handler.dungeonList[0].type).toBe(1);
             expect(handler.dungeonList[0].enchant).toBe(2);
-            expect(handler.dungeonList[0].drawName).toBe('group_2');
+            expect(handler.dungeonList[0].drawName).toBe('mist_2');
+        });
+
+        // @verified 2026-08-31: regression guard for the mist/dungeon icon mix-up — a mist and
+        // a plain dungeon with the same enchant must render with visibly different icons.
+        test('MIST-6: a mist portal and a regular dungeon at the same enchant use different icons', () => {
+            handler.addDungeon(1, 0, 0, 'MISTS_SOLO_YELLOW', 3);
+            handler.addDungeon(2, 0, 0, 'T5_PORTAL_ROYAL_SOLO', 3);
+
+            const [mist, dungeon] = handler.dungeonList;
+            expect(mist.drawName).toBe('mist_3');
+            expect(dungeon.drawName).toBe('dungeon_3');
+            expect(mist.drawName).not.toBe(dungeon.drawName);
         });
 
         // @verified 2026-04-23: settingMistDuo=false drops MISTS duo portal.
@@ -307,7 +323,7 @@ describe('DungeonsHandler', () => {
             handler.dungeonEvent(p);
 
             expect(handler.dungeonList).toHaveLength(1);
-            expect(handler.dungeonList[0].drawName).toBe('dungeon_1');
+            expect(handler.dungeonList[0].drawName).toBe('mist_1');
         });
 
         // @verified 2026-05-16: regression guard. A standard dungeon with a populated

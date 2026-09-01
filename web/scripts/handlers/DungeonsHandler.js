@@ -11,13 +11,14 @@ const DungeonType =
 
 class Dungeon
 {
-    constructor(id, posX, posY, name, type, enchant)
+    constructor(id, posX, posY, name, type, enchant, isMist = false)
     {
         this.id = id;
         this.posX = posX;
         this.posY = posY;
         this.name = name;
         this.enchant = enchant;
+        this.isMist = isMist;
 
         this.type = type;
 
@@ -36,6 +37,15 @@ class Dungeon
 
     setDrawNameByType()
     {
+        // Mist portals reuse DungeonType.Solo/Group (that's what the settingMist* gate above
+        // keys off of), but they have their own dedicated icon set (mist_0..mist_4, one icon
+        // for both solo and duo) — without this check they'd render as a plain "dungeon_N"/
+        // "group_N", indistinguishable from a regular random dungeon on the map.
+        if (this.isMist && (this.type === DungeonType.Solo || this.type === DungeonType.Group)) {
+            this.drawName = "mist_" + this.enchant;
+            return;
+        }
+
         switch (this.type)
         {
             case DungeonType.Solo:
@@ -122,7 +132,8 @@ export class DungeonsHandler
         };
 
         // MISTS portals route through the Mists settings, not Dungeon settings.
-        if (upperCaseName.startsWith("MISTS_"))
+        const isMist = upperCaseName.startsWith("MISTS_");
+        if (isMist)
         {
             const isSolo = upperCaseName.includes("_SOLO_");
 
@@ -187,8 +198,8 @@ export class DungeonsHandler
             dungeonType = DungeonType.Group;
         }
 
-        window.logger?.debug(CATEGORIES.DUNGEONS, 'DungeonAdded', {id, name, enchant, dungeonType});
-        const d = new Dungeon(id, posX, posY, name, dungeonType, enchant);
+        window.logger?.debug(CATEGORIES.DUNGEONS, 'DungeonAdded', {id, name, enchant, dungeonType, isMist});
+        const d = new Dungeon(id, posX, posY, name, dungeonType, enchant, isMist);
         this.dungeonList.push(d);
     }
 
