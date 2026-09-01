@@ -20,7 +20,8 @@ type PageData struct {
 // NavItem represents a navigation menu item
 type NavItem struct {
 	Path   string // URL path (e.g., "/players")
-	Label  string // Display label
+	Label  string // Display label (English fallback, replaced client-side by i18n)
+	Key    string // i18n key suffix (nav.<Key>) used to translate Label client-side
 	Icon   string // Lucide icon name (e.g., "users")
 	Active bool   // Whether this item is currently active
 }
@@ -28,13 +29,14 @@ type NavItem struct {
 // DefaultNavItems returns the default navigation items for OpenRadar
 func DefaultNavItems() []NavItem {
 	return []NavItem{
-		{Path: "/", Label: "Radar", Icon: "radar"},
-		{Path: "/players", Label: "Players", Icon: "users"},
-		{Path: "/resources", Label: "Resources", Icon: "gem"},
-		{Path: "/enemies", Label: "Enemies", Icon: "skull"},
-		{Path: "/chests", Label: "Chests", Icon: "archive"},
-		{Path: "/ignorelist", Label: "Ignore List", Icon: "user-x"},
-		{Path: "/settings", Label: "Settings", Icon: "settings"},
+		{Path: "/", Label: "Radar", Key: "radar", Icon: "radar"},
+		{Path: "/players", Label: "Players", Key: "players", Icon: "users"},
+		{Path: "/resources", Label: "Resources", Key: "resources", Icon: "gem"},
+		{Path: "/enemies", Label: "Enemies", Key: "enemies", Icon: "skull"},
+		{Path: "/chests", Label: "Chests", Key: "chests", Icon: "archive"},
+		{Path: "/market", Label: "Market", Key: "market", Icon: "coins"},
+		{Path: "/ignorelist", Label: "Ignore List", Key: "ignorelist", Icon: "user-x"},
+		{Path: "/settings", Label: "Settings", Key: "settings", Icon: "settings"},
 	}
 }
 

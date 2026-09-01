@@ -29,6 +29,7 @@
     <script type="module">
         import { CATEGORIES } from '/scripts/constants/LoggerConstants.js';
         import settingsSync from '/scripts/utils/SettingsSync.js';
+        import i18n from '/scripts/utils/i18n.js';
         import {
             attachCheckboxListeners,
             generateResourceGrid,
@@ -40,6 +41,7 @@
 
         window.CATEGORIES = CATEGORIES;
         window.settingsSync = settingsSync;
+        window.i18n = i18n;
         window.ResourcesHelper = {
             attachCheckboxListeners,
             generateResourceGrid,
@@ -51,6 +53,20 @@
 
         window.__globalsReady = true;
         document.dispatchEvent(new CustomEvent('globalsReady'));
+
+        // Re-translate whatever page content HTMX just swapped in, and the very first
+        // paint before any navigation happens.
+        i18n.applyTranslations();
+        document.body.addEventListener('htmx:afterSwap', (e) => {
+            if (e.detail.target) i18n.applyTranslations(e.detail.target);
+        });
+
+        function bindLangButtons(root) {
+            root.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.addEventListener('click', () => i18n.setLanguage(btn.dataset.lang));
+            });
+        }
+        bindLangButtons(document);
     </script>
 
     <script type="module" src="/scripts/logger.js"></script>
@@ -141,6 +157,7 @@
                     {{else if eq .Page "resources"}}{{template "pages/resources" .}}
                     {{else if eq .Page "enemies"}}{{template "pages/enemies" .}}
                     {{else if eq .Page "chests"}}{{template "pages/chests" .}}
+                    {{else if eq .Page "market"}}{{template "pages/market" .}}
                     {{else if eq .Page "ignorelist"}}{{template "pages/ignorelist" .}}
                     {{else if eq .Page "settings"}}{{template "pages/settings" .}}
                     {{else}}{{template "pages/radar" .}}{{end}}
@@ -151,6 +168,7 @@
                 {{else if eq .Page "resources"}}{{template "scripts/resources" .}}
                 {{else if eq .Page "enemies"}}{{template "scripts/enemies" .}}
                 {{else if eq .Page "chests"}}{{template "scripts/chests" .}}
+                {{else if eq .Page "market"}}{{template "scripts/market" .}}
                 {{else if eq .Page "ignorelist"}}{{template "scripts/ignorelist" .}}
                 {{else if eq .Page "settings"}}{{template "scripts/settings" .}}
                 {{end}}

@@ -11,7 +11,7 @@
     <div class="flex items-center gap-3">
         <div id="wsStatusIndicator" class="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-base-content/[0.02]">
             <span id="wsStatusDot" class="status status-neutral"></span>
-            <span id="wsStatusText" class="text-xs text-base-content/50 hidden sm:inline">Connecting...</span>
+            <span id="wsStatusText" data-i18n="header.connecting" class="text-xs text-base-content/50 hidden sm:inline">Connecting...</span>
         </div>
 
         <button id="pipToggleBtn" class="btn btn-primary btn-sm" disabled style="display:none;">
@@ -63,22 +63,22 @@
         switch(status) {
             case 'connected':
                 dot.classList.add('status-success', 'animate-pulse');
-                text.textContent = 'Connected';
+                text.textContent = window.i18n?.t('header.connected') ?? 'Connected';
                 text.classList.add('text-base-content/80');
                 break;
             case 'disconnected':
                 dot.classList.add('status-error');
-                text.textContent = 'Disconnected';
+                text.textContent = window.i18n?.t('header.disconnected') ?? 'Disconnected';
                 text.classList.add('text-error');
                 break;
             case 'connecting':
                 dot.classList.add('status-warning', 'animate-pulse');
-                text.textContent = 'Connecting...';
+                text.textContent = window.i18n?.t('header.connecting') ?? 'Connecting...';
                 text.classList.add('text-warning');
                 break;
             default:
                 dot.classList.add('status-neutral');
-                text.textContent = 'Disconnected';
+                text.textContent = window.i18n?.t('header.disconnected') ?? 'Disconnected';
                 text.classList.add('text-base-content/60');
         }
     }
@@ -119,6 +119,11 @@
     // Listen to WS status changes
     document.addEventListener('wsStatusChange', (e) => {
         if (isOnRadarPage()) updateIndicator(e.detail.status);
+    });
+
+    // Re-render the current status text (not just data-i18n elements) on language switch
+    document.addEventListener('languageChanged', () => {
+        if (isOnRadarPage()) updateIndicator(window.wsConnectionStatus || 'disconnected');
     });
 
     // Listen to PiP manager ready

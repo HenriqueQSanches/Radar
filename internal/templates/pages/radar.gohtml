@@ -25,172 +25,47 @@
             <div class="flex flex-wrap items-center gap-4 mt-3 mx-0 sm:mx-2.5 text-sm">
                 <!-- Display toggles -->
                 <div class="flex items-center gap-3">
-                    <span class="text-xs text-base-content/50">Display:</span>
+                    <span data-i18n="radar.display.label" class="text-xs text-base-content/50">Display:</span>
                     <label class="flex items-center gap-1.5 cursor-pointer group">
                         <input type="checkbox" id="settingResourceCount" class="checkbox checkbox-primary checkbox-xs">
-                        <span class="text-base-content/60 group-hover:text-base-content transition-colors">Count</span>
+                        <span data-i18n="radar.display.count" class="text-base-content/60 group-hover:text-base-content transition-colors">Count</span>
                     </label>
                     <label class="flex items-center gap-1.5 cursor-pointer group">
                         <input type="checkbox" id="settingResourceDistance" class="checkbox checkbox-primary checkbox-xs">
-                        <span class="text-base-content/60 group-hover:text-base-content transition-colors">Distance</span>
+                        <span data-i18n="radar.display.distance" class="text-base-content/60 group-hover:text-base-content transition-colors">Distance</span>
                     </label>
                     <label class="flex items-center gap-1.5 cursor-pointer group">
                         <input type="checkbox" id="settingResourceClusters" class="checkbox checkbox-primary checkbox-xs">
-                        <span class="text-base-content/60 group-hover:text-base-content transition-colors">Clusters</span>
+                        <span data-i18n="radar.display.clusters" class="text-base-content/60 group-hover:text-base-content transition-colors">Clusters</span>
                     </label>
                 </div>
                 <!-- Zoom control -->
                 <div class="hidden sm:flex items-center gap-2">
-                    <span class="text-xs text-base-content/50">Zoom:</span>
+                    <span data-i18n="radar.zoom.label" class="text-xs text-base-content/50">Zoom:</span>
                     <button id="zoomOut" class="btn btn-ghost btn-xs">−</button>
                     <input type="range" id="settingRadarZoom" min="0.3" max="3" step="0.1" value="1" class="range range-primary range-xs w-24">
                     <button id="zoomIn" class="btn btn-ghost btn-xs">+</button>
                     <span id="zoomValue" class="text-xs text-base-content/60 font-mono w-10">100%</span>
-                    <button id="zoomReset" class="btn btn-ghost btn-xs text-xs">Reset</button>
+                    <button id="zoomReset" data-i18n="radar.zoom.reset" class="btn btn-ghost btn-xs text-xs">Reset</button>
                 </div>
                 <!-- Size control -->
                 <div class="hidden sm:flex items-center gap-2">
-                    <span class="text-xs text-base-content/50">Size:</span>
+                    <span data-i18n="radar.size.label" class="text-xs text-base-content/50">Size:</span>
                     <button id="sizeDown" class="btn btn-ghost btn-xs">−</button>
                     <input type="range" id="settingCanvasSize" min="300" max="800" step="50" value="500" class="range range-primary range-xs w-24">
                     <button id="sizeUp" class="btn btn-ghost btn-xs">+</button>
                     <span id="sizeValue" class="text-xs text-base-content/60 font-mono w-12">500px</span>
-                    <button id="sizeReset" class="btn btn-ghost btn-xs text-xs">Reset</button>
+                    <button id="sizeReset" data-i18n="radar.size.reset" class="btn btn-ghost btn-xs text-xs">Reset</button>
                 </div>
                 <!-- Icon Size control -->
                 <div class="hidden sm:flex items-center gap-2">
-                    <span class="text-xs text-base-content/50">Icons:</span>
+                    <span data-i18n="radar.icons.label" class="text-xs text-base-content/50">Icons:</span>
                     <button id="iconSizeDown" class="btn btn-ghost btn-xs">−</button>
                     <input type="range" id="settingIconSize" min="0.5" max="2" step="0.1" value="1" class="range range-primary range-xs w-24">
                     <button id="iconSizeUp" class="btn btn-ghost btn-xs">+</button>
                     <span id="iconSizeValue" class="text-xs text-base-content/60 font-mono w-10">100%</span>
-                    <button id="iconSizeReset" class="btn btn-ghost btn-xs text-xs">Reset</button>
+                    <button id="iconSizeReset" data-i18n="radar.icons.reset" class="btn btn-ghost btn-xs text-xs">Reset</button>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Market Route Section -->
-    <div id="marketRouteSection" class="card bg-base-200">
-        <div class="card-body">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <h3 class="text-xl font-semibold text-base-content">Rota de Mercado</h3>
-                <div class="flex gap-2">
-                    <button id="calcRouteBtn" class="btn btn-primary btn-sm">Calcular Rota</button>
-                    <button id="calcCitiesBtn" class="btn btn-outline btn-sm">Melhor Cidade</button>
-                </div>
-            </div>
-            <p class="text-xs text-base-content/50 mt-1">
-                Preço de venda em Thetford, Fort Sterling, Lymhurst, Bridgewatch, Martlock e Caerleon
-                (T2-T8, incluindo T4.1-T8.1), via Albion Online Data Project.
-                "Melhor Cidade" usa a mesma busca, mas agrupa pela média geral por cidade.
-            </p>
-            <div id="marketRouteFilters" class="flex flex-wrap items-center gap-3 mt-3 hidden">
-                <label class="flex items-center gap-1.5 text-xs text-base-content/60">
-                    Recurso:
-                    <select id="marketRouteResourceFilter" class="select select-bordered select-xs">
-                        <option value="">Todos</option>
-                        <option value="Madeira">Madeira</option>
-                        <option value="Pedra">Pedra</option>
-                        <option value="Fibra">Fibra</option>
-                        <option value="Couro">Couro</option>
-                        <option value="Minério">Minério</option>
-                    </select>
-                </label>
-                <label class="flex items-center gap-1.5 text-xs text-base-content/60">
-                    Tier:
-                    <select id="marketRouteTierFilter" class="select select-bordered select-xs">
-                        <option value="">Todos</option>
-                        <option value="2.0">T2</option>
-                        <option value="3.0">T3</option>
-                        <option value="4.0">T4</option>
-                        <option value="4.1">T4.1</option>
-                        <option value="5.0">T5</option>
-                        <option value="5.1">T5.1</option>
-                        <option value="6.0">T6</option>
-                        <option value="6.1">T6.1</option>
-                        <option value="7.0">T7</option>
-                        <option value="7.1">T7.1</option>
-                        <option value="8.0">T8</option>
-                        <option value="8.1">T8.1</option>
-                    </select>
-                </label>
-            </div>
-            <div id="marketRouteStatus" class="text-sm text-base-content/60 mt-3 hidden"></div>
-            <div id="marketRouteResults" class="mt-3 overflow-x-auto hidden">
-                <table class="table table-zebra table-sm">
-                    <thead>
-                        <tr>
-                            <th>Recurso</th>
-                            <th>Preço</th>
-                            <th>Cidade</th>
-                        </tr>
-                    </thead>
-                    <tbody id="marketRouteTableBody"></tbody>
-                </table>
-            </div>
-            <div id="bestCitiesStatus" class="text-sm text-base-content/60 mt-3 hidden"></div>
-            <div id="bestCitiesResults" class="mt-3 overflow-x-auto hidden">
-                <table class="table table-zebra table-sm">
-                    <thead>
-                        <tr>
-                            <th>Cidade</th>
-                            <th>Preço médio</th>
-                            <th>Amostras</th>
-                        </tr>
-                    </thead>
-                    <tbody id="bestCitiesTableBody"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- Fish Hotspots Section -->
-    <div id="fishHotspotsSection" class="card bg-base-200">
-        <div class="card-body">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <h3 class="text-xl font-semibold text-base-content">Peixe</h3>
-                <button id="calcFishBtn" class="btn btn-primary btn-sm">Buscar Peixe</button>
-            </div>
-            <p class="text-xs text-base-content/50 mt-1">
-                Preço de venda de peixe (T4-T8) em Thetford, Fort Sterling, Lymhurst, Bridgewatch,
-                Martlock e Caerleon, via Albion Online Data Project.
-            </p>
-            <div id="fishFilters" class="flex flex-wrap items-center gap-3 mt-3 hidden">
-                <label class="flex items-center gap-1.5 text-xs text-base-content/60">
-                    Peixe:
-                    <select id="fishResourceFilter" class="select select-bordered select-xs">
-                        <option value="">Todos</option>
-                        <option value="Peixe de Água Doce">Água Doce</option>
-                        <option value="Peixe de Água Doce Raro">Água Doce Raro</option>
-                        <option value="Peixe de Água Salgada">Água Salgada</option>
-                        <option value="Peixe de Água Salgada Raro">Água Salgada Raro</option>
-                    </select>
-                </label>
-                <label class="flex items-center gap-1.5 text-xs text-base-content/60">
-                    Tier:
-                    <select id="fishTierFilter" class="select select-bordered select-xs">
-                        <option value="">Todos</option>
-                        <option value="4">T4</option>
-                        <option value="5">T5</option>
-                        <option value="6">T6</option>
-                        <option value="7">T7</option>
-                        <option value="8">T8</option>
-                    </select>
-                </label>
-            </div>
-            <div id="fishHotspotsStatus" class="text-sm text-base-content/60 mt-3 hidden"></div>
-            <div id="fishHotspotsResults" class="mt-3 overflow-x-auto hidden">
-                <table class="table table-zebra table-sm">
-                    <thead>
-                        <tr>
-                            <th>Peixe</th>
-                            <th>Preço</th>
-                            <th>Cidade</th>
-                        </tr>
-                    </thead>
-                    <tbody id="fishHotspotsTableBody"></tbody>
-                </table>
             </div>
         </div>
     </div>
@@ -200,10 +75,10 @@
         <div class="card-body">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <h3 class="text-xl font-semibold text-base-content flex items-center gap-3">
-                    Detected Players
+                    <span data-i18n="radar.players.title">Detected Players</span>
                     <label class="flex items-center gap-1.5 cursor-pointer" title="Show players on radar and in list below">
                         <input type="checkbox" id="settingShowPlayers" class="checkbox checkbox-primary checkbox-xs">
-                        <span class="text-xs text-base-content/60 font-normal">Show</span>
+                        <span data-i18n="radar.players.show" class="text-xs text-base-content/60 font-normal">Show</span>
                     </label>
                 </h3>
                 <!-- Compact Player Stats (next to title) -->
@@ -229,7 +104,7 @@
                     <!-- Hostile Section -->
                     <div id="playersHostile" class="hidden flex-1 min-w-0 sm:min-w-[280px]">
                         <div class="flex items-center gap-2 pb-2 mb-3 border-b border-error/20">
-                            <span class="text-sm font-medium text-error">Hostiles</span>
+                            <span data-i18n="radar.players.hostile" class="text-sm font-medium text-error">Hostiles</span>
                             <span id="hostileCount" class="text-xs text-base-content/50">(0)</span>
                         </div>
                         <div id="hostileList" class="player-cards grid gap-3 max-h-[400px] overflow-y-auto pr-1 scrollbar-thin"></div>
@@ -238,7 +113,7 @@
                     <!-- Faction Section -->
                     <div id="playersFaction" class="hidden flex-1 min-w-0 sm:min-w-[280px]">
                         <div class="flex items-center gap-2 pb-2 mb-3 border-b border-info/20">
-                            <span class="text-sm font-medium text-info">Faction</span>
+                            <span data-i18n="radar.players.faction" class="text-sm font-medium text-info">Faction</span>
                             <span id="factionCount" class="text-xs text-base-content/50">(0)</span>
                         </div>
                         <div id="factionList" class="player-cards grid gap-3 max-h-[400px] overflow-y-auto pr-1 scrollbar-thin"></div>
@@ -247,7 +122,7 @@
                     <!-- Passive Section -->
                     <div id="playersPassive" class="hidden flex-1 min-w-0 sm:min-w-[280px]">
                         <div class="flex items-center gap-2 pb-2 mb-3 border-b border-success/20">
-                            <span class="text-sm font-medium text-success">Passive</span>
+                            <span data-i18n="radar.players.passive" class="text-sm font-medium text-success">Passive</span>
                             <span id="passiveCount" class="text-xs text-base-content/50">(0)</span>
                         </div>
                         <div id="passiveList" class="player-cards grid gap-3 max-h-[400px] overflow-y-auto pr-1 scrollbar-thin"></div>
@@ -256,8 +131,8 @@
                     <!-- Empty State -->
                     <div id="playersEmpty" class="w-full flex flex-col items-center justify-center py-8 text-center">
                         <span class="loading loading-ring loading-lg text-primary mb-3"></span>
-                        <p class="text-sm text-base-content/40">No players detected yet</p>
-                        <p class="text-xs text-base-content/25 font-mono mt-1">Scanning...</p>
+                        <p data-i18n="radar.players.empty" class="text-sm text-base-content/40">No players detected yet</p>
+                        <p data-i18n="radar.players.scanning" class="text-xs text-base-content/25 font-mono mt-1">Scanning...</p>
                     </div>
                 </div>
             </div>
@@ -308,219 +183,6 @@ window.onGlobalsReady(function() {
         }
     }
     document.body.addEventListener('htmx:beforeSwap', htmxCleanupHandler);
-
-    function formatResourceLabel(entry) {
-        const enchantSuffix = entry.enchant > 0 ? `.${entry.enchant}` : '';
-        return `${entry.resource} T${entry.tier}${enchantSuffix}`;
-    }
-
-    function renderPriceTable(tableBody, entries) {
-        tableBody.innerHTML = '';
-        entries.forEach((entry, index) => {
-            const row = document.createElement('tr');
-            // Entries arrive sorted highest price first — highlight the top
-            // result so the best price doesn't require reading every row.
-            if (index === 0) row.classList.add('bg-warning/20', 'font-semibold');
-            const resourceCell = document.createElement('td');
-            resourceCell.textContent = formatResourceLabel(entry);
-            const priceCell = document.createElement('td');
-            priceCell.textContent = entry.price;
-            const cityCell = document.createElement('td');
-            cityCell.textContent = entry.city;
-            row.append(resourceCell, priceCell, cityCell);
-            tableBody.appendChild(row);
-        });
-    }
-
-    function renderCityTable(tableBody, rankings) {
-        tableBody.innerHTML = '';
-        rankings.forEach((ranking, index) => {
-            const row = document.createElement('tr');
-            if (index === 0) row.classList.add('bg-warning/20', 'font-semibold');
-            const cityCell = document.createElement('td');
-            cityCell.textContent = ranking.city;
-            const priceCell = document.createElement('td');
-            priceCell.textContent = Math.round(ranking.averagePrice);
-            const samplesCell = document.createElement('td');
-            samplesCell.textContent = ranking.sampleCount;
-            row.append(cityCell, priceCell, samplesCell);
-            tableBody.appendChild(row);
-        });
-    }
-
-    // Market route ("Calcular Rota")
-    const calcRouteBtn = document.getElementById('calcRouteBtn');
-    const marketRouteFilters = document.getElementById('marketRouteFilters');
-    const marketRouteResourceFilter = document.getElementById('marketRouteResourceFilter');
-    const marketRouteTierFilter = document.getElementById('marketRouteTierFilter');
-    const marketRouteStatus = document.getElementById('marketRouteStatus');
-    const marketRouteResults = document.getElementById('marketRouteResults');
-    const marketRouteTableBody = document.getElementById('marketRouteTableBody');
-    let lastRouteEntries = [];
-
-    function applyRouteFilters() {
-        const resource = marketRouteResourceFilter.value;
-        const tierFilter = marketRouteTierFilter.value; // "" | "2.0" | "3.0" | "4.0" | "4.1" | ... | "8.1"
-
-        const filtered = lastRouteEntries.filter(entry => {
-            if (resource && entry.resource !== resource) return false;
-            if (tierFilter) {
-                const [tier, enchant] = tierFilter.split('.').map(Number);
-                if (entry.tier !== tier || entry.enchant !== enchant) return false;
-            }
-            return true;
-        });
-
-        if (filtered.length === 0) {
-            marketRouteResults.classList.add('hidden');
-            marketRouteStatus.classList.remove('hidden');
-            marketRouteStatus.textContent = 'Nenhum resultado com esse filtro.';
-            return;
-        }
-        renderPriceTable(marketRouteTableBody, filtered);
-        marketRouteStatus.classList.add('hidden');
-        marketRouteResults.classList.remove('hidden');
-    }
-
-    async function calculateRoute() {
-        if (!calcRouteBtn) return;
-        calcRouteBtn.disabled = true;
-        marketRouteFilters.classList.add('hidden');
-        marketRouteResults.classList.add('hidden');
-        bestCitiesResults.classList.add('hidden');
-        bestCitiesStatus.classList.add('hidden');
-        marketRouteStatus.classList.remove('hidden');
-        marketRouteStatus.textContent = 'Buscando preços...';
-        try {
-            const response = await fetch('/api/market/route');
-            if (!response.ok) throw new Error(`status ${response.status}`);
-            const entries = await response.json();
-            lastRouteEntries = entries || [];
-
-            if (lastRouteEntries.length === 0) {
-                marketRouteStatus.textContent = 'Nenhum preço disponível agora.';
-                return;
-            }
-
-            marketRouteFilters.classList.remove('hidden');
-            applyRouteFilters();
-        } catch (error) {
-            marketRouteStatus.textContent = 'Erro ao buscar preços. Tente novamente em instantes.';
-            window.logger?.error('SYSTEM', 'MarketRouteFetchFailed', {
-                error: error?.message || String(error),
-            });
-        } finally {
-            calcRouteBtn.disabled = false;
-        }
-    }
-
-    addListener(calcRouteBtn, 'click', calculateRoute);
-    addListener(marketRouteResourceFilter, 'change', applyRouteFilters);
-    addListener(marketRouteTierFilter, 'change', applyRouteFilters);
-
-    // Best cities ("Melhor Cidade") — same underlying data, grouped by city average
-    const calcCitiesBtn = document.getElementById('calcCitiesBtn');
-    const bestCitiesStatus = document.getElementById('bestCitiesStatus');
-    const bestCitiesResults = document.getElementById('bestCitiesResults');
-    const bestCitiesTableBody = document.getElementById('bestCitiesTableBody');
-
-    async function calculateBestCities() {
-        if (!calcCitiesBtn) return;
-        calcCitiesBtn.disabled = true;
-        marketRouteFilters.classList.add('hidden');
-        marketRouteResults.classList.add('hidden');
-        bestCitiesResults.classList.add('hidden');
-        bestCitiesStatus.classList.remove('hidden');
-        bestCitiesStatus.textContent = 'Calculando média por cidade...';
-        try {
-            const response = await fetch('/api/market/cities');
-            if (!response.ok) throw new Error(`status ${response.status}`);
-            const rankings = await response.json();
-
-            if (!rankings || rankings.length === 0) {
-                bestCitiesStatus.textContent = 'Nenhum preço disponível agora.';
-                return;
-            }
-
-            renderCityTable(bestCitiesTableBody, rankings);
-            bestCitiesStatus.classList.add('hidden');
-            bestCitiesResults.classList.remove('hidden');
-        } catch (error) {
-            bestCitiesStatus.textContent = 'Erro ao buscar preços. Tente novamente em instantes.';
-            window.logger?.error('SYSTEM', 'BestCitiesFetchFailed', {
-                error: error?.message || String(error),
-            });
-        } finally {
-            calcCitiesBtn.disabled = false;
-        }
-    }
-
-    addListener(calcCitiesBtn, 'click', calculateBestCities);
-
-    // Fish prices ("Buscar Peixe")
-    const calcFishBtn = document.getElementById('calcFishBtn');
-    const fishFilters = document.getElementById('fishFilters');
-    const fishResourceFilter = document.getElementById('fishResourceFilter');
-    const fishTierFilter = document.getElementById('fishTierFilter');
-    const fishHotspotsStatus = document.getElementById('fishHotspotsStatus');
-    const fishHotspotsResults = document.getElementById('fishHotspotsResults');
-    const fishHotspotsTableBody = document.getElementById('fishHotspotsTableBody');
-    let lastFishEntries = [];
-
-    function applyFishFilters() {
-        const resource = fishResourceFilter.value;
-        const tier = fishTierFilter.value;
-
-        const filtered = lastFishEntries.filter(entry => {
-            if (resource && entry.resource !== resource) return false;
-            if (tier && entry.tier !== Number(tier)) return false;
-            return true;
-        });
-
-        if (filtered.length === 0) {
-            fishHotspotsResults.classList.add('hidden');
-            fishHotspotsStatus.classList.remove('hidden');
-            fishHotspotsStatus.textContent = 'Nenhum resultado com esse filtro.';
-            return;
-        }
-        renderPriceTable(fishHotspotsTableBody, filtered);
-        fishHotspotsStatus.classList.add('hidden');
-        fishHotspotsResults.classList.remove('hidden');
-    }
-
-    async function calculateFishPrices() {
-        if (!calcFishBtn) return;
-        calcFishBtn.disabled = true;
-        fishFilters.classList.add('hidden');
-        fishHotspotsResults.classList.add('hidden');
-        fishHotspotsStatus.classList.remove('hidden');
-        fishHotspotsStatus.textContent = 'Buscando preços...';
-        try {
-            const response = await fetch('/api/market/fish');
-            if (!response.ok) throw new Error(`status ${response.status}`);
-            const entries = await response.json();
-            lastFishEntries = entries || [];
-
-            if (lastFishEntries.length === 0) {
-                fishHotspotsStatus.textContent = 'Nenhum preço disponível agora.';
-                return;
-            }
-
-            fishFilters.classList.remove('hidden');
-            applyFishFilters();
-        } catch (error) {
-            fishHotspotsStatus.textContent = 'Erro ao buscar preços. Tente novamente em instantes.';
-            window.logger?.error('SYSTEM', 'FishPricesFetchFailed', {
-                error: error?.message || String(error),
-            });
-        } finally {
-            calcFishBtn.disabled = false;
-        }
-    }
-
-    addListener(calcFishBtn, 'click', calculateFishPrices);
-    addListener(fishResourceFilter, 'change', applyFishFilters);
-    addListener(fishTierFilter, 'change', applyFishFilters);
 
     // Bind display checkboxes
     ['settingResourceCount', 'settingResourceDistance', 'settingResourceClusters'].forEach(id => {
