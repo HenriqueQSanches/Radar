@@ -1,6 +1,6 @@
 {{define "layouts/base.gohtml"}}
 <!DOCTYPE html>
-<html data-theme="night" lang="en">
+<html data-theme="ferrugem" lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -67,6 +67,17 @@
             });
         }
         bindLangButtons(document);
+
+        // Compact rail (desktop sidebar): single button, toggles EN<->PT and shows the
+        // *other* language as the action (its tooltip/label say what clicking will switch to).
+        function bindLangRailToggle() {
+            const btn = document.getElementById('langToggleDesktop');
+            if (!btn) return;
+            btn.addEventListener('click', () => {
+                i18n.setLanguage(i18n.getLanguage() === 'en' ? 'pt' : 'en');
+            });
+        }
+        bindLangRailToggle();
     </script>
 
     <script type="module" src="/scripts/logger.js"></script>
@@ -77,42 +88,11 @@
 
     <!-- Must be in head before sidebar template -->
     <script>
+        // Desktop sidebar is a fixed-width compact icon rail (see sidebar.gohtml) — no
+        // expand/collapse state to track any more. Only the mobile slide-out menu needs JS.
         window.sidebar = {
-            collapsed: localStorage.getItem('sidebarCollapsed') === 'true',
-            hoverExpanded: false,
-            hoverTimeout: null,
-
             init() {
-                this.updateClasses();
                 if (window.lucide) lucide.createIcons();
-            },
-
-            toggle() {
-                this.collapsed = !this.collapsed;
-                localStorage.setItem('sidebarCollapsed', this.collapsed);
-                this.updateClasses();
-            },
-
-            onEnter() {
-                if (this.collapsed) {
-                    this.hoverTimeout = setTimeout(() => {
-                        this.hoverExpanded = true;
-                        this.updateClasses();
-                    }, 1000);
-                }
-            },
-
-            onLeave() {
-                if (this.hoverTimeout) {
-                    clearTimeout(this.hoverTimeout);
-                    this.hoverTimeout = null;
-                }
-                this.hoverExpanded = false;
-                this.updateClasses();
-            },
-
-            get isExpanded() {
-                return !this.collapsed || this.hoverExpanded;
             },
 
             openMobile() {
@@ -121,14 +101,6 @@
 
             closeMobile() {
                 document.body.classList.remove('mobile-menu-open');
-            },
-
-            updateClasses() {
-                document.body.classList.toggle('sidebar-collapsed', this.collapsed && !this.hoverExpanded);
-                const sidebar = document.getElementById('desktop-sidebar');
-                if (sidebar) {
-                    sidebar.style.width = this.isExpanded ? '16rem' : '5rem';
-                }
             }
         };
     </script>
@@ -209,18 +181,15 @@
             }
         });
 
-        // Update sidebar active state on navigation
+        // Update sidebar active state on navigation. Nav items carry their full visual
+        // styling as static classes already (see sidebar.gohtml) — this only flips the
+        // one class that marks which item is current, so it works the same for the
+        // desktop icon rail and the mobile text list.
         document.addEventListener('htmx:pushedIntoHistory', (_e) => {
             const currentPath = window.location.pathname;
-            const baseClasses = 'flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors';
-            const activeClasses = 'text-primary border-l-2 border-primary -ml-px pl-2.5';
-            const inactiveClasses = 'text-base-content/60 hover:text-base-content/80 hover:bg-base-content/[0.02]';
 
             document.querySelectorAll('#desktop-nav a, #mobile-nav a').forEach(link => {
-                const linkPath = link.getAttribute('href');
-                const isActive = linkPath === currentPath;
-
-                link.className = baseClasses + ' ' + (isActive ? activeClasses : inactiveClasses);
+                link.classList.toggle('active', link.getAttribute('href') === currentPath);
             });
         });
     </script>

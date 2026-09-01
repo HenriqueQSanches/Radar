@@ -141,6 +141,7 @@ const translations = {
         "settings.danger.clearCacheBtn": "Clear Cache",
         "settings.toast.resetSuccess": "Settings reset successfully",
         "settings.toast.cacheCleared": "Cache cleared",
+        "lang.toggleTip": "Language",
     },
     pt: {
         "nav.radar": "Radar",
@@ -275,6 +276,7 @@ const translations = {
         "settings.danger.clearCacheBtn": "Limpar Cache",
         "settings.toast.resetSuccess": "Configurações redefinidas com sucesso",
         "settings.toast.cacheCleared": "Cache limpo",
+        "lang.toggleTip": "Idioma",
     },
 };
 
@@ -304,6 +306,21 @@ function applyTranslations(root = document) {
     root.querySelectorAll?.('[data-i18n-tip]').forEach(el => {
         el.setAttribute('data-tip', t(el.getAttribute('data-i18n-tip')));
     });
+    // Compact-rail nav items show their label via a CSS ::after reading data-label
+    // (see .rail-item in app.css) rather than visible text, so translate that instead.
+    root.querySelectorAll?.('[data-i18n-label]').forEach(el => {
+        el.setAttribute('data-label', t(el.getAttribute('data-i18n-label')));
+    });
+
+    // The rail's single EN/PT toggle button shows the language it would switch TO,
+    // and its tooltip explains the action rather than just naming the current state.
+    const railToggle = document.getElementById('langToggleDesktop');
+    if (railToggle) {
+        const target = lang === 'en' ? 'pt' : 'en';
+        const label = document.getElementById('langToggleLabel');
+        if (label) label.textContent = target.toUpperCase();
+        railToggle.setAttribute('data-label', t('lang.toggleTip'));
+    }
 
     document.documentElement.lang = lang === 'pt' ? 'pt-BR' : 'en';
     document.querySelectorAll('.lang-btn').forEach(btn => {

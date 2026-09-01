@@ -41,13 +41,62 @@ input[type="checkbox"]:checked { animation: checkmark 0.15s ease-out; }
 * { scrollbar-width: thin; scrollbar-color: #2a2a3a #0a0a0f; }
 
 /* Focus - uses DaisyUI primary color */
-:focus-visible { outline: 2px solid oklch(var(--p)); outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 :focus:not(:focus-visible) { outline: none; }
 
-/* Sidebar */
-body.sidebar-collapsed .sidebar-expanded-only { display: none !important; }
-body:not(.sidebar-collapsed) .sidebar-collapsed-only { display: none !important; }
-.sidebar-transition { transition: width var(--transition-slow); }
+/* Sidebar: desktop is a fixed-width compact icon rail (see sidebar.gohtml) */
+.rail-item { position: relative; }
+.rail-item[data-label]::after {
+    content: attr(data-label);
+    position: absolute;
+    left: calc(100% + 10px);
+    top: 50%;
+    transform: translateY(-50%) translateX(-4px);
+    background: var(--color-base-300);
+    color: var(--color-base-content);
+    padding: 4px 9px;
+    border-radius: 6px;
+    font-size: 11px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-fast), transform var(--transition-fast);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .35);
+    z-index: 50;
+}
+.rail-item:hover[data-label]::after { opacity: 1; transform: translateY(-50%) translateX(0); }
+
+.nav-icon-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-base-content);
+    opacity: .55;
+    transition: opacity var(--transition-fast), background-color var(--transition-fast);
+}
+.nav-icon-btn:hover { opacity: .9; background: color-mix(in srgb, var(--color-base-content) 8%, transparent); }
+.nav-icon-btn.active { opacity: 1; background: var(--color-primary); color: var(--color-primary-content); }
+
+/* Mobile nav list items keep the old text+icon row layout */
+.nav-list-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 0.75rem;
+    border-radius: 0.375rem;
+    transition: color var(--transition-fast), background-color var(--transition-fast);
+    color: color-mix(in srgb, var(--color-base-content) 60%, transparent);
+}
+.nav-list-item:hover { color: color-mix(in srgb, var(--color-base-content) 80%, transparent); background: color-mix(in srgb, var(--color-base-content) 2%, transparent); }
+.nav-list-item.active {
+    color: var(--color-primary);
+    border-left: 2px solid var(--color-primary);
+    margin-left: -1px;
+    padding-left: calc(0.75rem - 1px);
+}
 
 /* Mobile menu */
 body.mobile-menu-open { overflow: hidden; }

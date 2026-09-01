@@ -2,12 +2,51 @@
 @import "./fonts.css";
 @import "tailwindcss";
 @plugin "daisyui" {
-    themes: night --default;
+    themes: night;
 }
 
 /* Source paths for class detection */
 @source "../../internal/templates/**/*.gohtml";
 @source "../scripts/**/*.js";
+
+/*
+ * "Ferrugem" (rust) theme: warm charcoal + burnt-orange accent, chosen to replace the
+ * old blue "night" look. Same variable set/selector shape as daisyui's own theme/night.css
+ * (see node_modules/daisyui/theme/night.css) so all daisyui components pick it up for free —
+ * this isn't registered through the daisyui plugin's theme registry, it just defines the
+ * same custom properties directly.
+ */
+[data-theme="ferrugem"] {
+    color-scheme: dark;
+    --color-base-100: #17130f;
+    --color-base-200: #221d19;
+    --color-base-300: #2c2420;
+    --color-base-content: #f2ece4;
+    --color-primary: #e8823a;
+    --color-primary-content: #2b1305;
+    --color-secondary: #b3798a;
+    --color-secondary-content: #2a1219;
+    --color-accent: #e0b04a;
+    --color-accent-content: #2e2205;
+    --color-neutral: #2a231f;
+    --color-neutral-content: #cbb9ab;
+    --color-info: #6fa3c9;
+    --color-info-content: #0a1b26;
+    --color-success: #8fbf6e;
+    --color-success-content: #13210b;
+    --color-warning: #e0b04a;
+    --color-warning-content: #2e2205;
+    --color-error: #d1543f;
+    --color-error-content: #250705;
+    --radius-selector: 1rem;
+    --radius-field: 0.5rem;
+    --radius-box: 1rem;
+    --size-selector: 0.25rem;
+    --size-field: 0.25rem;
+    --border: 1px;
+    --depth: 0;
+    --noise: 0;
+}
 
 /* Custom theme extending DaisyUI dark theme */
 @theme {

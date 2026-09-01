@@ -1,56 +1,31 @@
 {{define "layouts/sidebar.gohtml"}}
 <aside
     id="desktop-sidebar"
-    onmouseenter="window.sidebar.onEnter()"
-    onmouseleave="window.sidebar.onLeave()"
-    class="hidden md:flex flex-col z-20 flex-shrink-0 overflow-y-auto bg-base-200 border-r border-base-content/[0.03] sidebar-transition"
-    style="width: 16rem;">
+    class="hidden md:flex flex-col z-20 flex-shrink-0 w-[72px] bg-base-200 border-r border-base-content/[0.03]">
 
-    <div class="flex items-center justify-between p-4 border-b border-base-content/[0.03]">
-        <a href="/" class="flex items-center gap-3 sidebar-expanded-only">
-            <img src="/images/icon.png" alt="OpenRadar" class="w-10 h-10 rounded-lg">
-            <span class="text-xl font-bold text-base-content">OpenRadar</span>
+    <div class="flex items-center justify-center p-3 border-b border-base-content/[0.03]">
+        <a href="/" class="rail-item" data-label="OpenRadar">
+            <img src="/images/icon.png" alt="OpenRadar" class="w-9 h-9 rounded-lg">
         </a>
-        <div class="flex flex-col items-center gap-2 w-full sidebar-collapsed-only">
-            <img src="/images/icon.png" alt="OpenRadar" class="w-10 h-10 rounded-lg">
-            <button onclick="window.sidebar.toggle()"
-                class="p-1.5 rounded-lg text-base-content/60 hover:text-base-content hover:bg-base-300 transition-colors"
-                title="Expand sidebar">
-                <i data-lucide="panel-left-open" class="w-4 h-4"></i>
-            </button>
-        </div>
-        <button onclick="window.sidebar.toggle()"
-            class="p-2 rounded-lg text-base-content/60 hover:text-base-content hover:bg-base-300 transition-colors sidebar-expanded-only"
-            title="Collapse sidebar">
-            <i data-lucide="panel-left-close" class="w-5 h-5"></i>
-        </button>
     </div>
 
-    <nav id="desktop-nav" class="flex-1 p-3 space-y-0.5">
+    <nav id="desktop-nav" class="flex-1 flex flex-col items-center gap-1.5 py-3">
         {{range .NavItems}}
         <a href="{{.Path}}"
            hx-get="{{.Path}}" hx-target="#page-content" hx-swap="innerHTML transition:true"
            hx-push-url="true"
-           class="flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors
-                  {{if .Active}}text-primary border-l-2 border-primary -ml-px pl-2.5{{else}}text-base-content/60 hover:text-base-content/80 hover:bg-base-content/[0.02]{{end}}">
-            <i data-lucide="{{.Icon}}" class="w-[18px] h-[18px] flex-shrink-0" stroke-width="1.5"></i>
-            <span data-i18n="nav.{{.Key}}" class="text-sm sidebar-expanded-only">{{.Label}}</span>
+           class="nav-icon-btn rail-item{{if .Active}} active{{end}}"
+           data-label="{{.Label}}" data-i18n-label="nav.{{.Key}}">
+            <i data-lucide="{{.Icon}}" class="w-[18px] h-[18px]" stroke-width="1.5"></i>
         </a>
         {{end}}
     </nav>
 
-    <div class="p-3 border-t border-base-content/[0.03]">
-        <div id="langToggleDesktop" class="join w-full sidebar-expanded-only">
-            <button data-lang="en" class="lang-btn join-item btn btn-xs flex-1">EN</button>
-            <button data-lang="pt" class="lang-btn join-item btn btn-xs flex-1">PT</button>
-        </div>
-        <button id="langToggleCollapsed" class="w-full flex justify-center sidebar-collapsed-only p-1.5 rounded-md text-base-content/60 hover:text-base-content hover:bg-base-300 transition-colors" title="EN / PT">
-            <i data-lucide="languages" class="w-4 h-4"></i>
+    <div class="flex flex-col items-center gap-2 py-3 border-t border-base-content/[0.03]">
+        <button id="langToggleDesktop" class="nav-icon-btn rail-item lang-rail-btn" data-label="EN / PT">
+            <span id="langToggleLabel" class="text-[10px] font-mono font-semibold">EN</span>
         </button>
-    </div>
-
-    <div class="px-4 pb-4 sidebar-expanded-only">
-        <p class="text-xs text-base-content/50 font-mono">v{{.Version}}</p>
+        <p class="text-[9px] text-base-content/40 font-mono">v{{.Version}}</p>
     </div>
 </aside>
 
@@ -74,8 +49,7 @@
            hx-get="{{.Path}}" hx-target="#page-content" hx-swap="innerHTML transition:true"
            hx-push-url="true"
            onclick="window.sidebar.closeMobile()"
-           class="flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors
-                  {{if .Active}}text-primary border-l-2 border-primary -ml-px pl-2.5{{else}}text-base-content/60 hover:text-base-content/80 hover:bg-base-content/[0.02]{{end}}">
+           class="nav-list-item{{if .Active}} active{{end}}">
             <i data-lucide="{{.Icon}}" class="w-[18px] h-[18px]" stroke-width="1.5"></i>
             <span data-i18n="nav.{{.Key}}" class="text-sm">{{.Label}}</span>
         </a>
