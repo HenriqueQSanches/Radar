@@ -10,6 +10,17 @@ echo   Radar - Albion Online
 echo ==========================================
 echo.
 
+if not exist "%SystemRoot%\System32\Npcap\wpcap.dll" (
+    echo O Radar precisa do Npcap instalado para capturar o trafego do jogo.
+    echo Abrindo a pagina oficial de download do Npcap no seu navegador...
+    start "" "https://npcap.com/#download"
+    echo.
+    echo Baixe e instale o Npcap ^(deixe as opcoes padrao marcadas^), depois volte
+    echo aqui e aperte uma tecla para continuar.
+    pause
+    echo.
+)
+
 if not exist "%EXE_NAME%" (
     echo Baixando o Radar pela primeira vez, aguarde...
     powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Invoke-WebRequest -Uri '%DOWNLOAD_URL%' -OutFile '%EXE_NAME%' -UseBasicParsing } catch { Write-Host $_.Exception.Message; exit 1 }"
