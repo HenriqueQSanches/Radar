@@ -79,6 +79,18 @@ O conteúdo da janelinha flutuante do PiP agora é recortado em círculo com um 
 ### Página "Sobre"
 Adicionei uma aba explicando que este é um fork (não o projeto original) e listando todas as mudanças feitas aqui, pra quem chega no projeto direto por essa versão.
 
+### Flip de mercado local (captura de ordem de compra/venda, sem enviar nada pra nuvem)
+Aba nova ("Flip") que reaproveita a mesma captura de pacote que já existia pra mob/recurso, só que pra pacote de mercado. Quando você abre a tela de mercado numa cidade, o jogo pede pro servidor a lista de ordem de compra/venda daquele item — isso é capturado, decodificado e guardado só localmente (arquivo `market_flip.json`, nunca sobe pra nenhuma API, nem pro Albion Online Data Project). A tela calcula sozinha o melhor "compra aqui, vende ali" entre as cidades já visitadas. Ordem capturada há mais de 4h é descartada automaticamente — pode já ter sido vendida ou cancelada, então o preço não é mais confiável.
+
+### Tradução quebrada em Baús, Inimigos, Jogadores, Recursos e Lista de Ignorados
+Quando o alternador de idioma foi adicionado, só cobriu Radar/Mercado/Configurações/Sobre — essas outras 5 páginas continuavam com texto fixo em inglês mesmo trocando pra português. Adicionei o mesmo mecanismo (atributo `data-i18n` + chave no dicionário) nelas também.
+
+### Instalador não avisava quando faltava o Npcap
+O `IniciarRadar.bat` baixava e abria o Radar, mas se o Npcap (driver do qual toda a captura de pacote depende) não estivesse instalado, o app só fechava sozinho com um erro técnico sem explicação nenhuma. Agora o instalador detecta isso antes e abre a página oficial de download do Npcap pro usuário instalar. (Não dá pra instalar o Npcap automaticamente pelo próprio instalador: a licença gratuita dele não permite redistribuição por software de terceiro além de 5 sistemas.)
+
+### Instalador nunca percebia versão nova do Radar
+Depois da primeira vez, rodar o `IniciarRadar.bat` de novo sempre abria a mesma versão baixada antes, mesmo que já tivesse saído um release novo no GitHub — ele só baixava se o `.exe` não existisse. Agora ele compara a versão local com a última tag do repositório e, se forem diferentes, pergunta se você quer atualizar.
+
 ## Como rodar
 
 Precisa de [Go](https://go.dev/) e [Node.js](https://nodejs.org/) instalados, e do [Npcap](https://npcap.com/) pra capturar o tráfego.
