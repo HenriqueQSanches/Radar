@@ -12,6 +12,13 @@ import (
 
 const storeFilename = "market_flip.json"
 
+// StaleAfter is how long a captured listing is trusted before it's dropped.
+// A listing can be sold or cancelled long before the Expires date it was
+// created with, so — per the Albion Online Data Project's own guidance for
+// market order freshness — staleness is judged by how long ago we captured
+// it, not by its stated expiration.
+const StaleAfter = 4 * time.Hour
+
 // Order is one captured buy/sell listing, tagged with the resolved city and
 // when it was captured.
 type Order struct {
@@ -76,16 +83,33 @@ func (s *Store) load() error {
 	if ff.Orders != nil {
 		s.orders = ff.Orders
 	}
+	s.purgeStaleLocked(time.Now())
 	return nil
 }
 
+// purgeStaleLocked drops every order captured more than StaleAfter ago.
+// Caller must hold s.mu. Returns true if anything was removed.
+func (s *Store) purgeStaleLocked(now time.Time) bool {
+	removed := false
+	for k, o := range s.orders {
+		if now.Sub(o.CapturedAt) > StaleAfter {
+			delete(s.orders, k)
+			removed = true
+		}
+	}
+	return removed
+}
+
 // PutAll upserts a batch of captured orders (one market-screen response
-// usually carries many) with a single disk write.
+// usually carries many) with a single disk write. Stale orders (see
+// StaleAfter) are dropped first, so a long play session doesn't keep
+// re-persisting hours-old prices that are probably no longer accurate.
 func (s *Store) PutAll(orders []Order) error {
 	if len(orders) == 0 {
 		return nil
 	}
 	s.mu.Lock()
+	s.purgeStaleLocked(time.Now())
 	for _, o := range orders {
 		s.orders[o.key()] = o
 	}
@@ -102,11 +126,20 @@ func (s *Store) snapshotLocked() []Order {
 	return out
 }
 
-// All returns every captured order, newest capture first.
+// All returns every captured order still fresh (see StaleAfter), newest
+// capture first. Also persists the drop if any order aged out since the
+// last write, so opening the app after a long break clears itself out
+// without needing a new capture first.
 func (s *Store) All() []Order {
 	s.mu.Lock()
+	changed := s.purgeStaleLocked(time.Now())
 	out := s.snapshotLocked()
 	s.mu.Unlock()
+
+	if changed {
+		_ = s.write(out) // best-effort: a failed persist just means the stale entries reappear from disk on next restart
+	}
+
 	sort.Slice(out, func(i, j int) bool { return out[i].CapturedAt.After(out[j].CapturedAt) })
 	return out
 }
