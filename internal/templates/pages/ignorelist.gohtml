@@ -3,8 +3,8 @@
     <!-- Page Header -->
     <div class="card bg-base-200">
         <div class="card-body">
-            <h1 class="text-3xl font-bold text-base-content">Ignore List</h1>
-            <p class="text-base-content/60 mt-2">Manage players that won't trigger alerts or be shown on radar.</p>
+            <h1 data-i18n="ignorelist.title" class="text-3xl font-bold text-base-content">Ignore List</h1>
+            <p data-i18n="ignorelist.subtitle" class="text-base-content/60 mt-2">Manage players that won't trigger alerts or be shown on radar.</p>
         </div>
     </div>
 
@@ -12,8 +12,8 @@
     <div role="alert" class="alert bg-warning/20 border border-warning/40">
         <i data-lucide="alert-triangle" class="w-5 h-5 text-warning"></i>
         <div>
-            <h3 class="font-bold text-warning">Known limitation</h3>
-            <p class="text-sm">Ignored players may still trigger enemy proximity alerts. This will be fixed in a future
+            <h3 data-i18n="ignorelist.limitation.title" class="font-bold text-warning">Known limitation</h3>
+            <p data-i18n="ignorelist.limitation.text" class="text-sm">Ignored players may still trigger enemy proximity alerts. This will be fixed in a future
                 update.</p>
         </div>
     </div>
@@ -21,15 +21,16 @@
     <!-- Add Player -->
     <div class="card bg-base-200">
         <div class="card-body">
-            <h2 class="text-xl font-semibold text-base-content mb-4">Add Player</h2>
+            <h2 data-i18n="ignorelist.add.title" class="text-xl font-semibold text-base-content mb-4">Add Player</h2>
             <div class="flex gap-3">
                 <input type="text"
                        id="ignorePlayerInput"
                        placeholder="Enter player name..."
+                       data-i18n-placeholder="ignorelist.add.placeholder"
                        class="input input-bordered flex-1">
-                <button id="addIgnoreBtn" class="btn btn-primary">Add</button>
+                <button id="addIgnoreBtn" data-i18n="ignorelist.add.button" class="btn btn-primary">Add</button>
             </div>
-            <p class="text-xs text-base-content/50 mt-2">Players on this list will not trigger sound alerts or screen flashes.</p>
+            <p data-i18n="ignorelist.add.description" class="text-xs text-base-content/50 mt-2">Players on this list will not trigger sound alerts or screen flashes.</p>
         </div>
     </div>
 
@@ -37,13 +38,13 @@
     <div class="card bg-base-200">
         <div class="card-body">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-semibold text-base-content">Ignored Players</h2>
+                <h2 data-i18n="ignorelist.list.title" class="text-xl font-semibold text-base-content">Ignored Players</h2>
                 <span id="ignoreCount" class="badge badge-ghost font-mono">0</span>
             </div>
 
             <div id="ignoreListContainer" class="space-y-2">
                 <!-- Players will be rendered here -->
-                <p id="emptyIgnoreList" class="text-base-content/50 text-center py-8 italic">
+                <p id="emptyIgnoreList" data-i18n="ignorelist.empty" class="text-base-content/50 text-center py-8 italic">
                     No players on ignore list
                 </p>
             </div>
@@ -111,7 +112,7 @@
                     div.innerHTML = `
                     <span class="text-base-content font-medium">${escapeHtml(name)}</span>
                     <button class="remove-btn btn btn-ghost btn-xs text-error opacity-0 group-hover:opacity-100 transition-opacity">
-                        Remove
+                        ${escapeHtml(window.i18n.t('ignorelist.remove'))}
                     </button>
                 `;
                     div.querySelector('.remove-btn').addEventListener('click', () => {
