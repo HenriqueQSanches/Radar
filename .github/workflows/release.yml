@@ -164,11 +164,13 @@ jobs:
           path: dist
 
       - name: Copy Windows launcher into dist
-        run: cp tools/release/IniciarRadar.bat dist/IniciarRadar.bat
+        run: |
+          cp tools/release/IniciarRadar.bat dist/IniciarRadar.bat
+          cp tools/release/CheckUpdate.ps1 dist/CheckUpdate.ps1
 
       - name: Regenerate checksums (Windows .exe changed)
         working-directory: dist
-        run: sha256sum OpenRadar-linux-amd64 OpenRadar-windows-amd64.exe README-linux.txt README-windows.txt IniciarRadar.bat > checksums-sha256.txt
+        run: sha256sum OpenRadar-linux-amd64 OpenRadar-windows-amd64.exe README-linux.txt README-windows.txt IniciarRadar.bat CheckUpdate.ps1 > checksums-sha256.txt
 
       - name: Generate release notes
         uses: orhun/git-cliff-action@v4
@@ -189,6 +191,7 @@ jobs:
             dist/OpenRadar-linux-amd64 \
             dist/OpenRadar-windows-amd64.exe \
             dist/IniciarRadar.bat \
+            dist/CheckUpdate.ps1 \
             dist/README-linux.txt \
             dist/README-windows.txt \
             dist/checksums-sha256.txt

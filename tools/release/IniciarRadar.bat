@@ -21,6 +21,10 @@ if not exist "%SystemRoot%\System32\Npcap\wpcap.dll" (
     echo.
 )
 
+if exist "%EXE_NAME%" (
+    powershell -NoProfile -ExecutionPolicy Bypass -File "CheckUpdate.ps1"
+)
+
 if not exist "%EXE_NAME%" (
     echo Baixando o Radar pela primeira vez, aguarde...
     powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Invoke-WebRequest -Uri '%DOWNLOAD_URL%' -OutFile '%EXE_NAME%' -UseBasicParsing } catch { Write-Host $_.Exception.Message; exit 1 }"
