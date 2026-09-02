@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"os"
 	"runtime"
@@ -17,6 +18,7 @@ import (
 	assets "github.com/nospy/albion-openradar"
 	"github.com/nospy/albion-openradar/internal/capture"
 	"github.com/nospy/albion-openradar/internal/logger"
+	"github.com/nospy/albion-openradar/internal/marketflip"
 	"github.com/nospy/albion-openradar/internal/photon"
 	"github.com/nospy/albion-openradar/internal/server"
 	"github.com/nospy/albion-openradar/internal/ui"
@@ -45,6 +47,7 @@ type App struct {
 	captureManager *capture.Manager
 	photonParser   *photon.PhotonParser
 	program        *tea.Program
+	marketFlip     *marketflip.Capture
 
 	// Packet statistics (atomic for thread safety)
 	packetsProcessed uint64
@@ -207,7 +210,19 @@ func newApp(
 	log := logger.New("./logs", serverLogsEnabled)
 	wsHandler := server.NewWebSocketHandler(log)
 
-	httpServer, err := createHTTPServer(cfg.devMode, appDir, wsHandler, log, Version, manager, allIfaces)
+	flipStore, err := marketflip.NewStore(appDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open market flip store: %w", err)
+	}
+	zones, err := marketflip.LoadZoneIndex(openDataFS(cfg.devMode, appDir))
+	if err != nil {
+		// Non-fatal: captured orders just won't be tagged with a city name
+		// until this is fixed (missing/unreadable web/ao-bin-dumps/zones.json).
+		logger.PrintWarn("MARKET", "market flip zone lookup unavailable: %v", err)
+	}
+	marketFlip := marketflip.NewCapture(zones, flipStore)
+
+	httpServer, err := createHTTPServer(cfg.devMode, appDir, wsHandler, log, Version, manager, allIfaces, flipStore)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP server: %w", err)
 	}
@@ -219,6 +234,7 @@ func newApp(
 		wsHandler:      wsHandler,
 		httpServer:     httpServer,
 		captureManager: manager,
+		marketFlip:     marketFlip,
 	}
 	app.photonParser = photon.NewPhotonParser(
 		app.onPhotonEvent,
@@ -233,6 +249,22 @@ func newApp(
 	return app, nil
 }
 
+// openDataFS returns the same web/ao-bin-dumps filesystem the HTTP server
+// serves game-data assets from (embedded in production, disk in dev mode),
+// rooted the same way in both cases so callers can read e.g. "zones.json"
+// directly regardless of build mode.
+func openDataFS(devMode bool, appDir string) fs.FS {
+	if devMode {
+		return os.DirFS(appDir + "/web/ao-bin-dumps")
+	}
+	dataFS, err := fs.Sub(assets.Data, "web/ao-bin-dumps")
+	if err != nil {
+		logger.PrintWarn("MARKET", "failed to load embedded game data: %v", err)
+		return os.DirFS(appDir + "/web/ao-bin-dumps")
+	}
+	return dataFS
+}
+
 func createHTTPServer(
 	devMode bool,
 	appDir string,
@@ -241,10 +273,11 @@ func createHTTPServer(
 	version string,
 	mgr *capture.Manager,
 	allIfaces []capture.NetworkInterface,
+	flipStore *marketflip.Store,
 ) (*server.HTTPServer, error) {
 	if devMode {
 		logger.PrintInfo("MODE", "Development mode: reading files from disk")
-		return server.NewHTTPServerDev(serverPort, appDir, wsHandler, log, version, mgr, allIfaces, mgr, pcapCaptureDir)
+		return server.NewHTTPServerDev(serverPort, appDir, wsHandler, log, version, mgr, allIfaces, mgr, pcapCaptureDir, flipStore)
 	}
 	logger.PrintInfo("MODE", "Production mode: using embedded assets")
 	return server.NewHTTPServer(
@@ -263,6 +296,7 @@ func createHTTPServer(
 		appDir,
 		mgr,
 		pcapCaptureDir,
+		flipStore,
 	)
 }
 
@@ -370,6 +404,11 @@ func (app *App) onPhotonRequest(req *photon.OperationRequest) {
 
 func (app *App) onPhotonResponse(resp *photon.OperationResponse) {
 	photon.PostProcessResponse(resp)
+	if app.marketFlip != nil {
+		if err := app.marketFlip.HandleResponse(resp); err != nil {
+			app.logger.Warn("MARKET", "MarketFlipStoreFailed", map[string]interface{}{"error": err.Error()}, nil)
+		}
+	}
 	app.wsHandler.BroadcastResponse(resp)
 }
 
