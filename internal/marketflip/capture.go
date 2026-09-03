@@ -3,6 +3,7 @@ package marketflip
 import (
 	"time"
 
+	"github.com/nospy/albion-openradar/internal/logger"
 	"github.com/nospy/albion-openradar/internal/photon"
 	"github.com/nospy/albion-openradar/internal/photon/operationcodes"
 )
@@ -32,10 +33,18 @@ func (c *Capture) HandleResponse(resp *photon.OperationResponse) error {
 		return nil
 	}
 
+	// This whole feature was only verified against protocol documentation before
+	// release, never against a live capture (see flip.gohtml's "in development"
+	// notice) — this stays until that's confirmed, since it's the one thing that
+	// tells us whether the game is even sending the response we expect, versus
+	// a wrong opcode assumption or an unexpected Parameters[0] shape.
+	logger.PrintInfo("MARKET", "auction response op=%d returnCode=%d paramCount=%d", resp.OperationCode, resp.ReturnCode, len(resp.Parameters))
+
 	// Protocol18Deserializer already lifts the game's hijacked debug-message
 	// slot into Parameters[0] as []string — see internal/photon/deserializer.go.
 	raw, ok := resp.Parameters[0].([]string)
 	if !ok || len(raw) == 0 {
+		logger.PrintWarn("MARKET", "auction response op=%d had no usable order list in Parameters[0] (type %T)", resp.OperationCode, resp.Parameters[0])
 		return nil
 	}
 
@@ -57,7 +66,9 @@ func (c *Capture) HandleResponse(resp *photon.OperationResponse) error {
 		})
 	}
 	if len(orders) == 0 {
+		logger.PrintWarn("MARKET", "auction response op=%d had %d raw entries but none parsed into an Order", resp.OperationCode, len(raw))
 		return nil
 	}
+	logger.PrintInfo("MARKET", "captured %d orders (op=%d, city=%q)", len(orders), resp.OperationCode, orders[0].City)
 	return c.store.PutAll(orders)
 }
