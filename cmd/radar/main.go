@@ -212,7 +212,11 @@ func newApp(
 
 	flipStore, err := marketflip.NewStore(appDir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open market flip store: %w", err)
+		// Non-fatal, same reasoning as the zone index below: a corrupted local
+		// market_flip.json shouldn't stop the whole radar (capture, mobs,
+		// resources, players — none of which depend on Flip) from starting.
+		// The store above is already a valid empty one; it just starts fresh.
+		logger.PrintWarn("MARKET", "market flip store unavailable, starting empty: %v", err)
 	}
 	zones, err := marketflip.LoadZoneIndex(openDataFS(cfg.devMode, appDir))
 	if err != nil {

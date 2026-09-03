@@ -43,6 +43,7 @@ func (c *Capture) HandleResponse(resp *photon.OperationResponse) error {
 	orders := make([]Order, 0, len(raw))
 	for _, ro := range ParseOrders(raw) {
 		orders = append(orders, Order{
+			AuctionID:        ro.ID,
 			ItemID:           ro.ItemID,
 			QualityLevel:     ro.QualityLevel,
 			EnchantmentLevel: ro.EnchantmentLevel,
