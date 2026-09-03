@@ -35,6 +35,7 @@ func DefaultNavItems() []NavItem {
 		{Path: "/enemies", Label: "Enemies", Key: "enemies", Icon: "skull"},
 		{Path: "/chests", Label: "Chests", Key: "chests", Icon: "archive"},
 		{Path: "/market", Label: "Market", Key: "market", Icon: "coins"},
+		{Path: "/flip", Label: "Flip", Key: "flip", Icon: "trending-up"},
 		{Path: "/ignorelist", Label: "Ignore List", Key: "ignorelist", Icon: "user-x"},
 		{Path: "/settings", Label: "Settings", Key: "settings", Icon: "settings"},
 		{Path: "/about", Label: "About", Key: "about", Icon: "info"},

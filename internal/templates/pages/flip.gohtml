@@ -1,0 +1,358 @@
+{{define "pages/flip"}}
+<div class="space-y-6 stagger">
+    <!-- Page Header -->
+    <div class="card bg-base-200">
+        <div class="card-body">
+            <div>
+                <h1 data-i18n="flip.title" class="text-3xl font-bold text-base-content">Flip</h1>
+                <p data-i18n="flip.subtitle" class="text-base-content/60 mt-2">
+                    Walk into each city's market screen and this tab builds a private, local price book from what
+                    you actually saw — never uploaded anywhere.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters: apply to both the Opportunities and Captured listings tables below -->
+    <div id="flipFiltersSection" class="card bg-base-200">
+        <div class="card-body py-4">
+            <div class="flex flex-wrap items-center gap-3">
+                <label class="flex items-center gap-1.5 text-xs text-base-content/60">
+                    <span data-i18n="flip.filter.categoryLabel">Category:</span>
+                    <select id="flipCategoryFilter" class="select select-bordered select-xs">
+                        <option value="" data-i18n="flip.filter.all">All</option>
+                        <option value="resources" data-i18n="flip.filter.category.resources">Resources</option>
+                        <option value="refined" data-i18n="flip.filter.category.refined">Refined Resources</option>
+                    </select>
+                </label>
+                <label class="flex items-center gap-1.5 text-xs text-base-content/60">
+                    <span data-i18n="flip.filter.resourceLabel">Resource:</span>
+                    <select id="flipResourceFilter" class="select select-bordered select-xs">
+                        <option value="" data-i18n="flip.filter.all">All</option>
+                        <option value="Madeira" data-i18n="market.resource.wood">Wood</option>
+                        <option value="Pedra" data-i18n="market.resource.stone">Stone</option>
+                        <option value="Fibra" data-i18n="market.resource.fiber">Fiber</option>
+                        <option value="Couro" data-i18n="market.resource.hide">Hide</option>
+                        <option value="Minério" data-i18n="market.resource.ore">Ore</option>
+                    </select>
+                </label>
+            </div>
+            <p data-i18n="flip.filter.description" class="text-xs text-base-content/50 mt-2">
+                Only raw and refined resources are categorized for now — everything else (equipment, consumables,
+                etc) still shows up, just outside these filters.
+            </p>
+        </div>
+    </div>
+
+    <!-- Opportunities Section -->
+    <div id="flipOpportunitiesSection" class="card bg-base-200">
+        <div class="card-body">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <h3 data-i18n="flip.opportunities.title" class="text-xl font-semibold text-base-content">Opportunities</h3>
+                <div class="flex gap-2">
+                    <button id="flipRefreshBtn" data-i18n="flip.refreshBtn" class="btn btn-primary btn-sm">Refresh</button>
+                    <button id="flipClearBtn" data-i18n="flip.clearBtn" class="btn btn-outline btn-error btn-sm">Clear captured data</button>
+                </div>
+            </div>
+            <p data-i18n="flip.opportunities.description" class="text-xs text-base-content/50 mt-1">
+                Best observed buy-here-sell-there spread per item, across the cities captured so far. Market sales
+                tax isn't factored into the spread shown.
+            </p>
+            <div id="flipOpportunitiesStatus" class="text-sm text-base-content/60 mt-3"></div>
+            <div id="flipOpportunitiesResults" class="mt-3 overflow-x-auto hidden">
+                <table class="table table-zebra table-sm">
+                    <thead>
+                        <tr>
+                            <th data-i18n="flip.table.item">Item</th>
+                            <th data-i18n="flip.table.buyCity">Buy at</th>
+                            <th data-i18n="flip.table.buyPrice">Buy price</th>
+                            <th data-i18n="flip.table.sellCity">Sell at</th>
+                            <th data-i18n="flip.table.sellPrice">Sell price</th>
+                            <th data-i18n="flip.table.spread">Spread</th>
+                        </tr>
+                    </thead>
+                    <tbody id="flipOpportunitiesTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Captured Orders Section -->
+    <div id="flipOrdersSection" class="card bg-base-200">
+        <div class="card-body">
+            <h3 data-i18n="flip.orders.title" class="text-xl font-semibold text-base-content">Captured listings</h3>
+            <p data-i18n="flip.orders.description" class="text-xs text-base-content/50 mt-1">
+                Every buy/sell listing seen so far, most recent capture first.
+            </p>
+            <div id="flipOrdersStatus" class="text-sm text-base-content/60 mt-3"></div>
+            <div id="flipOrdersResults" class="mt-3 overflow-x-auto hidden">
+                <table class="table table-zebra table-sm">
+                    <thead>
+                        <tr>
+                            <th data-i18n="flip.table.item">Item</th>
+                            <th data-i18n="flip.table.city">City</th>
+                            <th data-i18n="flip.table.type">Type</th>
+                            <th data-i18n="flip.table.price">Price</th>
+                            <th data-i18n="flip.table.amount">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody id="flipOrdersTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Debug: live confirmation that captures are landing, without waiting for a refresh -->
+    <div id="flipDebugSection" class="card bg-base-200">
+        <div class="card-body">
+            <h3 data-i18n="flip.debug.title" class="text-xl font-semibold text-base-content">Debug</h3>
+            <p data-i18n="flip.debug.description" class="text-xs text-base-content/50 mt-1">
+                Shows each new listing the moment it's captured, before any refresh — use this to confirm
+                capture is actually working while you're standing in a market.
+            </p>
+            <pre id="flipDebugLog" class="mt-3 bg-black text-success font-mono text-xs p-3 rounded-lg h-40 overflow-y-auto whitespace-pre-wrap">Waiting for captures...</pre>
+        </div>
+    </div>
+
+    <!-- Roadmap notice -->
+    <div class="card bg-base-200/50 border border-dashed border-base-content/10">
+        <div class="card-body py-4">
+            <div class="flex items-center gap-2">
+                <span data-i18n="flip.dev.badge" class="badge badge-warning badge-sm">In development</span>
+                <p data-i18n="flip.dev.text" class="text-xs text-base-content/50">
+                    Opcode coverage was verified against the open-source albiondata-client's protocol
+                    documentation, not yet against a live capture — prices may not populate until that's confirmed
+                    in-game.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{define "scripts/flip"}}
+<!-- Flip page: register with PageController for proper lifecycle management -->
+<script>
+    (async function () {
+        const {registerPage, reinitCurrentPage} = await import('/scripts/core/PageController.js');
+
+        const listeners = [];
+        function addListener(el, event, handler) {
+            if (el) {
+                el.addEventListener(event, handler);
+                listeners.push(() => el.removeEventListener(event, handler));
+            }
+        }
+
+        function renderOpportunitiesTable(tableBody, opportunities) {
+            tableBody.innerHTML = '';
+            opportunities.forEach((op, index) => {
+                const row = document.createElement('tr');
+                if (index === 0) row.classList.add('bg-warning/20', 'font-semibold');
+                const cells = [
+                    op.itemId,
+                    op.buyCity,
+                    op.buyPrice,
+                    op.sellCity,
+                    op.sellPrice,
+                    op.spread,
+                ];
+                cells.forEach(value => {
+                    const td = document.createElement('td');
+                    td.textContent = value;
+                    row.appendChild(td);
+                });
+                tableBody.appendChild(row);
+            });
+        }
+
+        function renderOrdersTable(tableBody, orders) {
+            tableBody.innerHTML = '';
+            orders.forEach(order => {
+                const row = document.createElement('tr');
+                const cells = [
+                    order.itemId,
+                    order.city || '—',
+                    order.auctionType === 'offer'
+                        ? window.i18n.t('flip.type.offer')
+                        : window.i18n.t('flip.type.request'),
+                    order.unitPriceSilver,
+                    order.amount,
+                ];
+                cells.forEach(value => {
+                    const td = document.createElement('td');
+                    td.textContent = value;
+                    row.appendChild(td);
+                });
+                tableBody.appendChild(row);
+            });
+        }
+
+        function initFlipPage() {
+            const refreshBtn = document.getElementById('flipRefreshBtn');
+            const clearBtn = document.getElementById('flipClearBtn');
+            const opportunitiesStatus = document.getElementById('flipOpportunitiesStatus');
+            const opportunitiesResults = document.getElementById('flipOpportunitiesResults');
+            const opportunitiesTableBody = document.getElementById('flipOpportunitiesTableBody');
+            const ordersStatus = document.getElementById('flipOrdersStatus');
+            const ordersResults = document.getElementById('flipOrdersResults');
+            const ordersTableBody = document.getElementById('flipOrdersTableBody');
+            const categoryFilter = document.getElementById('flipCategoryFilter');
+            const resourceFilter = document.getElementById('flipResourceFilter');
+            const debugLog = document.getElementById('flipDebugLog');
+
+            let lastOpportunities = [];
+            let lastOrders = [];
+
+            function matchesFilter(entry) {
+                const category = categoryFilter.value;
+                const resource = resourceFilter.value;
+                if (category && entry.category !== category) return false;
+                if (resource && entry.subcategory !== resource) return false;
+                return true;
+            }
+
+            function applyFlipFilters() {
+                const filteredOpportunities = lastOpportunities.filter(matchesFilter);
+                if (lastOpportunities.length > 0 && filteredOpportunities.length === 0) {
+                    opportunitiesResults.classList.add('hidden');
+                    opportunitiesStatus.classList.remove('hidden');
+                    opportunitiesStatus.textContent = window.i18n.t('flip.status.noResultsForFilter');
+                } else if (filteredOpportunities.length > 0) {
+                    renderOpportunitiesTable(opportunitiesTableBody, filteredOpportunities);
+                    opportunitiesStatus.classList.add('hidden');
+                    opportunitiesResults.classList.remove('hidden');
+                }
+
+                const filteredOrders = lastOrders.filter(matchesFilter);
+                if (lastOrders.length > 0 && filteredOrders.length === 0) {
+                    ordersResults.classList.add('hidden');
+                    ordersStatus.classList.remove('hidden');
+                    ordersStatus.textContent = window.i18n.t('flip.status.noResultsForFilter');
+                } else if (filteredOrders.length > 0) {
+                    renderOrdersTable(ordersTableBody, filteredOrders);
+                    ordersStatus.classList.add('hidden');
+                    ordersResults.classList.remove('hidden');
+                }
+            }
+
+            // Debug panel: polls independently of the Refresh button so a capture shows
+            // up here within a couple seconds, without needing to click anything — the
+            // whole point is confirming capture is alive while standing in a market.
+            const seenAuctionIds = new Set();
+            let debugStarted = false;
+            if (debugLog) debugLog.textContent = window.i18n.t('flip.debug.waiting');
+
+            function appendDebugLine(text) {
+                if (!debugLog) return;
+                const time = new Date().toLocaleTimeString();
+                const line = `[${time}] ${text}`;
+                debugLog.textContent = debugStarted ? `${debugLog.textContent}\n${line}` : line;
+                debugStarted = true;
+                debugLog.scrollTop = debugLog.scrollHeight;
+            }
+
+            async function pollDebugCaptures() {
+                try {
+                    const response = await fetch('/api/flip/orders');
+                    if (!response.ok) return;
+                    const orders = await response.json();
+                    for (const o of orders) {
+                        if (seenAuctionIds.has(o.auctionId)) continue;
+                        seenAuctionIds.add(o.auctionId);
+                        appendDebugLine(
+                            `${seenAuctionIds.size} ${window.i18n.t('flip.debug.collected')} — id ${o.auctionId} ` +
+                            `(${o.itemId}, ${o.city || '—'}, ${o.auctionType})`
+                        );
+                    }
+                } catch {
+                    // best-effort debug panel only — the main tables already surface fetch errors
+                }
+            }
+
+            pollDebugCaptures();
+            const debugPollTimer = setInterval(pollDebugCaptures, 2000);
+            listeners.push(() => clearInterval(debugPollTimer));
+
+            async function loadFlipData() {
+                if (refreshBtn) refreshBtn.disabled = true;
+                opportunitiesStatus.textContent = window.i18n.t('flip.status.loading');
+                ordersStatus.textContent = window.i18n.t('flip.status.loading');
+                try {
+                    const [opportunitiesResponse, ordersResponse] = await Promise.all([
+                        fetch('/api/flip/opportunities'),
+                        fetch('/api/flip/orders'),
+                    ]);
+                    if (!opportunitiesResponse.ok) throw new Error(`status ${opportunitiesResponse.status}`);
+                    if (!ordersResponse.ok) throw new Error(`status ${ordersResponse.status}`);
+
+                    lastOpportunities = (await opportunitiesResponse.json()) || [];
+                    lastOrders = (await ordersResponse.json()) || [];
+
+                    if (lastOpportunities.length === 0) {
+                        opportunitiesResults.classList.add('hidden');
+                        opportunitiesStatus.classList.remove('hidden');
+                        opportunitiesStatus.textContent = window.i18n.t('flip.status.noOpportunities');
+                    }
+
+                    if (lastOrders.length === 0) {
+                        ordersResults.classList.add('hidden');
+                        ordersStatus.classList.remove('hidden');
+                        ordersStatus.textContent = window.i18n.t('flip.status.noOrders');
+                    }
+
+                    applyFlipFilters();
+                } catch (error) {
+                    opportunitiesStatus.classList.remove('hidden');
+                    opportunitiesStatus.textContent = window.i18n.t('flip.status.fetchError');
+                    ordersStatus.classList.remove('hidden');
+                    ordersStatus.textContent = window.i18n.t('flip.status.fetchError');
+                    window.logger?.error('SYSTEM', 'FlipDataFetchFailed', {
+                        error: error?.message || String(error),
+                    });
+                } finally {
+                    if (refreshBtn) refreshBtn.disabled = false;
+                }
+            }
+
+            async function clearFlipData() {
+                if (!clearBtn) return;
+                clearBtn.disabled = true;
+                try {
+                    const response = await fetch('/api/flip/orders', {method: 'DELETE'});
+                    if (!response.ok) throw new Error(`status ${response.status}`);
+                    await loadFlipData();
+                } catch (error) {
+                    window.logger?.error('SYSTEM', 'FlipDataClearFailed', {
+                        error: error?.message || String(error),
+                    });
+                } finally {
+                    clearBtn.disabled = false;
+                }
+            }
+
+            addListener(refreshBtn, 'click', loadFlipData);
+            addListener(clearBtn, 'click', clearFlipData);
+            addListener(categoryFilter, 'change', applyFlipFilters);
+            addListener(resourceFilter, 'change', applyFlipFilters);
+
+            loadFlipData();
+        }
+
+        function destroyFlipPage() {
+            listeners.forEach(fn => fn());
+            listeners.length = 0;
+        }
+
+        if (!window._flipPageRegistered) {
+            registerPage('flip', {
+                init: initFlipPage,
+                destroy: destroyFlipPage
+            });
+            window._flipPageRegistered = true;
+        }
+
+        window.onGlobalsReady(() => reinitCurrentPage());
+    })();
+</script>
+{{end}}

@@ -2,7 +2,7 @@
 
 Radar em tempo real pro Albion Online: mostra recursos, mobs e players ao seu redor direto no navegador, lendo o tráfego de rede (sem mexer no cliente do jogo, sem injeção).
 
-> **Não sou o autor original.** Isso aqui é um fork do [OpenRadar](https://github.com/Nouuu/Albion-Online-OpenRadar) (do Nouuu, licença MIT). Eu cloniei o projeto, corrigi uns bugs que estavam me atrapalhando e adicionei algumas coisas que faltavam pra mim. O crédito da base toda é do projeto original — a licença dele está mantida em [`LICENSE`](LICENSE).
+> **Não sou o autor original.** Isso aqui é um fork do [OpenRadar](https://github.com/Nouuu/Albion-Online-OpenRadar) (do Nouuu, licença MIT). Eu cloniei o projeto, corrigi uns bugs que estavam me atrapalhando e adicionei algumas coisas que faltavam pra mim. O crédito da base toda é do projeto original — a licença dele está mantida em [`LICENSE`](LICENSE), que também lista meu copyright sobre as mudanças feitas aqui neste fork. Se você forkar este repositório, mantenha os dois avisos de copyright do `LICENSE` (é tudo MIT, então dá pra usar/modificar livremente, só não apaga o crédito).
 
 ## O que eu corrigi / adicionei
 
@@ -78,6 +78,18 @@ O conteúdo da janelinha flutuante do PiP agora é recortado em círculo com um 
 
 ### Página "Sobre"
 Adicionei uma aba explicando que este é um fork (não o projeto original) e listando todas as mudanças feitas aqui, pra quem chega no projeto direto por essa versão.
+
+### Flip de mercado local (captura de ordem de compra/venda, sem enviar nada pra nuvem)
+Aba nova ("Flip") que reaproveita a mesma captura de pacote que já existia pra mob/recurso, só que pra pacote de mercado. Quando você abre a tela de mercado numa cidade, o jogo pede pro servidor a lista de ordem de compra/venda daquele item — isso é capturado, decodificado e guardado só localmente (arquivo `market_flip.json`, nunca sobe pra nenhuma API, nem pro Albion Online Data Project). A tela calcula sozinha o melhor "compra aqui, vende ali" entre as cidades já visitadas. Ordem capturada há mais de 4h é descartada automaticamente — pode já ter sido vendida ou cancelada, então o preço não é mais confiável.
+
+### Tradução quebrada em Baús, Inimigos, Jogadores, Recursos e Lista de Ignorados
+Quando o alternador de idioma foi adicionado, só cobriu Radar/Mercado/Configurações/Sobre — essas outras 5 páginas continuavam com texto fixo em inglês mesmo trocando pra português. Adicionei o mesmo mecanismo (atributo `data-i18n` + chave no dicionário) nelas também.
+
+### Instalador não avisava quando faltava o Npcap
+O `IniciarRadar.bat` baixava e abria o Radar, mas se o Npcap (driver do qual toda a captura de pacote depende) não estivesse instalado, o app só fechava sozinho com um erro técnico sem explicação nenhuma. Agora o instalador detecta isso antes e abre a página oficial de download do Npcap pro usuário instalar. (Não dá pra instalar o Npcap automaticamente pelo próprio instalador: a licença gratuita dele não permite redistribuição por software de terceiro além de 5 sistemas.)
+
+### Instalador nunca percebia versão nova do Radar
+Depois da primeira vez, rodar o `IniciarRadar.bat` de novo sempre abria a mesma versão baixada antes, mesmo que já tivesse saído um release novo no GitHub — ele só baixava se o `.exe` não existisse. Agora ele compara a versão local com a última tag do repositório e, se forem diferentes, pergunta se você quer atualizar.
 
 ## Como rodar
 
