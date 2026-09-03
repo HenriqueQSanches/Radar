@@ -103,6 +103,10 @@ const translations = {
         "flip.status.fetchError": "Error loading captured data. Try again shortly.",
         "flip.dev.badge": "In development",
         "flip.dev.text": "Opcode coverage was verified against the open-source albiondata-client's protocol documentation, not yet against a live capture — prices may not populate until that's confirmed in-game.",
+        "flip.debug.title": "Debug",
+        "flip.debug.description": "Shows each new listing the moment it's captured, before any refresh — use this to confirm capture is actually working while you're standing in a market.",
+        "flip.debug.collected": "orders collected",
+        "flip.debug.waiting": "Waiting for captures...",
 
         "chests.title": "Chests & Dungeons",
         "chests.subtitle": "Configure chest, mist, and dungeon detection settings.",
@@ -484,6 +488,10 @@ const translations = {
         "flip.status.fetchError": "Erro ao carregar dados coletados. Tente novamente em instantes.",
         "flip.dev.badge": "Em desenvolvimento",
         "flip.dev.text": "A cobertura dos opcodes foi confirmada contra a documentação do protocolo do albiondata-client (open source), ainda não contra uma captura ao vivo — os preços podem não aparecer até isso ser confirmado dentro do jogo.",
+        "flip.debug.title": "Depuração",
+        "flip.debug.description": "Mostra cada pedido novo no instante em que é capturado, antes de qualquer atualização — use isso pra confirmar que a captura está funcionando enquanto você está no mercado.",
+        "flip.debug.collected": "pedidos coletados",
+        "flip.debug.waiting": "Aguardando capturas...",
 
         "chests.title": "Baús & Masmorras",
         "chests.subtitle": "Configure a detecção de baús, névoas e masmorras.",

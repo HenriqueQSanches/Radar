@@ -71,6 +71,18 @@
         </div>
     </div>
 
+    <!-- Debug: live confirmation that captures are landing, without waiting for a refresh -->
+    <div id="flipDebugSection" class="card bg-base-200">
+        <div class="card-body">
+            <h3 data-i18n="flip.debug.title" class="text-xl font-semibold text-base-content">Debug</h3>
+            <p data-i18n="flip.debug.description" class="text-xs text-base-content/50 mt-1">
+                Shows each new listing the moment it's captured, before any refresh — use this to confirm
+                capture is actually working while you're standing in a market.
+            </p>
+            <pre id="flipDebugLog" class="mt-3 bg-black text-success font-mono text-xs p-3 rounded-lg h-40 overflow-y-auto whitespace-pre-wrap">Waiting for captures...</pre>
+        </div>
+    </div>
+
     <!-- Roadmap notice -->
     <div class="card bg-base-200/50 border border-dashed border-base-content/10">
         <div class="card-body py-4">
@@ -154,6 +166,45 @@
             const ordersStatus = document.getElementById('flipOrdersStatus');
             const ordersResults = document.getElementById('flipOrdersResults');
             const ordersTableBody = document.getElementById('flipOrdersTableBody');
+            const debugLog = document.getElementById('flipDebugLog');
+
+            // Debug panel: polls independently of the Refresh button so a capture shows
+            // up here within a couple seconds, without needing to click anything — the
+            // whole point is confirming capture is alive while standing in a market.
+            const seenAuctionIds = new Set();
+            let debugStarted = false;
+            if (debugLog) debugLog.textContent = window.i18n.t('flip.debug.waiting');
+
+            function appendDebugLine(text) {
+                if (!debugLog) return;
+                const time = new Date().toLocaleTimeString();
+                const line = `[${time}] ${text}`;
+                debugLog.textContent = debugStarted ? `${debugLog.textContent}\n${line}` : line;
+                debugStarted = true;
+                debugLog.scrollTop = debugLog.scrollHeight;
+            }
+
+            async function pollDebugCaptures() {
+                try {
+                    const response = await fetch('/api/flip/orders');
+                    if (!response.ok) return;
+                    const orders = await response.json();
+                    for (const o of orders) {
+                        if (seenAuctionIds.has(o.auctionId)) continue;
+                        seenAuctionIds.add(o.auctionId);
+                        appendDebugLine(
+                            `${seenAuctionIds.size} ${window.i18n.t('flip.debug.collected')} — id ${o.auctionId} ` +
+                            `(${o.itemId}, ${o.city || '—'}, ${o.auctionType})`
+                        );
+                    }
+                } catch {
+                    // best-effort debug panel only — the main tables already surface fetch errors
+                }
+            }
+
+            pollDebugCaptures();
+            const debugPollTimer = setInterval(pollDebugCaptures, 2000);
+            listeners.push(() => clearInterval(debugPollTimer));
 
             async function loadFlipData() {
                 if (refreshBtn) refreshBtn.disabled = true;
