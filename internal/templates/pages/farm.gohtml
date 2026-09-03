@@ -1,0 +1,353 @@
+{{define "pages/farm"}}
+<div class="space-y-6 stagger">
+    <!-- Page Header -->
+    <div class="card bg-base-200">
+        <div class="card-body">
+            <div>
+                <h1 data-i18n="farm.title" class="text-3xl font-bold text-base-content">Farm</h1>
+                <p data-i18n="farm.subtitle" class="text-base-content/60 mt-2">
+                    Pick a crop or herb and see the profit per lot and per day using live prices — same formula as
+                    AlbionOracle's farm profit calculator, cross-checked against it.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calculator -->
+    <div id="farmCalculatorSection" class="card bg-base-200">
+        <div class="card-body">
+            <h3 data-i18n="farm.calc.title" class="text-xl font-semibold text-base-content">Profit calculator</h3>
+
+            <div id="farmCalculatorStatus" class="text-sm text-base-content/60 mt-3"></div>
+
+            <div id="farmCalculatorForm" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
+                <label class="form-control">
+                    <span data-i18n="farm.calc.cropLabel" class="label-text text-xs text-base-content/60">Crop / herb</span>
+                    <select id="farmCropSelect" class="select select-bordered select-sm"></select>
+                </label>
+
+                <label class="form-control">
+                    <span data-i18n="farm.calc.lotsLabel" class="label-text text-xs text-base-content/60">Lots</span>
+                    <input id="farmLots" type="number" min="1" value="1" class="input input-bordered input-sm">
+                </label>
+
+                <label class="form-control">
+                    <span data-i18n="farm.calc.yieldLabel" class="label-text text-xs text-base-content/60">Yield per lot</span>
+                    <input id="farmYieldPerLot" type="number" min="0" value="9" class="input input-bordered input-sm">
+                </label>
+                <p data-i18n="farm.calc.yieldHint" class="text-xs text-base-content/40 -mt-2 md:col-start-3">
+                    Comes from the game's own loot table, not a fixed number — adjust to what you actually see.
+                </p>
+
+                <label class="form-control">
+                    <span data-i18n="farm.calc.seedPriceLabel" class="label-text text-xs text-base-content/60">Seed price (per lot)</span>
+                    <input id="farmSeedPrice" type="number" min="0" class="input input-bordered input-sm">
+                </label>
+                <p data-i18n="farm.calc.seedPriceHint" class="text-xs text-base-content/40 -mt-2">
+                    Filled from the cheapest current listing — seed prices swing a lot, so feel free to overwrite it.
+                </p>
+
+                <label class="form-control">
+                    <span data-i18n="farm.calc.harvestPriceLabel" class="label-text text-xs text-base-content/60">Harvest sell price</span>
+                    <input id="farmHarvestPrice" type="number" min="0" class="input input-bordered input-sm">
+                </label>
+
+                <div class="flex flex-col gap-2 justify-center">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input id="farmPremium" type="checkbox" checked class="checkbox checkbox-sm checkbox-primary">
+                        <span data-i18n="farm.calc.premiumLabel" class="text-sm text-base-content/80">Premium account (4% tax instead of 8%)</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input id="farmSelfSustaining" type="checkbox" class="checkbox checkbox-sm checkbox-primary">
+                        <span data-i18n="farm.calc.selfSustainingLabel" class="text-sm text-base-content/80">Self-sustaining seeds (Focus recovers them — zero seed cost)</span>
+                    </label>
+                </div>
+            </div>
+
+            <div id="farmResults" class="mt-6 hidden">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="stat bg-base-300 rounded-lg">
+                        <div data-i18n="farm.result.perCycle" class="stat-title text-xs">Profit / cycle</div>
+                        <div id="farmProfitPerCycle" class="stat-value text-lg"></div>
+                    </div>
+                    <div class="stat bg-base-300 rounded-lg">
+                        <div data-i18n="farm.result.perDay" class="stat-title text-xs">Profit / day</div>
+                        <div id="farmProfitPerDay" class="stat-value text-lg"></div>
+                    </div>
+                    <div class="stat bg-base-300 rounded-lg">
+                        <div data-i18n="farm.result.perLot" class="stat-title text-xs">Per lot</div>
+                        <div id="farmProfitPerLot" class="stat-value text-lg"></div>
+                    </div>
+                </div>
+
+                <div class="mt-4 overflow-x-auto">
+                    <table class="table table-sm">
+                        <tbody>
+                            <tr>
+                                <td data-i18n="farm.breakdown.seed">Seed</td>
+                                <td id="farmBreakdownSeedName"></td>
+                                <td id="farmBreakdownSeedCost" class="text-right"></td>
+                            </tr>
+                            <tr>
+                                <td data-i18n="farm.breakdown.harvest">Harvest</td>
+                                <td id="farmBreakdownHarvestName"></td>
+                                <td id="farmBreakdownHarvestValue" class="text-right"></td>
+                            </tr>
+                            <tr>
+                                <td data-i18n="farm.breakdown.revenue">Revenue (after tax)</td>
+                                <td id="farmBreakdownRevenueFormula" class="text-base-content/50"></td>
+                                <td id="farmBreakdownRevenue" class="text-right"></td>
+                            </tr>
+                            <tr>
+                                <td data-i18n="farm.breakdown.seedCost">Seed cost</td>
+                                <td></td>
+                                <td id="farmBreakdownSeedTotal" class="text-right"></td>
+                            </tr>
+                            <tr>
+                                <td data-i18n="farm.breakdown.growthTime">Growth time</td>
+                                <td></td>
+                                <td id="farmBreakdownGrowth" class="text-right"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <p data-i18n="farm.calc.footnote" class="text-xs text-base-content/50 mt-3">
+                Prices are the cheapest active listing across the standard trade cities. Many raw crops sell at a
+                loss — the real value is often in cooking them into food or brewing potions.
+            </p>
+        </div>
+    </div>
+
+    <!-- Reference guide -->
+    <div id="farmGuideSection" class="card bg-base-200">
+        <div class="card-body">
+            <h3 data-i18n="farm.guide.title" class="text-xl font-semibold text-base-content">Home / farm crafting guide</h3>
+            <p data-i18n="farm.guide.description" class="text-xs text-base-content/50 mt-1">
+                Growth time and Focus cost to tend, straight from the reference data — Focus drops from 1000 down to
+                125 with full farming specialization.
+            </p>
+
+            <h4 data-i18n="farm.guide.cropsTitle" class="text-sm font-semibold text-base-content/80 mt-4">Crops</h4>
+            <div class="overflow-x-auto">
+                <table class="table table-zebra table-sm">
+                    <thead>
+                        <tr>
+                            <th data-i18n="farm.table.tier">Tier</th>
+                            <th data-i18n="farm.table.plant">Plant</th>
+                            <th data-i18n="farm.table.growthTime">Growth time</th>
+                            <th data-i18n="farm.table.focus">Focus to tend</th>
+                        </tr>
+                    </thead>
+                    <tbody id="farmCropsGuideBody"></tbody>
+                </table>
+            </div>
+
+            <h4 data-i18n="farm.guide.herbsTitle" class="text-sm font-semibold text-base-content/80 mt-4">Herbs</h4>
+            <div class="overflow-x-auto">
+                <table class="table table-zebra table-sm">
+                    <thead>
+                        <tr>
+                            <th data-i18n="farm.table.tier">Tier</th>
+                            <th data-i18n="farm.table.plant">Plant</th>
+                            <th data-i18n="farm.table.growthTime">Growth time</th>
+                            <th data-i18n="farm.table.focus">Focus to tend</th>
+                        </tr>
+                    </thead>
+                    <tbody id="farmHerbsGuideBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Roadmap notice -->
+    <div class="card bg-base-200/50 border border-dashed border-base-content/10">
+        <div class="card-body py-4">
+            <div class="flex items-center gap-2">
+                <span data-i18n="farm.dev.badge" class="badge badge-warning badge-sm">In development</span>
+                <p data-i18n="farm.dev.text" class="text-xs text-base-content/50">
+                    Farm animals (breeding, feed) aren't covered yet — only field crops and herbs.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{define "scripts/farm"}}
+<!-- Farm page: register with PageController for proper lifecycle management -->
+<script>
+    (async function () {
+        const {registerPage, reinitCurrentPage} = await import('/scripts/core/PageController.js');
+
+        const listeners = [];
+        function addListener(el, event, handler) {
+            if (el) {
+                el.addEventListener(event, handler);
+                listeners.push(() => el.removeEventListener(event, handler));
+            }
+        }
+
+        function formatSilver(value) {
+            return Math.round(value).toLocaleString(window.i18n?.getLanguage() === 'pt' ? 'pt-BR' : 'en-US');
+        }
+
+        function renderGuideTable(tableBody, crops) {
+            tableBody.innerHTML = '';
+            crops.forEach(crop => {
+                const row = document.createElement('tr');
+                const cells = [
+                    `T${crop.tier}`,
+                    crop.name,
+                    window.i18n.t('farm.guide.growthHoursValue').replace('{hours}', crop.growthHours),
+                    window.i18n.t('farm.guide.focusValue'),
+                ];
+                cells.forEach(value => {
+                    const td = document.createElement('td');
+                    td.textContent = value;
+                    row.appendChild(td);
+                });
+                tableBody.appendChild(row);
+            });
+        }
+
+        function initFarmPage() {
+            const status = document.getElementById('farmCalculatorStatus');
+            const form = document.getElementById('farmCalculatorForm');
+            const results = document.getElementById('farmResults');
+
+            const cropSelect = document.getElementById('farmCropSelect');
+            const lotsInput = document.getElementById('farmLots');
+            const yieldInput = document.getElementById('farmYieldPerLot');
+            const seedPriceInput = document.getElementById('farmSeedPrice');
+            const harvestPriceInput = document.getElementById('farmHarvestPrice');
+            const premiumInput = document.getElementById('farmPremium');
+            const selfSustainingInput = document.getElementById('farmSelfSustaining');
+
+            let crops = [];
+
+            function selectedCrop() {
+                return crops.find(c => c.seedItemId === cropSelect.value);
+            }
+
+            function calculate() {
+                const crop = selectedCrop();
+                if (!crop) return;
+
+                const lots = Math.max(0, Number(lotsInput.value) || 0);
+                const yieldPerLot = Math.max(0, Number(yieldInput.value) || 0);
+                const seedPricePerLot = Math.max(0, Number(seedPriceInput.value) || 0);
+                const harvestPrice = Math.max(0, Number(harvestPriceInput.value) || 0);
+                const taxRate = premiumInput.checked ? 0.04 : 0.08;
+
+                const totalHarvest = lots * yieldPerLot;
+                const revenue = Math.trunc(totalHarvest * harvestPrice * (1 - taxRate));
+                const seedCost = selfSustainingInput.checked ? 0 : Math.trunc(lots * seedPricePerLot);
+                const profitPerCycle = revenue - seedCost;
+                const profitPerDay = Math.trunc(profitPerCycle * (24 / crop.growthHours));
+                const profitPerLot = lots > 0 ? Math.trunc(profitPerCycle / lots) : 0;
+
+                const colorClass = value => value >= 0 ? 'text-success' : 'text-error';
+
+                const perCycleEl = document.getElementById('farmProfitPerCycle');
+                perCycleEl.textContent = formatSilver(profitPerCycle);
+                perCycleEl.className = `stat-value text-lg ${colorClass(profitPerCycle)}`;
+
+                const perDayEl = document.getElementById('farmProfitPerDay');
+                perDayEl.textContent = formatSilver(profitPerDay);
+                perDayEl.className = `stat-value text-lg ${colorClass(profitPerDay)}`;
+
+                const perLotEl = document.getElementById('farmProfitPerLot');
+                perLotEl.textContent = formatSilver(profitPerLot);
+                perLotEl.className = `stat-value text-lg ${colorClass(profitPerLot)}`;
+
+                document.getElementById('farmBreakdownSeedName').textContent = crop.name + ' ' + window.i18n.t('farm.breakdown.seedSuffix');
+                document.getElementById('farmBreakdownSeedCost').textContent = formatSilver(seedPricePerLot);
+                document.getElementById('farmBreakdownHarvestName').textContent = crop.name;
+                document.getElementById('farmBreakdownHarvestValue').textContent = formatSilver(harvestPrice);
+                document.getElementById('farmBreakdownRevenueFormula').textContent = `${yieldPerLot} × ${lots}`;
+                document.getElementById('farmBreakdownRevenue').textContent = formatSilver(revenue);
+                document.getElementById('farmBreakdownSeedTotal').textContent = `-${formatSilver(seedCost)}`;
+                document.getElementById('farmBreakdownGrowth').textContent = `${crop.growthHours} h`;
+
+                results.classList.remove('hidden');
+            }
+
+            function onCropChange() {
+                const crop = selectedCrop();
+                if (!crop) return;
+                seedPriceInput.value = crop.seedPrice || '';
+                harvestPriceInput.value = crop.harvestPrice || '';
+                calculate();
+            }
+
+            async function loadCrops() {
+                status.textContent = window.i18n.t('farm.calc.loading');
+                try {
+                    const response = await fetch('/api/farm/crops');
+                    if (!response.ok) throw new Error(`status ${response.status}`);
+                    crops = (await response.json()) || [];
+
+                    if (crops.length === 0) {
+                        status.textContent = window.i18n.t('farm.calc.noData');
+                        return;
+                    }
+
+                    cropSelect.innerHTML = '';
+                    const cropsGroup = document.createElement('optgroup');
+                    cropsGroup.label = window.i18n.t('farm.guide.cropsTitle');
+                    const herbsGroup = document.createElement('optgroup');
+                    herbsGroup.label = window.i18n.t('farm.guide.herbsTitle');
+
+                    crops.forEach(crop => {
+                        const option = document.createElement('option');
+                        option.value = crop.seedItemId;
+                        option.textContent = `T${crop.tier} ${crop.name}`;
+                        (crop.kind === 'herb' ? herbsGroup : cropsGroup).appendChild(option);
+                    });
+                    cropSelect.appendChild(cropsGroup);
+                    cropSelect.appendChild(herbsGroup);
+
+                    renderGuideTable(document.getElementById('farmCropsGuideBody'), crops.filter(c => c.kind === 'crop'));
+                    renderGuideTable(document.getElementById('farmHerbsGuideBody'), crops.filter(c => c.kind === 'herb'));
+
+                    status.classList.add('hidden');
+                    form.classList.remove('hidden');
+                    onCropChange();
+                } catch (error) {
+                    status.textContent = window.i18n.t('farm.calc.fetchError');
+                    window.logger?.error('SYSTEM', 'FarmCropsFetchFailed', {
+                        error: error?.message || String(error),
+                    });
+                }
+            }
+
+            addListener(cropSelect, 'change', onCropChange);
+            addListener(lotsInput, 'input', calculate);
+            addListener(yieldInput, 'input', calculate);
+            addListener(seedPriceInput, 'input', calculate);
+            addListener(harvestPriceInput, 'input', calculate);
+            addListener(premiumInput, 'change', calculate);
+            addListener(selfSustainingInput, 'change', calculate);
+
+            loadCrops();
+        }
+
+        function destroyFarmPage() {
+            listeners.forEach(fn => fn());
+            listeners.length = 0;
+        }
+
+        if (!window._farmPageRegistered) {
+            registerPage('farm', {
+                init: initFarmPage,
+                destroy: destroyFarmPage
+            });
+            window._farmPageRegistered = true;
+        }
+
+        window.onGlobalsReady(() => reinitCurrentPage());
+    })();
+</script>
+{{end}}

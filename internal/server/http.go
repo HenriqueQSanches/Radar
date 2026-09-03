@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/nospy/albion-openradar/internal/capture"
+	"github.com/nospy/albion-openradar/internal/farm"
 	"github.com/nospy/albion-openradar/internal/logger"
 	"github.com/nospy/albion-openradar/internal/market"
 	"github.com/nospy/albion-openradar/internal/marketflip"
@@ -39,6 +40,7 @@ type HTTPServer struct {
 	settingsAPI *SettingsAPI
 	marketAPI   *MarketAPI
 	flipAPI     *FlipAPI
+	farmAPI     *FarmAPI
 }
 
 // NewHTTPServer creates a new HTTP server with embedded assets (production mode)
@@ -103,6 +105,7 @@ func NewHTTPServer(
 	s.settingsAPI = NewSettingsAPI(appDir, log, recorder, captureDir)
 	s.marketAPI = NewMarketAPI(market.NewClient(market.RegionAmericas))
 	s.flipAPI = NewFlipAPI(flipStore)
+	s.farmAPI = NewFarmAPI(farm.NewPriceClient())
 	s.setupRoutes()
 	return s, nil
 }
@@ -148,6 +151,7 @@ func NewHTTPServerDev(
 	s.settingsAPI = NewSettingsAPI(appDir, log, recorder, captureDir)
 	s.marketAPI = NewMarketAPI(market.NewClient(market.RegionAmericas))
 	s.flipAPI = NewFlipAPI(flipStore)
+	s.farmAPI = NewFarmAPI(farm.NewPriceClient())
 	s.setupRoutes()
 	return s, nil
 }
@@ -180,6 +184,7 @@ func (s *HTTPServer) setupRoutes() {
 		"/chests":     "chests",
 		"/market":     "market",
 		"/flip":       "flip",
+		"/farm":       "farm",
 		"/ignorelist": "ignorelist",
 		"/settings":   "settings",
 		"/about":      "about",
@@ -214,6 +219,7 @@ func (s *HTTPServer) setupRoutes() {
 	s.settingsAPI.Register(s.mux)
 	s.marketAPI.Register(s.mux)
 	s.flipAPI.Register(s.mux)
+	s.farmAPI.Register(s.mux)
 	if s.networkAPI != nil {
 		s.networkAPI.Register(s.mux)
 	}
@@ -230,6 +236,7 @@ func (s *HTTPServer) renderPage(w http.ResponseWriter, r *http.Request, page str
 		"chests":     "Chests",
 		"market":     "Market",
 		"flip":       "Flip",
+		"farm":       "Farm",
 		"ignorelist": "Ignore List",
 		"settings":   "Settings",
 		"about":      "About",
