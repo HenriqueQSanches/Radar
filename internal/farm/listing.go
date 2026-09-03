@@ -7,13 +7,13 @@ import "sort"
 // the profit calculation against (and to let the user override either
 // price, since seed prices swing a lot city to city and day to day).
 type PricedCrop struct {
-	Tier          int    `json:"tier"`
-	Name          string `json:"name"`
-	Kind          string `json:"kind"` // "crop" or "herb"
-	SeedItemID    string `json:"seedItemId"`
-	SeedPrice     int64  `json:"seedPrice"`
-	HarvestItemID string `json:"harvestItemId"`
-	HarvestPrice  int64  `json:"harvestPrice"`
+	Tier          int     `json:"tier"`
+	Name          string  `json:"name"`
+	Kind          string  `json:"kind"` // "crop" or "herb"
+	SeedItemID    string  `json:"seedItemId"`
+	SeedPrice     int64   `json:"seedPrice"`
+	HarvestItemID string  `json:"harvestItemId"`
+	HarvestPrice  int64   `json:"harvestPrice"`
 	GrowthHours   float64 `json:"growthHours"`
 }
 
