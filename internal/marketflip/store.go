@@ -24,6 +24,8 @@ const StaleAfter = 4 * time.Hour
 type Order struct {
 	AuctionID        int       `json:"auctionId"`
 	ItemID           string    `json:"itemId"`
+	Category         string    `json:"category"`
+	Subcategory      string    `json:"subcategory"`
 	QualityLevel     int       `json:"qualityLevel"`
 	EnchantmentLevel int       `json:"enchantmentLevel"`
 	City             string    `json:"city"`

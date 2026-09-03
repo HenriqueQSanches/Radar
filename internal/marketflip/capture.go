@@ -51,9 +51,12 @@ func (c *Capture) HandleResponse(resp *photon.OperationResponse) error {
 	now := time.Now()
 	orders := make([]Order, 0, len(raw))
 	for _, ro := range ParseOrders(raw) {
+		category, subcategory := Category(ro.ItemID)
 		orders = append(orders, Order{
 			AuctionID:        ro.ID,
 			ItemID:           ro.ItemID,
+			Category:         category,
+			Subcategory:      subcategory,
 			QualityLevel:     ro.QualityLevel,
 			EnchantmentLevel: ro.EnchantmentLevel,
 			City:             c.zones.CityName(ro.LocationID),

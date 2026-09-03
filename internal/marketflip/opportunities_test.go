@@ -109,3 +109,15 @@ func TestOpportunities_SortedBySpreadDescending(t *testing.T) {
 	require.Equal(t, "T5_BAG", got[0].ItemID, "bigger spread first")
 	require.Equal(t, "T4_BAG", got[1].ItemID)
 }
+
+func TestOpportunities_TagsCategoryAndSubcategory(t *testing.T) {
+	orders := []Order{
+		{ItemID: "T4_ORE", City: "Lymhurst", AuctionType: "offer", UnitPriceSilver: 100},
+		{ItemID: "T4_ORE", City: "Martlock", AuctionType: "request", UnitPriceSilver: 200},
+	}
+
+	got := Opportunities(orders)
+	require.Len(t, got, 1)
+	require.Equal(t, "resources", got[0].Category)
+	require.Equal(t, "Minério", got[0].Subcategory)
+}

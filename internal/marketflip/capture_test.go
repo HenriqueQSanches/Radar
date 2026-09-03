@@ -38,6 +38,26 @@ func TestCapture_HandleResponse_AuctionGetOffers(t *testing.T) {
 	require.Equal(t, "Lymhurst", all[0].City, "resolved from LocationId via zones.json")
 }
 
+func TestCapture_HandleResponse_TagsCategory(t *testing.T) {
+	mc, store := newTestCapture(t)
+
+	resp := &photon.OperationResponse{
+		OperationCode: operationcodes.AuctionGetOffers,
+		Parameters: map[byte]interface{}{
+			0: []string{
+				`{"Id":1,"ItemTypeId":"T4_ORE","LocationId":1000,"QualityLevel":1,"UnitPriceSilver":100,"Amount":1,"AuctionType":"offer"}`,
+			},
+		},
+	}
+
+	require.NoError(t, mc.HandleResponse(resp))
+
+	all := store.All()
+	require.Len(t, all, 1)
+	require.Equal(t, "resources", all[0].Category)
+	require.Equal(t, "Minério", all[0].Subcategory)
+}
+
 func TestCapture_HandleResponse_UnrelatedOperation(t *testing.T) {
 	mc, store := newTestCapture(t)
 

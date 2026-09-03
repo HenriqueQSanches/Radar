@@ -13,6 +13,37 @@
         </div>
     </div>
 
+    <!-- Filters: apply to both the Opportunities and Captured listings tables below -->
+    <div id="flipFiltersSection" class="card bg-base-200">
+        <div class="card-body py-4">
+            <div class="flex flex-wrap items-center gap-3">
+                <label class="flex items-center gap-1.5 text-xs text-base-content/60">
+                    <span data-i18n="flip.filter.categoryLabel">Category:</span>
+                    <select id="flipCategoryFilter" class="select select-bordered select-xs">
+                        <option value="" data-i18n="flip.filter.all">All</option>
+                        <option value="resources" data-i18n="flip.filter.category.resources">Resources</option>
+                        <option value="refined" data-i18n="flip.filter.category.refined">Refined Resources</option>
+                    </select>
+                </label>
+                <label class="flex items-center gap-1.5 text-xs text-base-content/60">
+                    <span data-i18n="flip.filter.resourceLabel">Resource:</span>
+                    <select id="flipResourceFilter" class="select select-bordered select-xs">
+                        <option value="" data-i18n="flip.filter.all">All</option>
+                        <option value="Madeira" data-i18n="market.resource.wood">Wood</option>
+                        <option value="Pedra" data-i18n="market.resource.stone">Stone</option>
+                        <option value="Fibra" data-i18n="market.resource.fiber">Fiber</option>
+                        <option value="Couro" data-i18n="market.resource.hide">Hide</option>
+                        <option value="Minério" data-i18n="market.resource.ore">Ore</option>
+                    </select>
+                </label>
+            </div>
+            <p data-i18n="flip.filter.description" class="text-xs text-base-content/50 mt-2">
+                Only raw and refined resources are categorized for now — everything else (equipment, consumables,
+                etc) still shows up, just outside these filters.
+            </p>
+        </div>
+    </div>
+
     <!-- Opportunities Section -->
     <div id="flipOpportunitiesSection" class="card bg-base-200">
         <div class="card-body">
@@ -166,7 +197,44 @@
             const ordersStatus = document.getElementById('flipOrdersStatus');
             const ordersResults = document.getElementById('flipOrdersResults');
             const ordersTableBody = document.getElementById('flipOrdersTableBody');
+            const categoryFilter = document.getElementById('flipCategoryFilter');
+            const resourceFilter = document.getElementById('flipResourceFilter');
             const debugLog = document.getElementById('flipDebugLog');
+
+            let lastOpportunities = [];
+            let lastOrders = [];
+
+            function matchesFilter(entry) {
+                const category = categoryFilter.value;
+                const resource = resourceFilter.value;
+                if (category && entry.category !== category) return false;
+                if (resource && entry.subcategory !== resource) return false;
+                return true;
+            }
+
+            function applyFlipFilters() {
+                const filteredOpportunities = lastOpportunities.filter(matchesFilter);
+                if (lastOpportunities.length > 0 && filteredOpportunities.length === 0) {
+                    opportunitiesResults.classList.add('hidden');
+                    opportunitiesStatus.classList.remove('hidden');
+                    opportunitiesStatus.textContent = window.i18n.t('flip.status.noResultsForFilter');
+                } else if (filteredOpportunities.length > 0) {
+                    renderOpportunitiesTable(opportunitiesTableBody, filteredOpportunities);
+                    opportunitiesStatus.classList.add('hidden');
+                    opportunitiesResults.classList.remove('hidden');
+                }
+
+                const filteredOrders = lastOrders.filter(matchesFilter);
+                if (lastOrders.length > 0 && filteredOrders.length === 0) {
+                    ordersResults.classList.add('hidden');
+                    ordersStatus.classList.remove('hidden');
+                    ordersStatus.textContent = window.i18n.t('flip.status.noResultsForFilter');
+                } else if (filteredOrders.length > 0) {
+                    renderOrdersTable(ordersTableBody, filteredOrders);
+                    ordersStatus.classList.add('hidden');
+                    ordersResults.classList.remove('hidden');
+                }
+            }
 
             // Debug panel: polls independently of the Refresh button so a capture shows
             // up here within a couple seconds, without needing to click anything — the
@@ -218,28 +286,22 @@
                     if (!opportunitiesResponse.ok) throw new Error(`status ${opportunitiesResponse.status}`);
                     if (!ordersResponse.ok) throw new Error(`status ${ordersResponse.status}`);
 
-                    const opportunities = await opportunitiesResponse.json();
-                    const orders = await ordersResponse.json();
+                    lastOpportunities = (await opportunitiesResponse.json()) || [];
+                    lastOrders = (await ordersResponse.json()) || [];
 
-                    if (!opportunities || opportunities.length === 0) {
+                    if (lastOpportunities.length === 0) {
                         opportunitiesResults.classList.add('hidden');
                         opportunitiesStatus.classList.remove('hidden');
                         opportunitiesStatus.textContent = window.i18n.t('flip.status.noOpportunities');
-                    } else {
-                        renderOpportunitiesTable(opportunitiesTableBody, opportunities);
-                        opportunitiesStatus.classList.add('hidden');
-                        opportunitiesResults.classList.remove('hidden');
                     }
 
-                    if (!orders || orders.length === 0) {
+                    if (lastOrders.length === 0) {
                         ordersResults.classList.add('hidden');
                         ordersStatus.classList.remove('hidden');
                         ordersStatus.textContent = window.i18n.t('flip.status.noOrders');
-                    } else {
-                        renderOrdersTable(ordersTableBody, orders);
-                        ordersStatus.classList.add('hidden');
-                        ordersResults.classList.remove('hidden');
                     }
+
+                    applyFlipFilters();
                 } catch (error) {
                     opportunitiesStatus.classList.remove('hidden');
                     opportunitiesStatus.textContent = window.i18n.t('flip.status.fetchError');
@@ -271,6 +333,8 @@
 
             addListener(refreshBtn, 'click', loadFlipData);
             addListener(clearBtn, 'click', clearFlipData);
+            addListener(categoryFilter, 'change', applyFlipFilters);
+            addListener(resourceFilter, 'change', applyFlipFilters);
 
             loadFlipData();
         }

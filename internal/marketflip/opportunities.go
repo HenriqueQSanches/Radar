@@ -7,6 +7,8 @@ import "sort"
 // just the best observed spread.
 type Opportunity struct {
 	ItemID           string `json:"itemId"`
+	Category         string `json:"category"`
+	Subcategory      string `json:"subcategory"`
 	QualityLevel     int    `json:"qualityLevel"`
 	EnchantmentLevel int    `json:"enchantmentLevel"`
 	BuyCity          string `json:"buyCity"`
@@ -93,8 +95,11 @@ func Opportunities(orders []Order) []Opportunity {
 				spread := sellPrice - buyPrice
 				if spread > bestSpread {
 					bestSpread = spread
+					category, subcategory := Category(k.itemID)
 					best = Opportunity{
 						ItemID:           k.itemID,
+						Category:         category,
+						Subcategory:      subcategory,
 						QualityLevel:     k.qualityLevel,
 						EnchantmentLevel: k.enchantmentLevel,
 						BuyCity:          buyCity,
