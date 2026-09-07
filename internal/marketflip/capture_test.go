@@ -96,5 +96,5 @@ func TestCapture_HandleResponse_UnknownZoneStillStored(t *testing.T) {
 
 	all := store.All()
 	require.Len(t, all, 1)
-	require.Equal(t, "", all[0].City)
+	require.Empty(t, all[0].City)
 }

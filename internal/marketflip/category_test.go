@@ -50,12 +50,12 @@ func TestCategory_AllFamilies(t *testing.T) {
 
 func TestCategory_UnclassifiedItem(t *testing.T) {
 	category, subcategory := Category("T4_MAIN_SWORD")
-	require.Equal(t, "", category)
-	require.Equal(t, "", subcategory)
+	require.Empty(t, category)
+	require.Empty(t, subcategory)
 }
 
 func TestCategory_ItemWithoutTierPrefix(t *testing.T) {
 	category, subcategory := Category("UNIQUE_HIDEOUT")
-	require.Equal(t, "", category)
-	require.Equal(t, "", subcategory)
+	require.Empty(t, category)
+	require.Empty(t, subcategory)
 }

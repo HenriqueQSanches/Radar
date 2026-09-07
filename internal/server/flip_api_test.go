@@ -29,7 +29,7 @@ func TestFlipAPI_HandleOrders(t *testing.T) {
 	mux := http.NewServeMux()
 	api.Register(mux)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/flip/orders", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/flip/orders", http.NoBody)
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
 
@@ -49,7 +49,7 @@ func TestFlipAPI_HandleOrders_FilterByCity(t *testing.T) {
 	mux := http.NewServeMux()
 	api.Register(mux)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/flip/orders?city=Martlock", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/flip/orders?city=Martlock", http.NoBody)
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
 
@@ -68,7 +68,7 @@ func TestFlipAPI_HandleClear(t *testing.T) {
 	mux := http.NewServeMux()
 	api.Register(mux)
 
-	req := httptest.NewRequest(http.MethodDelete, "/api/flip/orders", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/api/flip/orders", http.NoBody)
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
 
@@ -86,7 +86,7 @@ func TestFlipAPI_HandleOpportunities(t *testing.T) {
 	mux := http.NewServeMux()
 	api.Register(mux)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/flip/opportunities", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/flip/opportunities", http.NoBody)
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
 
@@ -109,7 +109,7 @@ func TestFlipAPI_NilStore(t *testing.T) {
 		{http.MethodDelete, "/api/flip/orders"},
 		{http.MethodGet, "/api/flip/opportunities"},
 	} {
-		req := httptest.NewRequest(tc.method, tc.path, nil)
+		req := httptest.NewRequest(tc.method, tc.path, http.NoBody)
 		rec := httptest.NewRecorder()
 		mux.ServeHTTP(rec, req)
 		require.Equal(t, http.StatusOK, rec.Code, tc.path)

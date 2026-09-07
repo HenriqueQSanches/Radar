@@ -13,8 +13,10 @@ func TestList_TagsKindAndSortsByTier(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var rows []priceRow
 		for _, c := range append(append([]Crop{}, Crops...), Herbs...) {
-			rows = append(rows, priceRow{ItemID: c.SeedItemID, SellPriceMin: 100})
-			rows = append(rows, priceRow{ItemID: c.HarvestItemID, SellPriceMin: 200})
+			rows = append(rows,
+				priceRow{ItemID: c.SeedItemID, SellPriceMin: 100},
+				priceRow{ItemID: c.HarvestItemID, SellPriceMin: 200},
+			)
 		}
 		_ = json.NewEncoder(w).Encode(rows)
 	}))
@@ -29,7 +31,7 @@ func TestList_TagsKindAndSortsByTier(t *testing.T) {
 	require.Equal(t, 1, list[0].Tier, "crops start at T1")
 	require.Equal(t, int64(100), list[0].SeedPrice)
 	require.Equal(t, int64(200), list[0].HarvestPrice)
-	require.Equal(t, GrowthHours, list[0].GrowthHours)
+	require.InDelta(t, GrowthHours, list[0].GrowthHours, 0.0001)
 
 	lastCrop := list[len(Crops)-1]
 	firstHerb := list[len(Crops)]

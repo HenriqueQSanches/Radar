@@ -22,7 +22,7 @@ func TestLoadZoneIndex_CityName(t *testing.T) {
 
 	require.Equal(t, "Lymhurst", zones.CityName(1000))
 	require.Equal(t, "Caerleon", zones.CityName(3005))
-	require.Equal(t, "", zones.CityName(999999))
+	require.Empty(t, zones.CityName(999999))
 }
 
 func TestLoadZoneIndex_MissingFile(t *testing.T) {
@@ -32,5 +32,5 @@ func TestLoadZoneIndex_MissingFile(t *testing.T) {
 
 func TestZoneIndex_NilReceiver(t *testing.T) {
 	var zones *ZoneIndex
-	require.Equal(t, "", zones.CityName(1000))
+	require.Empty(t, zones.CityName(1000))
 }

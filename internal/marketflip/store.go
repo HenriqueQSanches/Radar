@@ -13,7 +13,7 @@ import (
 const storeFilename = "market_flip.json"
 
 // StaleAfter is how long a captured listing is trusted before it's dropped.
-// A listing can be sold or cancelled long before the Expires date it was
+// A listing can be sold or canceled long before the Expires date it was
 // created with, so — per the Albion Online Data Project's own guidance for
 // market order freshness — staleness is judged by how long ago we captured
 // it, not by its stated expiration.
