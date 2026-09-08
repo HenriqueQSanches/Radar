@@ -232,12 +232,17 @@
             ];
 
             const enchantLevels = ['e0', 'e1', 'e2', 'e3', 'e4'];
+            // Defaults to everything on, same as every other visibility toggle in the app
+            // (enemies, dungeons, mists, fishing) -- a resource type the user never touched
+            // this grid for used to be invisible with zero indication why, and that included
+            // every enchant level of the Living grid, since it shares this same default with
+            // Static instead of getting its own (see below for the actual render-time bug).
             const defaultEnchants = {
-                'e0': [false, false, false, false, false, false, false, false],
-                'e1': [false, false, false, false, false, false, false, false],
-                'e2': [false, false, false, false, false, false, false, false],
-                'e3': [false, false, false, false, false, false, false, false],
-                'e4': [false, false, false, false, false, false, false, false],
+                'e0': [true, true, true, true, true, true, true, true],
+                'e1': [true, true, true, true, true, true, true, true],
+                'e2': [true, true, true, true, true, true, true, true],
+                'e3': [true, true, true, true, true, true, true, true],
+                'e4': [true, true, true, true, true, true, true, true],
             };
 
             // Generate all resource grids
@@ -258,7 +263,16 @@
                 const storageKey = getResourceStorageKey(config.prefix, config.type);
                 // Clone per family: the change handlers mutate this object in place,
                 // and sharing one default would leak ticks across resource families.
-                const enchants = settingsSync.getJSON(storageKey, null) || structuredClone(defaultEnchants);
+                const saved = settingsSync.getJSON(storageKey, null);
+                const enchants = saved || structuredClone(defaultEnchants);
+                // Persist the default immediately rather than leaving it only in this
+                // in-memory copy: the radar's render-time visibility check reads
+                // straight from storage with no fallback of its own (by design — see
+                // LivingResourceFilter.js), so a family the user never happened to
+                // click a checkbox for stayed permanently invisible even though this
+                // page showed it checked. Saving once here is enough; every later
+                // load finds `saved` already set and skips this.
+                if (!saved) settingsSync.setJSON(storageKey, enchants);
 
                 enchantLevels.forEach(enchantLevel => {
                     const parent = document.getElementById(`${config.prefix}-${enchantLevel}`);
