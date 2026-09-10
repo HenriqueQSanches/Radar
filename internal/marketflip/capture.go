@@ -29,22 +29,25 @@ func (c *Capture) HandleResponse(resp *photon.OperationResponse) error {
 	if resp == nil {
 		return nil
 	}
-	if resp.OperationCode != operationcodes.AuctionGetOffers && resp.OperationCode != operationcodes.AuctionGetRequests {
+
+	// Under Protocol18 the wire-level OperationCode byte is always 1 (a
+	// generic dispatch value) — the real operation code lives in
+	// Parameters[253] as an int, guaranteed present by PostProcessResponse
+	// (backfilled from OperationCode if the wire didn't carry it). Comparing
+	// resp.OperationCode directly — as this used to — could never match real
+	// traffic, which is why Flip never captured anything.
+	code := realOperationCode(resp.Parameters)
+	if code != operationcodes.AuctionGetOffers && code != operationcodes.AuctionGetRequests {
 		return nil
 	}
 
-	// This whole feature was only verified against protocol documentation before
-	// release, never against a live capture (see flip.gohtml's "in development"
-	// notice) — this stays until that's confirmed, since it's the one thing that
-	// tells us whether the game is even sending the response we expect, versus
-	// a wrong opcode assumption or an unexpected Parameters[0] shape.
-	logger.PrintInfo("MARKET", "auction response op=%d returnCode=%d paramCount=%d", resp.OperationCode, resp.ReturnCode, len(resp.Parameters))
+	logger.PrintInfo("MARKET", "auction response op=%d returnCode=%d paramCount=%d", code, resp.ReturnCode, len(resp.Parameters))
 
 	// Protocol18Deserializer already lifts the game's hijacked debug-message
 	// slot into Parameters[0] as []string — see internal/photon/deserializer.go.
 	raw, ok := resp.Parameters[0].([]string)
 	if !ok || len(raw) == 0 {
-		logger.PrintWarn("MARKET", "auction response op=%d had no usable order list in Parameters[0] (type %T)", resp.OperationCode, resp.Parameters[0])
+		logger.PrintWarn("MARKET", "auction response op=%d had no usable order list in Parameters[0] (type %T)", code, resp.Parameters[0])
 		return nil
 	}
 
@@ -72,6 +75,27 @@ func (c *Capture) HandleResponse(resp *photon.OperationResponse) error {
 		logger.PrintWarn("MARKET", "auction response op=%d had %d raw entries but none parsed into an Order", resp.OperationCode, len(raw))
 		return nil
 	}
-	logger.PrintInfo("MARKET", "captured %d orders (op=%d, city=%q)", len(orders), resp.OperationCode, orders[0].City)
+	logger.PrintInfo("MARKET", "captured %d orders (op=%d, city=%q)", len(orders), code, orders[0].City)
 	return c.store.PutAll(orders)
+}
+
+// realOperationCode reads Albion's real operation code out of Parameters[253].
+// Protocol18 only guarantees an int-family type there (see
+// internal/photon/events.go's PostProcessResponse and doc.go); the wire's own
+// OperationResponse.OperationCode byte is not it.
+func realOperationCode(params map[byte]interface{}) int {
+	switch v := params[253].(type) {
+	case byte:
+		return int(v)
+	case int8:
+		return int(v)
+	case int16:
+		return int(v)
+	case int32:
+		return int(v)
+	case int64:
+		return int(v)
+	default:
+		return -1
+	}
 }

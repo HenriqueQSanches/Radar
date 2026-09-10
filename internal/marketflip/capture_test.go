@@ -30,6 +30,7 @@ func TestCapture_HandleResponse_AuctionGetOffers(t *testing.T) {
 		},
 	}
 
+	photon.PostProcessResponse(resp)
 	require.NoError(t, mc.HandleResponse(resp))
 
 	all := store.All()
@@ -50,6 +51,7 @@ func TestCapture_HandleResponse_TagsCategory(t *testing.T) {
 		},
 	}
 
+	photon.PostProcessResponse(resp)
 	require.NoError(t, mc.HandleResponse(resp))
 
 	all := store.All()
@@ -66,6 +68,7 @@ func TestCapture_HandleResponse_UnrelatedOperation(t *testing.T) {
 		Parameters:    map[byte]interface{}{0: []string{`{"ItemTypeId":"T4_BAG"}`}},
 	}
 
+	photon.PostProcessResponse(resp)
 	require.NoError(t, mc.HandleResponse(resp))
 	require.Empty(t, store.All())
 }
@@ -79,6 +82,7 @@ func TestCapture_HandleResponse_NilOrWrongParamType(t *testing.T) {
 		OperationCode: operationcodes.AuctionGetRequests,
 		Parameters:    map[byte]interface{}{0: "not a []string"},
 	}
+	photon.PostProcessResponse(resp)
 	require.NoError(t, mc.HandleResponse(resp))
 	require.Empty(t, store.All())
 }
@@ -92,6 +96,7 @@ func TestCapture_HandleResponse_UnknownZoneStillStored(t *testing.T) {
 			0: []string{`{"ItemTypeId":"T4_BAG","LocationId":999999,"UnitPriceSilver":1,"AuctionType":"request"}`},
 		},
 	}
+	photon.PostProcessResponse(resp)
 	require.NoError(t, mc.HandleResponse(resp))
 
 	all := store.All()
