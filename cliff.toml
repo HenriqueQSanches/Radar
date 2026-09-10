@@ -67,7 +67,7 @@ commit_parsers = [
   { message = ".*", group = "Correções e melhorias" },
 ]
 filter_commits = false
-tag_pattern = "v?[0-9]+\\.[0-9]+\\.[0-9]+"
+tag_pattern = "v?[0-9]+\\.[0-9]+(\\.[0-9]+)?"
 ignore_tags = ""
 topo_order = false
 sort_commits = "oldest"
