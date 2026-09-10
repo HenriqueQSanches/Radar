@@ -111,9 +111,13 @@ func TestOpportunities_SortedBySpreadDescending(t *testing.T) {
 }
 
 func TestOpportunities_TagsCategoryAndSubcategory(t *testing.T) {
+	// Category/Subcategory are resolved once at capture time (capture.go) and
+	// carried on the Order itself — Opportunities reuses whatever the first
+	// order for a variant already has, rather than recomputing from ItemID,
+	// since only Capture has access to ItemIndex's equipment classification.
 	orders := []Order{
-		{ItemID: "T4_ORE", City: "Lymhurst", AuctionType: "offer", UnitPriceSilver: 100},
-		{ItemID: "T4_ORE", City: "Martlock", AuctionType: "request", UnitPriceSilver: 200},
+		{ItemID: "T4_ORE", Category: "resources", Subcategory: "Minério", City: "Lymhurst", AuctionType: "offer", UnitPriceSilver: 100},
+		{ItemID: "T4_ORE", Category: "resources", Subcategory: "Minério", City: "Martlock", AuctionType: "request", UnitPriceSilver: 200},
 	}
 
 	got := Opportunities(orders)

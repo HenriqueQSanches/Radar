@@ -82,6 +82,8 @@ const translations = {
         "flip.subtitle": "Walk into each city's market screen and this tab builds a private, local price book from what you actually saw — never uploaded anywhere.",
         "flip.refreshBtn": "Refresh",
         "flip.clearBtn": "Clear captured data",
+        "flip.pip.enable": "Compact window",
+        "flip.pip.disable": "Close compact window",
         "flip.opportunities.title": "Opportunities",
         "flip.opportunities.description": "Best observed buy-here-sell-there spread per item, across the cities captured so far. Market sales tax isn't factored into the spread shown.",
         "flip.orders.title": "Captured listings",
@@ -92,6 +94,10 @@ const translations = {
         "flip.table.sellCity": "Sell at",
         "flip.table.sellPrice": "Sell price",
         "flip.table.spread": "Spread",
+        "flip.table.source": "Source",
+        "flip.source.private": "your capture",
+        "flip.source.public": "public data",
+        "flip.publicData.toggle": "Fill gaps with public price data (Albion Online Data Project) for items I haven't captured in enough cities yet",
         "flip.table.city": "City",
         "flip.table.type": "Type",
         "flip.table.price": "Price",
@@ -104,11 +110,26 @@ const translations = {
         "flip.status.noResultsForFilter": "No results for this filter.",
         "flip.status.fetchError": "Error loading captured data. Try again shortly.",
         "flip.filter.categoryLabel": "Category:",
-        "flip.filter.resourceLabel": "Resource:",
+        "flip.filter.resourceLabel": "Subcategory:",
         "flip.filter.all": "All",
         "flip.filter.category.resources": "Resources",
         "flip.filter.category.refined": "Refined Resources",
-        "flip.filter.description": "Only raw and refined resources are categorized for now — everything else (equipment, consumables, etc) still shows up, just outside these filters.",
+        "flip.filter.category.equipment": "Equipment",
+        "flip.filter.category.blackmarket": "Black Market (faction/artifact gear)",
+        "flip.filter.group.resources": "Resources",
+        "flip.filter.group.equipment": "Equipment",
+        "flip.filter.subcategory.weapons": "Weapons",
+        "flip.filter.subcategory.offhands": "Offhands",
+        "flip.filter.subcategory.armors": "Armor",
+        "flip.filter.subcategory.head": "Head",
+        "flip.filter.subcategory.shoes": "Shoes",
+        "flip.filter.subcategory.capes": "Capes",
+        "flip.filter.subcategory.bags": "Bags",
+        "flip.filter.subcategory.mounts": "Mounts",
+        "flip.filter.subcategory.gathering": "Gathering tools",
+        "flip.filter.subcategory.vanity": "Vanity",
+        "flip.filter.subcategory.other": "Other",
+        "flip.filter.description": "Raw/refined resources, equipment (by slot) and Black Market faction/artifact gear are categorized. Anything else still shows up, just outside these filters.",
         "flip.dev.badge": "In development",
         "flip.dev.text": "Opcode coverage was verified against the open-source albiondata-client's protocol documentation, not yet against a live capture — prices may not populate until that's confirmed in-game.",
         "flip.debug.title": "Debug",
@@ -513,6 +534,8 @@ const translations = {
         "flip.subtitle": "Ande pela tela de mercado de cada cidade e esta aba monta um catálogo de preços privado e local com o que você viu — nunca é enviado pra lugar nenhum.",
         "flip.refreshBtn": "Atualizar",
         "flip.clearBtn": "Limpar dados coletados",
+        "flip.pip.enable": "Janela compacta",
+        "flip.pip.disable": "Fechar janela compacta",
         "flip.opportunities.title": "Oportunidades",
         "flip.opportunities.description": "Melhor diferença de preço observada (comprar aqui, vender ali) por item, entre as cidades já coletadas. A taxa de venda do mercado não entra nessa conta.",
         "flip.orders.title": "Ordens coletadas",
@@ -523,6 +546,10 @@ const translations = {
         "flip.table.sellCity": "Vender em",
         "flip.table.sellPrice": "Preço de venda",
         "flip.table.spread": "Diferença",
+        "flip.table.source": "Fonte",
+        "flip.source.private": "sua coleta",
+        "flip.source.public": "dado público",
+        "flip.publicData.toggle": "Preencher lacunas com dado público (Albion Online Data Project) pros itens que eu ainda não capturei em cidades suficientes",
         "flip.table.city": "Cidade",
         "flip.table.type": "Tipo",
         "flip.table.price": "Preço",
@@ -535,11 +562,26 @@ const translations = {
         "flip.status.noResultsForFilter": "Nenhum resultado para esse filtro.",
         "flip.status.fetchError": "Erro ao carregar dados coletados. Tente novamente em instantes.",
         "flip.filter.categoryLabel": "Categoria:",
-        "flip.filter.resourceLabel": "Recurso:",
+        "flip.filter.resourceLabel": "Subcategoria:",
         "flip.filter.all": "Todos",
         "flip.filter.category.resources": "Recursos",
         "flip.filter.category.refined": "Recursos Refinados",
-        "flip.filter.description": "Só recursos brutos e refinados são categorizados por enquanto — o resto (equipamento, consumível, etc) continua aparecendo, só fica fora desses filtros.",
+        "flip.filter.category.equipment": "Equipamento",
+        "flip.filter.category.blackmarket": "Black Market (facção/artefato)",
+        "flip.filter.group.resources": "Recursos",
+        "flip.filter.group.equipment": "Equipamento",
+        "flip.filter.subcategory.weapons": "Armas",
+        "flip.filter.subcategory.offhands": "Segunda mão",
+        "flip.filter.subcategory.armors": "Armadura",
+        "flip.filter.subcategory.head": "Cabeça",
+        "flip.filter.subcategory.shoes": "Sapatos",
+        "flip.filter.subcategory.capes": "Capas",
+        "flip.filter.subcategory.bags": "Bolsas",
+        "flip.filter.subcategory.mounts": "Montarias",
+        "flip.filter.subcategory.gathering": "Ferramentas de coleta",
+        "flip.filter.subcategory.vanity": "Vaidade",
+        "flip.filter.subcategory.other": "Outro",
+        "flip.filter.description": "Recursos brutos/refinados, equipamento (por slot) e itens de facção/artefato do Black Market são categorizados. O resto continua aparecendo, só fica fora desses filtros.",
         "flip.dev.badge": "Em desenvolvimento",
         "flip.dev.text": "A cobertura dos opcodes foi confirmada contra a documentação do protocolo do albiondata-client (open source), ainda não contra uma captura ao vivo — os preços podem não aparecer até isso ser confirmado dentro do jogo.",
         "flip.debug.title": "Depuração",
@@ -900,8 +942,17 @@ function applyTranslations(root = document) {
     });
     // Compact-rail nav items show their label via a CSS ::after reading data-label
     // (see .rail-item in app.css) rather than visible text, so translate that instead.
+    // <optgroup> is the other element whose visible text is an attribute (`label`)
+    // rather than textContent — data-i18n would silently insert a stray text node
+    // instead of translating what the browser actually renders, so it shares this
+    // same data attribute rather than getting its own.
     root.querySelectorAll?.('[data-i18n-label]').forEach(el => {
-        el.setAttribute('data-label', t(el.getAttribute('data-i18n-label')));
+        const translated = t(el.getAttribute('data-i18n-label'));
+        if (el.tagName === 'OPTGROUP') {
+            el.setAttribute('label', translated);
+        } else {
+            el.setAttribute('data-label', translated);
+        }
     });
 
     // The rail's single EN/PT toggle button shows the language it would switch TO,

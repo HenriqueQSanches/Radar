@@ -224,9 +224,16 @@ func newApp(
 		// until this is fixed (missing/unreadable web/ao-bin-dumps/zones.json).
 		logger.PrintWarn("MARKET", "market flip zone lookup unavailable: %v", err)
 	}
-	marketFlip := marketflip.NewCapture(zones, flipStore)
+	items, err := marketflip.LoadItemIndex(openDataFS(cfg.devMode, appDir))
+	if err != nil {
+		// Non-fatal: captured orders just won't be classified beyond the
+		// raw/refined resource families until this is fixed (missing/unreadable
+		// web/ao-bin-dumps/items.min.json).
+		logger.PrintWarn("MARKET", "market flip item classification unavailable: %v", err)
+	}
+	marketFlip := marketflip.NewCapture(zones, items, flipStore)
 
-	httpServer, err := createHTTPServer(cfg.devMode, appDir, wsHandler, log, Version, manager, allIfaces, flipStore)
+	httpServer, err := createHTTPServer(cfg.devMode, appDir, wsHandler, log, Version, manager, allIfaces, flipStore, items)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP server: %w", err)
 	}
@@ -278,10 +285,11 @@ func createHTTPServer(
 	mgr *capture.Manager,
 	allIfaces []capture.NetworkInterface,
 	flipStore *marketflip.Store,
+	flipItems *marketflip.ItemIndex,
 ) (*server.HTTPServer, error) {
 	if devMode {
 		logger.PrintInfo("MODE", "Development mode: reading files from disk")
-		return server.NewHTTPServerDev(serverPort, appDir, wsHandler, log, version, mgr, allIfaces, mgr, pcapCaptureDir, flipStore)
+		return server.NewHTTPServerDev(serverPort, appDir, wsHandler, log, version, mgr, allIfaces, mgr, pcapCaptureDir, flipStore, flipItems)
 	}
 	logger.PrintInfo("MODE", "Production mode: using embedded assets")
 	return server.NewHTTPServer(
@@ -301,6 +309,7 @@ func createHTTPServer(
 		mgr,
 		pcapCaptureDir,
 		flipStore,
+		flipItems,
 	)
 }
 

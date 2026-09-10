@@ -56,6 +56,7 @@ func NewHTTPServer(
 	recorder Recorder,
 	captureDir string,
 	flipStore *marketflip.Store,
+	flipItems *marketflip.ItemIndex,
 ) (*HTTPServer, error) {
 	// Extract subdirectories from embed.FS (they include the folder path)
 	imagesFS, err := fs.Sub(images, "web/images")
@@ -104,7 +105,7 @@ func NewHTTPServer(
 	}
 	s.settingsAPI = NewSettingsAPI(appDir, log, recorder, captureDir)
 	s.marketAPI = NewMarketAPI(market.NewClient(market.RegionAmericas))
-	s.flipAPI = NewFlipAPI(flipStore)
+	s.flipAPI = NewFlipAPI(flipStore, flipItems)
 	s.farmAPI = NewFarmAPI(farm.NewPriceClient())
 	s.setupRoutes()
 	return s, nil
@@ -122,6 +123,7 @@ func NewHTTPServerDev(
 	recorder Recorder,
 	captureDir string,
 	flipStore *marketflip.Store,
+	flipItems *marketflip.ItemIndex,
 ) (*HTTPServer, error) {
 	// Initialize template engine in dev mode (hot reload)
 	tmplDir := appDir + "/internal/templates"
@@ -150,7 +152,7 @@ func NewHTTPServerDev(
 	}
 	s.settingsAPI = NewSettingsAPI(appDir, log, recorder, captureDir)
 	s.marketAPI = NewMarketAPI(market.NewClient(market.RegionAmericas))
-	s.flipAPI = NewFlipAPI(flipStore)
+	s.flipAPI = NewFlipAPI(flipStore, flipItems)
 	s.farmAPI = NewFarmAPI(farm.NewPriceClient())
 	s.setupRoutes()
 	return s, nil

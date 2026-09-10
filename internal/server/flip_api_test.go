@@ -16,7 +16,7 @@ func newTestFlipAPI(t *testing.T) (*FlipAPI, *marketflip.Store) {
 	t.Helper()
 	store, err := marketflip.NewStore(t.TempDir())
 	require.NoError(t, err)
-	return NewFlipAPI(store), store
+	return NewFlipAPI(store, nil), store
 }
 
 func TestFlipAPI_HandleOrders(t *testing.T) {
@@ -98,7 +98,7 @@ func TestFlipAPI_HandleOpportunities(t *testing.T) {
 }
 
 func TestFlipAPI_NilStore(t *testing.T) {
-	api := NewFlipAPI(nil)
+	api := NewFlipAPI(nil, nil)
 	mux := http.NewServeMux()
 	api.Register(mux)
 
