@@ -223,8 +223,11 @@ describe('MobsDrawing DEAD critter routing (user live-test 2026-04-24: dead crit
     // T6_MOB_CRITTER_FIBER_SWAMP_DEAD's own typeId/hp, which self-matches
     // unambiguously, to keep testing the Living-filter drawing flow this
     // test is actually about.
+    // @updated 2026-09-09: September dump refresh shifted
+    // T6_MOB_CRITTER_FIBER_SWAMP_DEAD's typeId from 557 to 561 (+4, same
+    // drift as the rest of the mob table this patch).
     test('pcap-derived full-flow: DEAD Fiber carcass typeId=534 renders via Living filter', () => {
-        const p = normalizeParams({'0': 99557, '1': 557, '2': 255, '7': [0, 0], '13': 1564, '33': 0});
+        const p = normalizeParams({'0': 99561, '1': 561, '2': 255, '7': [0, 0], '13': 1564, '33': 0});
 
         mockSettings(livingOn('Fiber'), staticOff('Fiber'));
         mobsHandler.NewMobEvent(p);
@@ -249,8 +252,10 @@ describe('MobsDrawing DEAD critter routing (user live-test 2026-04-24: dead crit
     // @updated 2026-07-20: same ambiguity as typeId=534 above, one tier down
     // (hp=1367 collides with T5 Ore). Switched to a direct synthetic spawn
     // at T5_MOB_CRITTER_FIBER_SWAMP_DEAD's own typeId/hp for the same reason.
+    // @updated 2026-09-09: same +4 drift as typeId=534 above —
+    // T5_MOB_CRITTER_FIBER_SWAMP_DEAD's typeId shifted from 555 to 559.
     test('pcap-derived full-flow: DEAD Fiber carcass typeId=532 renders via Living T5 filter', () => {
-        const p = normalizeParams({'0': 99555, '1': 555, '2': 255, '7': [0, 0], '13': 1367, '33': 0});
+        const p = normalizeParams({'0': 99559, '1': 559, '2': 255, '7': [0, 0], '13': 1367, '33': 0});
 
         mockSettings(livingOn('Fiber'), staticOff('Fiber'));
         mobsHandler.NewMobEvent(p);

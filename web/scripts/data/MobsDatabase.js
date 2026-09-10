@@ -24,7 +24,12 @@
 import {CATEGORIES} from '../constants/LoggerConstants.js';
 
 export class MobsDatabase {
-    // Anchor: wire 444 (hp=20) -> idx 428 = T1_MOB_HIDE_SWAMP_TOAD.
+    // Anchor: wire 424 -> idx 408 = MOB_RABBIT (tier 1, HIDE). Re-verified
+    // 2026-09-09 against mobs.min.json refreshed from the current game patch,
+    // cross-checked against 4 live-confirmed (typeId, tier, lootType) samples
+    // from a real session's CritterCorpseTierAudit log (server-reported tier
+    // on the harvested corpse vs. this DB) — all 4 matched at OFFSET=16, so the
+    // offset itself didn't drift, only the vendored dump was stale.
     static OFFSET = 16;
 
     // Game patches insert/remove rows in the upstream mob table, so wire typeIds

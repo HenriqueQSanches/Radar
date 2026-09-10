@@ -99,10 +99,10 @@ describe('MobsHandler', () => {
             expect(mobs[0].uniqueName).toBe('T5_MOB_CRITTER_FIBER');
         });
 
-        // @updated 2026-07-18: wire 557 (hp=1564) -> T6_MOB_CRITTER_FIBER_SWAMP_DEAD, combat tier 6.
-        // (was wire 535 before the July mob-dump update shifted this row.)
-        test('issue #92: wire typeId 557 resolves to T6_MOB_CRITTER_FIBER_SWAMP_DEAD with combat tier 6', () => {
-            const p = normalizeParams({'0': 99557, '1': 557, '2': 255, '7': [0, 0], '13': 1564, '33': 0});
+        // @updated 2026-09-09: wire 561 (hp=1564) -> T6_MOB_CRITTER_FIBER_SWAMP_DEAD, combat tier 6.
+        // (was wire 557 before the September mob-dump update shifted this row.)
+        test('issue #92: wire typeId 561 resolves to T6_MOB_CRITTER_FIBER_SWAMP_DEAD with combat tier 6', () => {
+            const p = normalizeParams({'0': 99561, '1': 561, '2': 255, '7': [0, 0], '13': 1564, '33': 0});
 
             handler.NewMobEvent(p);
 
@@ -163,17 +163,19 @@ describe('MobsHandler', () => {
             expect(mobs[0].uniqueName).toBe('MOB_RABBIT');
         });
 
-        // @updated 2026-07-20: wire 529's window (hp=856, tier 3) now spans
-        // BOTH T3_MOB_CRITTER_FIBER and T3_MOB_CRITTER_ORE_MOUNTAIN_GREEN —
-        // a real "pedra/minério marcado como fibra" case, structurally
-        // identical to the reported bug. hp+tier can't tell them apart, so
-        // getMobInfo now refuses to name a specific resource type instead of
-        // guessing (previously picked Fiber only by being the closer typeId).
-        test('pcap-derived spawn: Fiber critter typeId=529 no longer guesses a specific resource type (hp collides with Ore)', async () => {
-            const fx = await loadFixture('mobs', 'spawn');
-            const msg = fx.messages.find(m => m.parameters['1'] === 529);
-            expect(msg).toBeDefined();
-            const p = normalizeParams(msg.parameters);
+        // @updated 2026-09-09: the September mob-dump refresh moved wire 529's
+        // captured hp (856) off this ambiguity entirely — that wire now
+        // resolves to an unrelated locked treasure prop. The real "fibra vs
+        // minério" collision this test guards against still exists in the
+        // fresh dump: T3 Fiber/Ore/Rock critters all share hp=856. A direct
+        // spawn AT one of those exact wires resolves definitively by design
+        // (see getMobInfo's exact-hp-match fast path), so this uses a nearby
+        // wire (540) whose own row does NOT share that hp, forcing the same
+        // window fallback a real drifted/uncalibrated wire would hit —
+        // matching how the original pcap capture (wire 529, not itself one
+        // of the colliding rows) exercised this path.
+        test('synthetic spawn: wire 540 no longer guesses a specific resource type (hp collides across Fiber/Ore)', () => {
+            const p = normalizeParams({'0': 99540, '1': 540, '2': 255, '7': [0, 0], '13': 856, '33': 0});
 
             handler.NewMobEvent(p);
 
@@ -182,13 +184,11 @@ describe('MobsHandler', () => {
             expect(mobs[0].type).not.toBe(EnemyType.LivingHarvestable);
         });
 
-        // @updated 2026-07-20: same ambiguity as wire 529, one tier up (hp=1203
-        // collides with T4 Ore/Rock).
-        test('pcap-derived spawn: Fiber critter typeId=531 no longer guesses a specific resource type (hp collides with Ore/Rock)', async () => {
-            const fx = await loadFixture('mobs', 'spawn');
-            const msg = fx.messages.find(m => m.parameters['1'] === 531);
-            expect(msg).toBeDefined();
-            const p = normalizeParams(msg.parameters);
+        // @updated 2026-09-09: same drift as wire 540 above, one tier up
+        // (T4 Fiber/Ore critters, hp=1203). Wire 545 doesn't itself match
+        // that hp, forcing the window fallback that finds both types.
+        test('synthetic spawn: wire 545 no longer guesses a specific resource type (hp collides across Fiber/Ore)', () => {
+            const p = normalizeParams({'0': 99545, '1': 545, '2': 255, '7': [0, 0], '13': 1203, '33': 0});
 
             handler.NewMobEvent(p);
 
@@ -244,16 +244,14 @@ describe('MobsHandler', () => {
             expect(mobs[0].uniqueName).toBe('T5_MOB_HIDE_MISTS_OWL');
         });
 
-        // @verified 2026-04-26: wire 532 -> T5_MOB_CRITTER_FIBER_SWAMP_RED.
-        // @updated 2026-07-20: wire 532's window (hp=1367, tier 5) now spans
-        // both T5_MOB_CRITTER_FIBER and T5_MOB_CRITTER_ORE_MOUNTAIN_RED —
-        // same class of ambiguity as the reported "pedra marcada como
-        // fibra" bug. getMobInfo no longer guesses a specific type here.
-        test('pcap-derived spawn (living-tier): Fiber Swamp typeId=532 no longer guesses a specific resource type (hp collides with Ore)', async () => {
-            const fx = await loadFixture('mobs', 'living-tier');
-            const msg = fx.messages.find(m => m.parameters['1'] === 532);
-            expect(msg).toBeDefined();
-            const p = normalizeParams(msg.parameters);
+        // @updated 2026-09-09: same September dump drift as wires 540/545
+        // above — wire 532's captured hp (1367) no longer lands on this
+        // collision after the refresh (T5 Fiber/Ore/Rock critters share
+        // hp=1367 at different wires now). Wire 566 doesn't itself match
+        // that hp, forcing the window fallback. Switched from a frozen pcap
+        // fixture to a direct synthetic spawn.
+        test('synthetic spawn: wire 566 no longer guesses a specific resource type (hp collides across Fiber/Ore)', () => {
+            const p = normalizeParams({'0': 99566, '1': 566, '2': 255, '7': [0, 0], '13': 1367, '33': 0});
 
             handler.NewMobEvent(p);
 
@@ -262,13 +260,11 @@ describe('MobsHandler', () => {
             expect(mobs[0].type).not.toBe(EnemyType.LivingHarvestable);
         });
 
-        // @updated 2026-07-20: same ambiguity one tier up (hp=1564 collides
-        // with T6 Ore/Rock/Fiber-Roads).
-        test('pcap-derived spawn (living-tier): Fiber Swamp typeId=534 no longer guesses a specific resource type (hp collides with Ore/Rock)', async () => {
-            const fx = await loadFixture('mobs', 'living-tier');
-            const msg = fx.messages.find(m => m.parameters['1'] === 534);
-            expect(msg).toBeDefined();
-            const p = normalizeParams(msg.parameters);
+        // @updated 2026-09-09: same drift one tier up (T6 Fiber/Ore/Rock
+        // critters, hp=1564). Wire 568 doesn't itself match that hp,
+        // forcing the window fallback.
+        test('synthetic spawn: wire 568 no longer guesses a specific resource type (hp collides across Fiber/Ore/Rock)', () => {
+            const p = normalizeParams({'0': 99568, '1': 568, '2': 255, '7': [0, 0], '13': 1564, '33': 0});
 
             handler.NewMobEvent(p);
 
@@ -294,16 +290,15 @@ describe('MobsHandler', () => {
             expect(mobs[0].uniqueName).toBe('T3_MOB_CRITTER_WOOD_MISTS_GREEN');
         });
 
-        // @updated 2026-07-18: wire 650's captured hp (1443) is shared by
-        // BOTH the tier-3 and tier-4 Wood Mists Green critters in the current
-        // dump, and they disagree on tier — a genuinely incoherent window
-        // (see MobsDatabase's incoherent-window handling), so it can no
-        // longer reliably resolve to tier 4 from this real capture (tier 3
-        // wins the proximity tie-break, duplicating the wire=649 test above).
-        // Switched to a direct synthetic spawn at T4_MOB_CRITTER_WOOD_MISTS_GREEN's
-        // current typeId with its real hp, which self-matches unambiguously.
-        test('synthetic: Wood Mists critter typeId=672 (T4_MOB_CRITTER_WOOD_MISTS_GREEN) rendered with harvest tier 4', () => {
-            const p = normalizeParams({'0': 99672, '1': 672, '2': 255, '7': [0, 0], '13': 1443, '33': 0});
+        // @updated 2026-09-09: September dump refresh shifted
+        // T4_MOB_CRITTER_WOOD_MISTS_GREEN off wire 672 (now an unrelated
+        // T6 Fiber Roads Elite) onto wire 676. The tier-3/tier-4 hp=1443
+        // collision this test works around also shifted (still adjacent,
+        // now at wire 675/676) but a direct synthetic spawn at the exact
+        // current typeId matches its own dump row before any window/tie-break
+        // logic runs, so it still resolves unambiguously to tier 4.
+        test('synthetic: Wood Mists critter typeId=676 (T4_MOB_CRITTER_WOOD_MISTS_GREEN) rendered with harvest tier 4', () => {
+            const p = normalizeParams({'0': 99676, '1': 676, '2': 255, '7': [0, 0], '13': 1443, '33': 0});
 
             handler.NewMobEvent(p);
 
@@ -361,10 +356,10 @@ describe('MobsHandler', () => {
             expect(mobs[0].uniqueName).toBe('T6_MOB_CRITTER_HIDE_MISTCOUGAR_ELITE');
         });
 
-        // @updated 2026-07-18: wire 663 (was 641 before the July mob-dump
+        // @updated 2026-09-09: wire 667 (was 663 before the September mob-dump
         // update shifted this row) -> T6_MOB_CRITTER_FIBER_ROADS_VETERAN.
-        test('roads veteran: wire 663 resolves to T6_MOB_CRITTER_FIBER_ROADS_VETERAN with tier 6', () => {
-            const p = normalizeParams({'0': 99663, '1': 663, '2': 255, '7': [0, 0], '13': 4592, '33': 0});
+        test('roads veteran: wire 667 resolves to T6_MOB_CRITTER_FIBER_ROADS_VETERAN with tier 6', () => {
+            const p = normalizeParams({'0': 99667, '1': 667, '2': 255, '7': [0, 0], '13': 4592, '33': 0});
             handler.NewMobEvent(p);
             const mobs = handler.getMobList();
             expect(mobs).toHaveLength(1);
@@ -374,10 +369,10 @@ describe('MobsHandler', () => {
             expect(mobs[0].uniqueName).toBe('T6_MOB_CRITTER_FIBER_ROADS_VETERAN');
         });
 
-        // @updated 2026-07-18: wire 670 (was 648 before the July mob-dump
+        // @updated 2026-09-09: wire 674 (was 670 before the September mob-dump
         // update shifted this row) -> T8_MOB_CRITTER_FIBER_ROADS_ELITE.
-        test('roads elite: wire 670 resolves to T8_MOB_CRITTER_FIBER_ROADS_ELITE with tier 8', () => {
-            const p = normalizeParams({'0': 99670, '1': 670, '2': 255, '7': [0, 0], '13': 14688, '33': 0});
+        test('roads elite: wire 674 resolves to T8_MOB_CRITTER_FIBER_ROADS_ELITE with tier 8', () => {
+            const p = normalizeParams({'0': 99674, '1': 674, '2': 255, '7': [0, 0], '13': 14688, '33': 0});
             handler.NewMobEvent(p);
             const mobs = handler.getMobList();
             expect(mobs).toHaveLength(1);
@@ -387,10 +382,10 @@ describe('MobsHandler', () => {
             expect(mobs[0].uniqueName).toBe('T8_MOB_CRITTER_FIBER_ROADS_ELITE');
         });
 
-        // @updated 2026-07-18: wire 646 (was 624 before the July mob-dump
+        // @updated 2026-09-09: wire 650 (was 646 before the September mob-dump
         // update shifted this row) -> T4_MOB_CRITTER_ORE_ROADS_VETERAN.
-        test('roads veteran: wire 646 resolves to T4_MOB_CRITTER_ORE_ROADS_VETERAN with tier 4', () => {
-            const p = normalizeParams({'0': 99646, '1': 646, '2': 255, '7': [0, 0], '13': 3970, '33': 0});
+        test('roads veteran: wire 650 resolves to T4_MOB_CRITTER_ORE_ROADS_VETERAN with tier 4', () => {
+            const p = normalizeParams({'0': 99650, '1': 650, '2': 255, '7': [0, 0], '13': 3970, '33': 0});
             handler.NewMobEvent(p);
             const mobs = handler.getMobList();
             expect(mobs).toHaveLength(1);
@@ -404,8 +399,8 @@ describe('MobsHandler', () => {
         // ROCK/ORE/FIBER_ROADS_ELITE alike — the exact "pedra/minério/fibra"
         // ambiguity reported live. getMobInfo now refuses to guess which one
         // this is instead of arbitrarily picking Rock.
-        test('roads elite: wire 616 no longer guesses a specific resource type (hp collides with Ore/Fiber)', () => {
-            const p = normalizeParams({'0': 99616, '1': 616, '2': 255, '7': [0, 0], '13': 9883, '33': 0});
+        test('roads elite: wire 620 no longer guesses a specific resource type (hp collides with Ore/Fiber)', () => {
+            const p = normalizeParams({'0': 99620, '1': 620, '2': 255, '7': [0, 0], '13': 9883, '33': 0});
             handler.NewMobEvent(p);
             const mobs = handler.getMobList();
             expect(mobs).toHaveLength(1);
@@ -578,72 +573,72 @@ describe('MobsHandler', () => {
         // exist to verify. Each row now uses its own real hp so the lookup
         // takes the same exact-match path a real, non-enchanted spawn would.
         const LIVING_COVERAGE = [
-            ['Fiber', 3, 'LIVING', 547, 856,  'Fiber', EnemyType.LivingHarvestable, 3], // T3_MOB_CRITTER_FIBER
-            ['Fiber', 3, 'DEAD',   737, 856,  'Fiber', EnemyType.LivingHarvestable, 3], // T3_MOB_CRITTER_FIBER_MISTS_DEAD
-            ['Fiber', 4, 'LIVING', 552, 1203, 'Fiber', EnemyType.LivingHarvestable, 4], // T4_MOB_CRITTER_FIBER_SWAMP_GREEN
-            ['Fiber', 4, 'DEAD',   738, 1203, 'Fiber', EnemyType.LivingHarvestable, 4], // T4_MOB_CRITTER_FIBER_MISTS_DEAD
-            ['Fiber', 5, 'LIVING', 548, 1367, 'Fiber', EnemyType.LivingHarvestable, 5], // T5_MOB_CRITTER_FIBER
-            ['Fiber', 5, 'DEAD',   555, 1367, 'Fiber', EnemyType.LivingHarvestable, 5], // T5_MOB_CRITTER_FIBER_SWAMP_DEAD
-            ['Fiber', 6, 'LIVING', 556, 1564, 'Fiber', EnemyType.LivingHarvestable, 6], // T6_MOB_CRITTER_FIBER_SWAMP_RED
-            ['Fiber', 6, 'DEAD',   557, 1564, 'Fiber', EnemyType.LivingHarvestable, 6], // T6_MOB_CRITTER_FIBER_SWAMP_DEAD
-            ['Fiber', 7, 'LIVING', 549, 1830, 'Fiber', EnemyType.LivingHarvestable, 7], // T7_MOB_CRITTER_FIBER
-            ['Fiber', 7, 'DEAD',   558, 1830, 'Fiber', EnemyType.LivingHarvestable, 7], // T7_MOB_CRITTER_FIBER_SWAMP_DEAD
-            ['Fiber', 8, 'LIVING', 660, 2192, 'Fiber', EnemyType.LivingHarvestable, 8], // T8_MOB_CRITTER_FIBER_ROADS
-            ['Fiber', 8, 'DEAD',   559, 2192, 'Fiber', EnemyType.LivingHarvestable, 8], // T8_MOB_CRITTER_FIBER_SWAMP_DEAD
+            ['Fiber', 3, 'LIVING', 551, 856, 'Fiber', EnemyType.LivingHarvestable, 3], // T3_MOB_CRITTER_FIBER
+            ['Fiber', 3, 'DEAD', 741, 856, 'Fiber', EnemyType.LivingHarvestable, 3], // T3_MOB_CRITTER_FIBER_MISTS_DEAD
+            ['Fiber', 4, 'LIVING', 556, 1203, 'Fiber', EnemyType.LivingHarvestable, 4], // T4_MOB_CRITTER_FIBER_SWAMP_GREEN
+            ['Fiber', 4, 'DEAD', 742, 1203, 'Fiber', EnemyType.LivingHarvestable, 4], // T4_MOB_CRITTER_FIBER_MISTS_DEAD
+            ['Fiber', 5, 'LIVING', 552, 1367, 'Fiber', EnemyType.LivingHarvestable, 5], // T5_MOB_CRITTER_FIBER
+            ['Fiber', 5, 'DEAD', 559, 1367, 'Fiber', EnemyType.LivingHarvestable, 5], // T5_MOB_CRITTER_FIBER_SWAMP_DEAD
+            ['Fiber', 6, 'LIVING', 560, 1564, 'Fiber', EnemyType.LivingHarvestable, 6], // T6_MOB_CRITTER_FIBER_SWAMP_RED
+            ['Fiber', 6, 'DEAD', 561, 1564, 'Fiber', EnemyType.LivingHarvestable, 6], // T6_MOB_CRITTER_FIBER_SWAMP_DEAD
+            ['Fiber', 7, 'LIVING', 553, 1830, 'Fiber', EnemyType.LivingHarvestable, 7], // T7_MOB_CRITTER_FIBER
+            ['Fiber', 7, 'DEAD', 562, 1830, 'Fiber', EnemyType.LivingHarvestable, 7], // T7_MOB_CRITTER_FIBER_SWAMP_DEAD
+            ['Fiber', 8, 'LIVING', 664, 2192, 'Fiber', EnemyType.LivingHarvestable, 8], // T8_MOB_CRITTER_FIBER_ROADS
+            ['Fiber', 8, 'DEAD', 563, 2192, 'Fiber', EnemyType.LivingHarvestable, 8], // T8_MOB_CRITTER_FIBER_SWAMP_DEAD
 
-            ['Hide', 1, 'LIVING',  392, 20,   'Hide',  EnemyType.LivingSkinnable, 1], // T1_MOB_HIDE_MISTS_WOLPERTINGER
-            ['Hide', 2, 'LIVING',  393, 515,  'Hide',  EnemyType.LivingSkinnable, 2], // T2_MOB_HIDE_MISTS_FOX
-            ['Hide', 3, 'LIVING',  394, 685,  'Hide',  EnemyType.LivingSkinnable, 3], // T3_MOB_HIDE_MISTS_DEER
-            ['Hide', 3, 'DYNAMIC', 424, 685,  'Hide',  EnemyType.LivingSkinnable, 3], // MOB_DYNAMIC_WOLF
-            ['Hide', 4, 'LIVING',  395, 1143, 'Hide',  EnemyType.LivingSkinnable, 4], // T4_MOB_HIDE_MISTS_GIANTSTAG
-            ['Hide', 4, 'DYNAMIC', 426, 1323, 'Hide',  EnemyType.LivingSkinnable, 4], // MOB_DYNAMIC_BOAR
-            ['Hide', 5, 'LIVING',  396, 1032, 'Hide',  EnemyType.LivingSkinnable, 5], // T5_MOB_HIDE_MISTS_OWL
-            ['Hide', 5, 'DYNAMIC', 428, 1641, 'Hide',  EnemyType.LivingSkinnable, 5], // MOB_DYNAMIC_BEAR
-            ['Hide', 6, 'LIVING',  397, 1113, 'Hide',  EnemyType.LivingSkinnable, 6], // T6_MOB_HIDE_MISTS_HOUND
-            ['Hide', 6, 'DYNAMIC', 430, 1180, 'Hide',  EnemyType.LivingSkinnable, 6], // MOB_DYNAMIC_DIREWOLF
-            ['Hide', 7, 'LIVING',  398, 1921, 'Hide',  EnemyType.LivingSkinnable, 7], // T7_MOB_HIDE_MISTS_DIREBEAR
-            ['Hide', 7, 'DYNAMIC', 434, 1052, 'Hide',  EnemyType.LivingSkinnable, 7], // T7_MOB_DYNAMIC_HIDE_FOREST_DIREBOAR_SMALL
-            ['Hide', 8, 'LIVING',  399, 2171, 'Hide',  EnemyType.LivingSkinnable, 8], // T8_MOB_HIDE_MISTS_DRAGONHAWK
-            ['Hide', 8, 'DYNAMIC', 437, 1370, 'Hide',  EnemyType.LivingSkinnable, 8], // T8_MOB_DYNAMIC_HIDE_FOREST_DIREBEAR_SMALL
+            ['Hide', 1, 'LIVING', 396, 20, 'Hide', EnemyType.LivingSkinnable, 1], // T1_MOB_HIDE_MISTS_WOLPERTINGER
+            ['Hide', 2, 'LIVING', 397, 515, 'Hide', EnemyType.LivingSkinnable, 2], // T2_MOB_HIDE_MISTS_FOX
+            ['Hide', 3, 'LIVING', 398, 685, 'Hide', EnemyType.LivingSkinnable, 3], // T3_MOB_HIDE_MISTS_DEER
+            ['Hide', 3, 'DYNAMIC', 428, 685, 'Hide', EnemyType.LivingSkinnable, 3], // MOB_DYNAMIC_WOLF
+            ['Hide', 4, 'LIVING', 399, 1143, 'Hide', EnemyType.LivingSkinnable, 4], // T4_MOB_HIDE_MISTS_GIANTSTAG
+            ['Hide', 4, 'DYNAMIC', 430, 1323, 'Hide', EnemyType.LivingSkinnable, 4], // MOB_DYNAMIC_BOAR
+            ['Hide', 5, 'LIVING', 400, 1032, 'Hide', EnemyType.LivingSkinnable, 5], // T5_MOB_HIDE_MISTS_OWL
+            ['Hide', 5, 'DYNAMIC', 432, 1641, 'Hide', EnemyType.LivingSkinnable, 5], // MOB_DYNAMIC_BEAR
+            ['Hide', 6, 'LIVING', 401, 1113, 'Hide', EnemyType.LivingSkinnable, 6], // T6_MOB_HIDE_MISTS_HOUND
+            ['Hide', 6, 'DYNAMIC', 434, 1180, 'Hide', EnemyType.LivingSkinnable, 6], // MOB_DYNAMIC_DIREWOLF
+            ['Hide', 7, 'LIVING', 402, 1921, 'Hide', EnemyType.LivingSkinnable, 7], // T7_MOB_HIDE_MISTS_DIREBEAR
+            ['Hide', 7, 'DYNAMIC', 438, 1052, 'Hide', EnemyType.LivingSkinnable, 7], // T7_MOB_DYNAMIC_HIDE_FOREST_DIREBOAR_SMALL
+            ['Hide', 8, 'LIVING', 403, 2171, 'Hide', EnemyType.LivingSkinnable, 8], // T8_MOB_HIDE_MISTS_DRAGONHAWK
+            ['Hide', 8, 'DYNAMIC', 441, 1370, 'Hide', EnemyType.LivingSkinnable, 8], // T8_MOB_DYNAMIC_HIDE_FOREST_DIREBEAR_SMALL
 
-            ['Log', 3, 'LIVING', 576, 1028, 'Log', EnemyType.LivingHarvestable, 3], // T3_MOB_CRITTER_WOOD_FOREST_GREEN
-            ['Log', 3, 'DEAD',   719, 1443, 'Log', EnemyType.LivingHarvestable, 3], // T3_MOB_CRITTER_WOOD_MISTS_DEAD
-            ['Log', 4, 'LIVING', 578, 1443, 'Log', EnemyType.LivingHarvestable, 4], // T4_MOB_CRITTER_WOOD_FOREST_GREEN
-            ['Log', 4, 'DEAD',   720, 1443, 'Log', EnemyType.LivingHarvestable, 4], // T4_MOB_CRITTER_WOOD_MISTS_DEAD
-            ['Log', 5, 'LIVING', 580, 1641, 'Log', EnemyType.LivingHarvestable, 5], // T5_MOB_CRITTER_WOOD_FOREST_RED
-            ['Log', 5, 'DEAD',   581, 1641, 'Log', EnemyType.LivingHarvestable, 5], // T5_MOB_CRITTER_WOOD_FOREST_DEAD
-            ['Log', 6, 'LIVING', 582, 1876, 'Log', EnemyType.LivingHarvestable, 6], // T6_MOB_CRITTER_WOOD_FOREST_RED
-            ['Log', 6, 'DEAD',   583, 1876, 'Log', EnemyType.LivingHarvestable, 6], // T6_MOB_CRITTER_WOOD_FOREST_DEAD
-            ['Log', 7, 'LIVING', 614, 2196, 'Log', EnemyType.LivingHarvestable, 7], // T7_MOB_CRITTER_WOOD_ROADS
-            ['Log', 7, 'DEAD',   584, 2196, 'Log', EnemyType.LivingHarvestable, 7], // T7_MOB_CRITTER_WOOD_FOREST_DEAD
-            ['Log', 8, 'LIVING', 615, 2631, 'Log', EnemyType.LivingHarvestable, 8], // T8_MOB_CRITTER_WOOD_ROADS
-            ['Log', 8, 'DEAD',   585, 2631, 'Log', EnemyType.LivingHarvestable, 8], // T8_MOB_CRITTER_WOOD_FOREST_DEAD
+            ['Log', 3, 'LIVING', 580, 1028, 'Log', EnemyType.LivingHarvestable, 3], // T3_MOB_CRITTER_WOOD_FOREST_GREEN
+            ['Log', 3, 'DEAD', 723, 1443, 'Log', EnemyType.LivingHarvestable, 3], // T3_MOB_CRITTER_WOOD_MISTS_DEAD
+            ['Log', 4, 'LIVING', 582, 1443, 'Log', EnemyType.LivingHarvestable, 4], // T4_MOB_CRITTER_WOOD_FOREST_GREEN
+            ['Log', 4, 'DEAD', 724, 1443, 'Log', EnemyType.LivingHarvestable, 4], // T4_MOB_CRITTER_WOOD_MISTS_DEAD
+            ['Log', 5, 'LIVING', 584, 1641, 'Log', EnemyType.LivingHarvestable, 5], // T5_MOB_CRITTER_WOOD_FOREST_RED
+            ['Log', 5, 'DEAD', 585, 1641, 'Log', EnemyType.LivingHarvestable, 5], // T5_MOB_CRITTER_WOOD_FOREST_DEAD
+            ['Log', 6, 'LIVING', 586, 1876, 'Log', EnemyType.LivingHarvestable, 6], // T6_MOB_CRITTER_WOOD_FOREST_RED
+            ['Log', 6, 'DEAD', 587, 1876, 'Log', EnemyType.LivingHarvestable, 6], // T6_MOB_CRITTER_WOOD_FOREST_DEAD
+            ['Log', 7, 'LIVING', 618, 2196, 'Log', EnemyType.LivingHarvestable, 7], // T7_MOB_CRITTER_WOOD_ROADS
+            ['Log', 7, 'DEAD', 588, 2196, 'Log', EnemyType.LivingHarvestable, 7], // T7_MOB_CRITTER_WOOD_FOREST_DEAD
+            ['Log', 8, 'LIVING', 619, 2631, 'Log', EnemyType.LivingHarvestable, 8], // T8_MOB_CRITTER_WOOD_ROADS
+            ['Log', 8, 'DEAD', 589, 2631, 'Log', EnemyType.LivingHarvestable, 8], // T8_MOB_CRITTER_WOOD_FOREST_DEAD
 
-            ['Ore', 3, 'LIVING', 566, 856,  'Ore', EnemyType.LivingHarvestable, 3], // T3_MOB_CRITTER_ORE_MOUNTAIN_GREEN
-            ['Ore', 3, 'DEAD',   731, 1203, 'Ore', EnemyType.LivingHarvestable, 3], // T3_MOB_CRITTER_ORE_MISTS_DEAD
-            ['Ore', 4, 'LIVING', 568, 1203, 'Ore', EnemyType.LivingHarvestable, 4], // T4_MOB_CRITTER_ORE_MOUNTAIN_GREEN
-            ['Ore', 4, 'DEAD',   732, 1203, 'Ore', EnemyType.LivingHarvestable, 4], // T4_MOB_CRITTER_ORE_MISTS_DEAD
-            ['Ore', 5, 'LIVING', 570, 1367, 'Ore', EnemyType.LivingHarvestable, 5], // T5_MOB_CRITTER_ORE_MOUNTAIN_RED
-            ['Ore', 5, 'DEAD',   571, 1367, 'Ore', EnemyType.LivingHarvestable, 5], // T5_MOB_CRITTER_ORE_MOUNTAIN_DEAD
-            ['Ore', 6, 'LIVING', 572, 1564, 'Ore', EnemyType.LivingHarvestable, 6], // T6_MOB_CRITTER_ORE_MOUNTAIN_RED
-            ['Ore', 6, 'DEAD',   573, 1564, 'Ore', EnemyType.LivingHarvestable, 6], // T6_MOB_CRITTER_ORE_MOUNTAIN_DEAD
-            ['Ore', 7, 'LIVING', 644, 1830, 'Ore', EnemyType.LivingHarvestable, 7], // T7_MOB_CRITTER_ORE_ROADS
-            ['Ore', 7, 'DEAD',   574, 1830, 'Ore', EnemyType.LivingHarvestable, 7], // T7_MOB_CRITTER_ORE_MOUNTAIN_DEAD
-            ['Ore', 8, 'LIVING', 645, 2192, 'Ore', EnemyType.LivingHarvestable, 8], // T8_MOB_CRITTER_ORE_ROADS
-            ['Ore', 8, 'DEAD',   575, 2192, 'Ore', EnemyType.LivingHarvestable, 8], // T8_MOB_CRITTER_ORE_MOUNTAIN_DEAD
+            ['Ore', 3, 'LIVING', 570, 856, 'Ore', EnemyType.LivingHarvestable, 3], // T3_MOB_CRITTER_ORE_MOUNTAIN_GREEN
+            ['Ore', 3, 'DEAD', 735, 1203, 'Ore', EnemyType.LivingHarvestable, 3], // T3_MOB_CRITTER_ORE_MISTS_DEAD
+            ['Ore', 4, 'LIVING', 572, 1203, 'Ore', EnemyType.LivingHarvestable, 4], // T4_MOB_CRITTER_ORE_MOUNTAIN_GREEN
+            ['Ore', 4, 'DEAD', 736, 1203, 'Ore', EnemyType.LivingHarvestable, 4], // T4_MOB_CRITTER_ORE_MISTS_DEAD
+            ['Ore', 5, 'LIVING', 574, 1367, 'Ore', EnemyType.LivingHarvestable, 5], // T5_MOB_CRITTER_ORE_MOUNTAIN_RED
+            ['Ore', 5, 'DEAD', 575, 1367, 'Ore', EnemyType.LivingHarvestable, 5], // T5_MOB_CRITTER_ORE_MOUNTAIN_DEAD
+            ['Ore', 6, 'LIVING', 576, 1564, 'Ore', EnemyType.LivingHarvestable, 6], // T6_MOB_CRITTER_ORE_MOUNTAIN_RED
+            ['Ore', 6, 'DEAD', 577, 1564, 'Ore', EnemyType.LivingHarvestable, 6], // T6_MOB_CRITTER_ORE_MOUNTAIN_DEAD
+            ['Ore', 7, 'LIVING', 648, 1830, 'Ore', EnemyType.LivingHarvestable, 7], // T7_MOB_CRITTER_ORE_ROADS
+            ['Ore', 7, 'DEAD', 578, 1830, 'Ore', EnemyType.LivingHarvestable, 7], // T7_MOB_CRITTER_ORE_MOUNTAIN_DEAD
+            ['Ore', 8, 'LIVING', 649, 2192, 'Ore', EnemyType.LivingHarvestable, 8], // T8_MOB_CRITTER_ORE_ROADS
+            ['Ore', 8, 'DEAD', 579, 2192, 'Ore', EnemyType.LivingHarvestable, 8], // T8_MOB_CRITTER_ORE_MOUNTAIN_DEAD
 
-            ['Rock', 3, 'LIVING', 586, 856,  'Rock', EnemyType.LivingHarvestable, 3], // T3_MOB_CRITTER_ROCK_HIGHLAND_GREEN
-            ['Rock', 3, 'DEAD',   725, 1203, 'Rock', EnemyType.LivingHarvestable, 3], // T3_MOB_CRITTER_ROCK_MISTS_DEAD
-            ['Rock', 4, 'LIVING', 588, 1203, 'Rock', EnemyType.LivingHarvestable, 4], // T4_MOB_CRITTER_ROCK_HIGHLAND_GREEN
-            ['Rock', 4, 'DEAD',   726, 1203, 'Rock', EnemyType.LivingHarvestable, 4], // T4_MOB_CRITTER_ROCK_MISTS_DEAD
-            ['Rock', 5, 'LIVING', 590, 1367, 'Rock', EnemyType.LivingHarvestable, 5], // T5_MOB_CRITTER_ROCK_HIGHLAND_RED
-            ['Rock', 5, 'DEAD',   591, 1367, 'Rock', EnemyType.LivingHarvestable, 5], // T5_MOB_CRITTER_ROCK_HIGHLAND_DEAD
-            ['Rock', 6, 'LIVING', 592, 1564, 'Rock', EnemyType.LivingHarvestable, 6], // T6_MOB_CRITTER_ROCK_HIGHLAND_RED
-            ['Rock', 6, 'DEAD',   593, 1564, 'Rock', EnemyType.LivingHarvestable, 6], // T6_MOB_CRITTER_ROCK_HIGHLAND_DEAD
-            ['Rock', 7, 'LIVING', 629, 1830, 'Rock', EnemyType.LivingHarvestable, 7], // T7_MOB_CRITTER_ROCK_ROADS
-            ['Rock', 7, 'DEAD',   594, 1830, 'Rock', EnemyType.LivingHarvestable, 7], // T7_MOB_CRITTER_ROCK_HIGHLAND_DEAD
-            ['Rock', 8, 'LIVING', 630, 2192, 'Rock', EnemyType.LivingHarvestable, 8], // T8_MOB_CRITTER_ROCK_ROADS
-            ['Rock', 8, 'DEAD',   595, 2192, 'Rock', EnemyType.LivingHarvestable, 8], // T8_MOB_CRITTER_ROCK_HIGHLAND_DEAD
+            ['Rock', 3, 'LIVING', 590, 856, 'Rock', EnemyType.LivingHarvestable, 3], // T3_MOB_CRITTER_ROCK_HIGHLAND_GREEN
+            ['Rock', 3, 'DEAD', 729, 1203, 'Rock', EnemyType.LivingHarvestable, 3], // T3_MOB_CRITTER_ROCK_MISTS_DEAD
+            ['Rock', 4, 'LIVING', 592, 1203, 'Rock', EnemyType.LivingHarvestable, 4], // T4_MOB_CRITTER_ROCK_HIGHLAND_GREEN
+            ['Rock', 4, 'DEAD', 730, 1203, 'Rock', EnemyType.LivingHarvestable, 4], // T4_MOB_CRITTER_ROCK_MISTS_DEAD
+            ['Rock', 5, 'LIVING', 594, 1367, 'Rock', EnemyType.LivingHarvestable, 5], // T5_MOB_CRITTER_ROCK_HIGHLAND_RED
+            ['Rock', 5, 'DEAD', 595, 1367, 'Rock', EnemyType.LivingHarvestable, 5], // T5_MOB_CRITTER_ROCK_HIGHLAND_DEAD
+            ['Rock', 6, 'LIVING', 596, 1564, 'Rock', EnemyType.LivingHarvestable, 6], // T6_MOB_CRITTER_ROCK_HIGHLAND_RED
+            ['Rock', 6, 'DEAD', 597, 1564, 'Rock', EnemyType.LivingHarvestable, 6], // T6_MOB_CRITTER_ROCK_HIGHLAND_DEAD
+            ['Rock', 7, 'LIVING', 633, 1830, 'Rock', EnemyType.LivingHarvestable, 7], // T7_MOB_CRITTER_ROCK_ROADS
+            ['Rock', 7, 'DEAD', 598, 1830, 'Rock', EnemyType.LivingHarvestable, 7], // T7_MOB_CRITTER_ROCK_HIGHLAND_DEAD
+            ['Rock', 8, 'LIVING', 634, 2192, 'Rock', EnemyType.LivingHarvestable, 8], // T8_MOB_CRITTER_ROCK_ROADS
+            ['Rock', 8, 'DEAD', 599, 2192, 'Rock', EnemyType.LivingHarvestable, 8], // T8_MOB_CRITTER_ROCK_HIGHLAND_DEAD
         ];
 
         test.each(LIVING_COVERAGE)(
@@ -718,9 +713,9 @@ describe('MobsHandler', () => {
                 e4: Array(8).fill(false),
             };
             settingsSync.getJSON.mockReturnValue(e0OffOnlyE2On);
-            // typeId 395 (T4_MOB_HIDE_MISTS_GIANTSTAG) — was 373 before the
-            // July mob-dump update shifted this row onto an unrelated boss.
-            const spawnParams = normalizeParams({'0': 92000, '1': 395, '2': 255, '7': [0, 0], '13': 1000, '33': 0});
+            // typeId 399 (T4_MOB_HIDE_MISTS_GIANTSTAG) — was 395 before the
+            // September mob-dump update shifted this row onto an unrelated mob.
+            const spawnParams = normalizeParams({'0': 92000, '1': 399, '2': 255, '7': [0, 0], '13': 1000, '33': 0});
             handler.NewMobEvent(spawnParams);
 
             handler.updateEnchantEvent({0: 92000, 1: 2});
