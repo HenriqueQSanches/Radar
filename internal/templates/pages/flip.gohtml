@@ -220,6 +220,18 @@
         }
 
         function initFlipPage() {
+            // PageController's htmx:afterSettle init and the onGlobalsReady-triggered
+            // reinitCurrentPage() below both fire on every visit to this page (the
+            // second bypasses the normal destroy step by design, for pages that need
+            // a clean re-init once globals are ready) — so init can run twice back to
+            // back with no destroy in between. Harmless for most pages, but this one
+            // starts a setInterval poll and adds button listeners: two uncleaned
+            // rounds meant a doubled (then quadrupled, on repeat visits) fetch/polling
+            // rate, worse each time the user navigated back to Flip — the "clicking
+            // Flip crashes the frontend" bug. Self-cleaning here, rather than
+            // touching the shared PageController pattern every other page also uses.
+            destroyFlipPage();
+
             const refreshBtn = document.getElementById('flipRefreshBtn');
             const clearBtn = document.getElementById('flipClearBtn');
             const opportunitiesStatus = document.getElementById('flipOpportunitiesStatus');

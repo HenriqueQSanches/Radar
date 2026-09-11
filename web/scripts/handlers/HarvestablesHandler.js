@@ -1,4 +1,6 @@
 import {CATEGORIES} from "../constants/LoggerConstants.js";
+import settingsSync from "../utils/SettingsSync.js";
+import {shouldRenderLivingResource, shouldRenderStaticResource} from "../utils/LivingResourceFilter.js";
 
 const HarvestableType =
 {
@@ -50,6 +52,9 @@ export class HarvestablesHandler
     {
         this.harvestableList = [];
         this.mobsHandler = mobsHandler;
+        // Ids already alerted this session, so a resource matching the user's own
+        // tier/enchant filter only pings once, not on every update/re-verify.
+        this.alertedResourceIds = new Set();
 
         // 📊 Statistics tracking
         this.stats = {
@@ -131,6 +136,7 @@ export class HarvestablesHandler
                 id, type, stringType, tier, charges, size, mobileTypeId,
                 listSize: this.harvestableList.length
             });
+            this._checkSpotAlert(h);
         }
         else // update
         {
@@ -140,6 +146,7 @@ export class HarvestablesHandler
             window.logger?.debug(CATEGORIES.HARVESTABLES, 'HarvestableUpdated', {
                 id, stringType, newCharges: charges
             });
+            this._checkSpotAlert(harvestable);
         }
     }
 
@@ -203,6 +210,7 @@ export class HarvestablesHandler
         harvestable.charges = charges;
         harvestable.size = size;
         if (stringType) harvestable.stringType = stringType;
+        this._checkSpotAlert(harvestable);
     }
 
     harvestFinished(Parameters)
@@ -244,6 +252,7 @@ export class HarvestablesHandler
         window.logger?.info(CATEGORIES.HARVESTABLES, 'LivingResource_EnchantCorrected', {
             id, mobileTypeId: harvestable.mobileTypeId, oldCharges, newCharges: enchantmentLevel,
         });
+        this._checkSpotAlert(harvestable);
     }
 
     HarvestUpdateEvent(Parameters) // Event 46 - HarvestableChangeState
@@ -522,6 +531,58 @@ export class HarvestablesHandler
     Clear()
     {
         this.harvestableList = [];
+        this.alertedResourceIds.clear();
+    }
+
+    // Opt-in (settingResourceSpotAlert, off by default): pings a toast + sound the
+    // first time a resource matching the user's OWN tier/enchant filter (Settings >
+    // Resources) becomes known — same filter shouldRenderLivingResource/
+    // shouldRenderStaticResource already gates drawing with, so this only fires for
+    // something that would actually be drawn on the radar. Called from every place
+    // charges/stringType can change (spawn, update, enchant correction) since a
+    // resource can start out not matching (e.g. enchant unknown yet) and only start
+    // matching once corrected.
+    _checkSpotAlert(harvestable)
+    {
+        if (!settingsSync.getBool('settingResourceSpotAlert')) return;
+        if (this.alertedResourceIds.has(harvestable.id)) return;
+        if (!harvestable.stringType) return;
+
+        const isLiving = harvestable.mobileTypeId !== null && harvestable.mobileTypeId !== undefined
+            && harvestable.mobileTypeId !== 65535 && harvestable.mobileTypeId !== -1;
+        const filterEntity = {
+            name: harvestable.stringType,
+            tier: harvestable.tier,
+            enchantmentLevel: harvestable.charges,
+        };
+        const filterFn = isLiving ? shouldRenderLivingResource : shouldRenderStaticResource;
+        if (!filterFn(filterEntity, key => settingsSync.getJSON(key))) return;
+
+        this.alertedResourceIds.add(harvestable.id);
+        this._emitSpotAlert(harvestable, isLiving);
+    }
+
+    _emitSpotAlert(harvestable, isLiving)
+    {
+        const label = `${harvestable.stringType} T${harvestable.tier}`
+            + (harvestable.charges ? `.${harvestable.charges}` : '');
+
+        window.logger?.info(CATEGORIES.HARVESTABLES, 'ResourceSpotAlert', {
+            id: harvestable.id, stringType: harvestable.stringType, tier: harvestable.tier,
+            charges: harvestable.charges, isLiving,
+        });
+
+        window.toast?.show(`🔔 Recurso encontrado: ${label}`, 'info', 6000);
+
+        try {
+            const audio = new Audio('/sounds/player.mp3');
+            audio.volume = 1.0;
+            audio.play().catch((err) => {
+                window.logger?.debug(CATEGORIES.HARVESTABLES, 'audio_blocked', {error: err?.message});
+            });
+        } catch (err) {
+            window.logger?.debug(CATEGORIES.HARVESTABLES, 'audio_error', {error: err?.message});
+        }
     }
 
     /**

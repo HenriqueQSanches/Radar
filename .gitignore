@@ -106,3 +106,4 @@ HELPER PACKAGE/
 # Local full-session Photon captures (never committed, always anonymized then split)
 captures/
 /network.json
+/market_flip.json
