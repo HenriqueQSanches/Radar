@@ -444,6 +444,11 @@ export function onEvent(Parameters) {
 
         case EventCodes.MobChangeState:
             mobsHandler.updateEnchantEvent(Parameters);
+            // Living resources (pelegos/critters) spawn as mobs, so this is also the
+            // channel their real enchant arrives on — HarvestablesHandler needs it too,
+            // since it drives the resource icon and the Settings > Resources filter
+            // grid independently of mobsHandler's own list (see HarvestablesHandler.js).
+            harvestablesHandler.updateEnchantEvent(Parameters);
             break;
 
         case EventCodes.RegenerationHealthChanged: {

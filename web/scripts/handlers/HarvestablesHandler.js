@@ -212,6 +212,40 @@ export class HarvestablesHandler
         window.logger?.debug(CATEGORIES.HARVESTABLES, 'Event61_HarvestFinished', {id});
     }
 
+    // Event code 47 (MobChangeState) — a living resource (pelego/critter) is spawned
+    // as a mob, so its real enchant often isn't known yet at spawn (Event 40's own
+    // enchant param arrives as 0/undefined) and only gets revealed later through this
+    // mob-side event. MobsHandler.updateEnchantEvent already corrects its own mobsList
+    // entry for combat/threat rendering, but that never touched this handler's
+    // harvestableList — so a living resource's *drawn* icon (and the tier/enchant
+    // filter grid in Settings > Resources, which reads harvestable.charges) stayed
+    // stuck at whatever enchant was known at spawn (usually 0) for its whole
+    // lifetime, even after the mob's own enchant was corrected. That's the reported
+    // "some living resources never show up" bug: a resource that's actually T4.2
+    // gets permanently filtered as if it were unenchanted.
+    updateEnchantEvent(Parameters)
+    {
+        const id = Parameters[0];
+        const enchantmentLevel = Parameters[1];
+        if (!Number.isInteger(enchantmentLevel) || enchantmentLevel < 0 || enchantmentLevel > 4) return;
+
+        const harvestable = this.harvestableList.find((item) => item.id === id);
+        if (!harvestable) return;
+
+        const isLiving = harvestable.mobileTypeId !== null && harvestable.mobileTypeId !== undefined
+            && harvestable.mobileTypeId !== 65535 && harvestable.mobileTypeId !== -1;
+        if (!isLiving) return; // static resources get their enchant from Event 46 already
+
+        if (enchantmentLevel === harvestable.charges) return;
+
+        const oldCharges = harvestable.charges;
+        harvestable.setCharges(enchantmentLevel);
+
+        window.logger?.info(CATEGORIES.HARVESTABLES, 'LivingResource_EnchantCorrected', {
+            id, mobileTypeId: harvestable.mobileTypeId, oldCharges, newCharges: enchantmentLevel,
+        });
+    }
+
     HarvestUpdateEvent(Parameters) // Event 46 - HarvestableChangeState
     {
         const id = Parameters[0];

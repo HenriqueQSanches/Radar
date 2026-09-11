@@ -60,7 +60,8 @@ describe('EventRouter', () => {
                 newSimpleHarvestableObject: vi.fn(),
                 newHarvestableObject: vi.fn(),
                 HarvestUpdateEvent: vi.fn(),
-                harvestFinished: vi.fn()
+                harvestFinished: vi.fn(),
+                updateEnchantEvent: vi.fn()
             },
             chestsHandler: {removeChest: vi.fn(), addChestEvent: vi.fn()},
             dungeonsHandler: {removeDungeon: vi.fn(), dungeonEvent: vi.fn()},
@@ -850,6 +851,19 @@ describe('EventRouter', () => {
             EventRouter.onEvent(p);
 
             expect(handlers.mobsHandler.updateEnchantEvent).toHaveBeenCalledWith(p);
+        });
+
+        // @verified 2026-09-10: living resources (pelegos) spawn as mobs, so their real
+        // enchant also arrives on this event — bridged to harvestablesHandler too, since
+        // it drives the resource icon/filter independently of mobsHandler's own list.
+        test('MobChangeState also dispatches to harvestablesHandler.updateEnchantEvent', async () => {
+            const fix = await loadFixture('mobs', 'change-state');
+            const msg = fix.messages[0];
+            const p = normalizeParams(msg.parameters);
+
+            EventRouter.onEvent(p);
+
+            expect(handlers.harvestablesHandler.updateEnchantEvent).toHaveBeenCalledWith(p);
         });
     });
 

@@ -712,6 +712,55 @@ describe('HarvestablesHandler', () => {
         });
     });
 
+    describe('updateEnchantEvent (event 47 - MobChangeState, bridged from mobsHandler)', () => {
+        function seedLivingHarvestable(id, mobileTypeId, charges = 0) {
+            const p = {0: id, 5: 14, 6: mobileTypeId, 7: 4, 8: [-307.5, 59.5], 10: 3, 11: charges};
+            handler.newHarvestableObject(id, p);
+        }
+
+        // @verified 2026-09-10: this is the fix for "some living resources never show up" —
+        // a living resource (pelego) spawns as a mob, and its real enchant often isn't known
+        // until this event arrives later. Before this bridge, HarvestablesHandler never learned
+        // it, so the resource stayed stuck at whatever enchant charges it spawned with (usually
+        // 0) for its whole lifetime even after mobsHandler's own copy got corrected.
+        test('synthetic: corrects charges on an existing living resource', () => {
+            seedLivingHarvestable(7001, 424, 0);
+
+            handler.updateEnchantEvent({0: 7001, 1: 2});
+
+            const e = handler.getHarvestableList().find(h => h.id === 7001);
+            expect(e.charges).toBe(2);
+        });
+
+        // @verified 2026-09-10: static resources get their enchant from Event 46
+        // (HarvestUpdateEvent) already — this event shouldn't touch them.
+        test('synthetic: static resource (no mobileTypeId) is untouched', () => {
+            const p = {0: 7002, 5: 14, 6: -1, 7: 4, 8: [-307.5, 59.5], 10: 3, 11: 0};
+            handler.newHarvestableObject(7002, p);
+
+            handler.updateEnchantEvent({0: 7002, 1: 2});
+
+            const e = handler.getHarvestableList().find(h => h.id === 7002);
+            expect(e.charges).toBe(0);
+        });
+
+        // @verified 2026-09-10: same 0-4 guard as MobsHandler's own updateEnchantEvent —
+        // a shifted/foreign payload shouldn't corrupt the filter grid's charges field.
+        test('synthetic: out-of-range enchant value is ignored', () => {
+            seedLivingHarvestable(7003, 424, 1);
+
+            handler.updateEnchantEvent({0: 7003, 1: 7});
+
+            const e = handler.getHarvestableList().find(h => h.id === 7003);
+            expect(e.charges).toBe(1);
+        });
+
+        // @verified 2026-09-10: unknown id is a no-op, no throw.
+        test('synthetic: unknown id is no-op', () => {
+            expect(() => handler.updateEnchantEvent({0: 99999, 1: 2})).not.toThrow();
+        });
+    });
+
     describe('harvestFinished (event 61)', () => {
         // @characterization 2026-04-18: current code logs the id but makes no state change;
         // spec-intent ambiguous from code alone.
