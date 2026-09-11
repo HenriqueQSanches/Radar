@@ -150,6 +150,21 @@ describe('PlayersHandler', () => {
             expect(playSpy).toHaveBeenCalled();
         });
 
+        // @updated 2026-09-11: red zones are unconditional full-loot PvP, same as black
+        // — faction here is just city alignment (see Player constructor comment), not
+        // a danger flag, and 255 (PvP-flagged) only ever shows up in Yellow zones. A
+        // real T6 red-zone session confirmed this: 900+ live player detections across
+        // factions 0/4/5, never once 255, so isPlayerThreat gating red on ===255 meant
+        // the threat alert silently never fired for an entire play session.
+        test('synthetic: passive faction=0 in red zone plays sound', () => {
+            zonesDatabase.getPvpType.mockReturnValue('red');
+            const playSpy = vi.spyOn(handler, 'playThreatSound').mockImplementation(() => {});
+
+            handler.handleNewPlayerEvent(1, {1: 'Passive', 8: '', 53: 0, 51: null, 40: [], 43: []});
+
+            expect(playSpy).toHaveBeenCalled();
+        });
+
         // @verified 2026-04-18: in black zone isPlayerThreat returns true for any faction including passive=0.
         test('synthetic: passive faction=0 in black zone plays sound', () => {
             zonesDatabase.getPvpType.mockReturnValue('black');
@@ -221,9 +236,14 @@ describe('PlayersHandler', () => {
             expect(handler.getSize()).toBe(0);
         });
 
-        // @verified 2026-04-18: passive to hostile transition in red zone fires audio alert.
-        test('synthetic: passive-to-hostile transition in red zone plays sound', () => {
-            zonesDatabase.getPvpType.mockReturnValue('red');
+        // @updated 2026-09-11: moved from 'red' to 'yellow' — red zones now alert on
+        // ANY faction at spawn (see isPlayerThreat fix), so a passive-faction spawn in
+        // red would already fire before this test's spy is attached, making the
+        // "transition" this test exists to check unobservable there. Yellow zones are
+        // the one pvpType where the faction===255 (PvP-flagged) gate still applies, so
+        // this is still a real transition in the zone type where it matters.
+        test('synthetic: passive-to-hostile transition in yellow zone plays sound', () => {
+            zonesDatabase.getPvpType.mockReturnValue('yellow');
             handler.handleNewPlayerEvent(1, {1: 'Alice', 8: '', 53: 0, 51: null, 40: [], 43: []});
             const playSpy = vi.spyOn(handler, 'playThreatSound').mockImplementation(() => {});
 
@@ -234,7 +254,7 @@ describe('PlayersHandler', () => {
 
         // @verified 2026-04-18: already-hostile player does not re-fire alert on repeated hostile update.
         test('synthetic: hostile-to-hostile does not play sound again', () => {
-            zonesDatabase.getPvpType.mockReturnValue('red');
+            zonesDatabase.getPvpType.mockReturnValue('yellow');
             handler.handleNewPlayerEvent(1, {1: 'Alice', 8: '', 53: 255, 51: null, 40: [], 43: []});
             const playSpy = vi.spyOn(handler, 'playThreatSound').mockImplementation(() => {});
 
@@ -245,7 +265,7 @@ describe('PlayersHandler', () => {
 
         // @verified 2026-04-18: hostile-to-passive transition does not play sound.
         test('synthetic: hostile-to-passive does not play sound', () => {
-            zonesDatabase.getPvpType.mockReturnValue('red');
+            zonesDatabase.getPvpType.mockReturnValue('yellow');
             handler.handleNewPlayerEvent(1, {1: 'Alice', 8: '', 53: 255, 51: null, 40: [], 43: []});
             const playSpy = vi.spyOn(handler, 'playThreatSound').mockImplementation(() => {});
 
@@ -266,8 +286,10 @@ describe('PlayersHandler', () => {
         });
 
         // @suspect 2026-04-18 PLAY-2 (issue #36): alreadyIgnoredPlayers list is never consulted in triggerHostileAlert. A player pushed into that list still triggers a sound alert on faction change.
-        test('synthetic PLAY-2: ignored player still triggers alert on faction change in red zone', () => {
-            zonesDatabase.getPvpType.mockReturnValue('red');
+        // @updated 2026-09-11: moved to 'yellow' for the same reason as the transition
+        // test above — red now alerts at spawn regardless of faction.
+        test('synthetic PLAY-2: ignored player still triggers alert on faction change in yellow zone', () => {
+            zonesDatabase.getPvpType.mockReturnValue('yellow');
             handler.handleNewPlayerEvent(1, {1: 'Alice', 8: '', 53: 0, 51: null, 40: [], 43: []});
             handler.alreadyIgnoredPlayers = [{id: 1}];
             const playSpy = vi.spyOn(handler, 'playThreatSound').mockImplementation(() => {});
@@ -659,15 +681,19 @@ describe('PlayersHandler', () => {
             expect(handler.getThreatPlayers()).toHaveLength(0);
         });
 
-        // @verified 2026-04-24: red zone returns only faction=255 players.
-        test('synthetic: red zone returns faction=255 only', () => {
+        // @updated 2026-09-11: red zones are always-on full-loot PvP same as black —
+        // gating on faction===255 here was the same "Pulsating Border" bug the black
+        // zone fix below already addresses, just never extended to red. Confirmed via
+        // a real ~1h play session in a T6 red zone: 900+ real player detections across
+        // factions 0/4/5, zero ever showed 255 (that value only appears from Yellow
+        // zone PvP-flagging), so every single one was silently treated as not-a-threat
+        // — a live, reproduced "no gank warning" bug, not a hypothetical.
+        test('synthetic: red zone returns passive AND hostile as threats', () => {
             zonesDatabase.getPvpType.mockReturnValue('red');
             handler.handleNewPlayerEvent(1, {1: 'Passive', 8: '', 53: 0, 51: null, 40: [], 43: []});
             handler.handleNewPlayerEvent(2, {1: 'Hostile', 8: '', 53: 255, 51: null, 40: [], 43: []});
 
-            const threats = handler.getThreatPlayers();
-            expect(threats).toHaveLength(1);
-            expect(threats[0].id).toBe(2);
+            expect(handler.getThreatPlayers()).toHaveLength(2);
         });
 
         // @verified 2026-04-24: black zone returns every player regardless of faction (fix for Pulsating Border bug).

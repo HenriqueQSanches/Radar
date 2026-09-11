@@ -208,8 +208,17 @@ export class PlayersHandler {
 
     isPlayerThreat(faction, pvpType) {
         if (pvpType === 'safe') return false;
-        if (pvpType === 'black') return true;
-        if (pvpType === 'red' || pvpType === 'yellow') return faction === 255;
+        // Red and black zones are always-on full-loot PvP — any other player is a
+        // threat regardless of their city-faction alignment (faction here is "which
+        // of the 6 city factions", not a danger flag; see Player constructor comment).
+        // faction===255 marks a player explicitly PvP-flagged, a concept that only
+        // exists in Yellow zones (opt-in PvP) — it basically never appears in a
+        // red/black zone's own player data, which is why gating red on it here
+        // silently never fired: a live session in a T6 red zone (Malag Crevasse)
+        // logged 900+ real player detections across factions 0/4/5 and never once
+        // saw 255, so every single one was (wrongly) treated as not-a-threat.
+        if (pvpType === 'black' || pvpType === 'red') return true;
+        if (pvpType === 'yellow') return faction === 255;
         return faction === 255;
     }
 
