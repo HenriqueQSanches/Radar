@@ -61,7 +61,8 @@ describe('EventRouter', () => {
                 newHarvestableObject: vi.fn(),
                 HarvestUpdateEvent: vi.fn(),
                 harvestFinished: vi.fn(),
-                updateEnchantEvent: vi.fn()
+                updateEnchantEvent: vi.fn(),
+                updateHarvestablePosition: vi.fn()
             },
             chestsHandler: {removeChest: vi.fn(), addChestEvent: vi.fn()},
             dungeonsHandler: {removeDungeon: vi.fn(), dungeonEvent: vi.fn()},
@@ -485,6 +486,33 @@ describe('EventRouter', () => {
             expect(map.isBZ).toBe(false);
         });
 
+        // @verified 2026-09-12: live capture confirmed JoinFinished carries the local
+        // player's own nickname at [2] and guild at [58] (param[2]="Quittii",
+        // param[58]="Candangagem", matching the in-game nameplate) — this is what lets
+        // PlayersHandler.isPlayerThreat tell "my own guildmate" apart from a real threat.
+        test('opcode 2 captures local player guild and nickname from params[58]/[2]', () => {
+            window.localPlayerGuild = undefined;
+            window.localPlayerNickname = undefined;
+
+            EventRouter.onResponse({253: 2, 2: 'Quittii', 8: '2204', 9: [0, 0], 58: 'Candangagem'}, clearHandlers);
+
+            expect(window.localPlayerGuild).toBe('Candangagem');
+            expect(window.localPlayerNickname).toBe('Quittii');
+        });
+
+        // @verified 2026-09-12: a response missing these keys (e.g. a re-join without a
+        // full character payload) leaves the previously-known guild/nickname untouched
+        // rather than clobbering them with undefined.
+        test('opcode 2 without params[58]/[2] leaves previously-known guild/nickname untouched', () => {
+            window.localPlayerGuild = 'Candangagem';
+            window.localPlayerNickname = 'Quittii';
+
+            EventRouter.onResponse({253: 2, 8: '2204', 9: [0, 0]}, clearHandlers);
+
+            expect(window.localPlayerGuild).toBe('Candangagem');
+            expect(window.localPlayerNickname).toBe('Quittii');
+        });
+
         // @verified 2026-04-18: second pcap JoinFinished message updates position from array
         test('opcode 2 second pcap message: position array updates local player position', async () => {
             // pcap-derived: router/join-finished.json message[1], params[9]=[-10.09..., 28.14...]
@@ -627,6 +655,16 @@ describe('EventRouter', () => {
 
             expect(handlers.mobsHandler.updateMobPosition).toHaveBeenCalledWith(12345, 100, 200);
             expect(handlers.mobsHandler.updateMistPosition).toHaveBeenCalledWith(12345, 100, 200);
+        });
+
+        // @updated 2026-09-12: living resources (Dryads/critters) wander like any other
+        // mob, but only mobsHandler's copy of position was ever updated — harvestablesHandler's
+        // copy (the one the resource icon actually draws from) stayed frozen at spawn,
+        // reported as "living fiber doesn't show up until you kill it".
+        test('Move event also dispatches to harvestablesHandler.updateHarvestablePosition', () => {
+            EventRouter.onEvent({0: 12345, 4: 100, 5: 200, 252: 3});
+
+            expect(handlers.harvestablesHandler.updateHarvestablePosition).toHaveBeenCalledWith(12345, 100, 200);
         });
     });
 

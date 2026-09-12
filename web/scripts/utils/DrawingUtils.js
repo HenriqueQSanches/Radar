@@ -5,6 +5,15 @@ import settingsSync from "./SettingsSync.js";
 const SCALE_FACTOR = 1.0;
 const BASE_ZOOM = 4;
 
+// getCanvasSize() runs on every getMarkerSize/getScaledFontSize call — which is every
+// drawn entity, every frame — and was calling document.getElementById on every single
+// one of those. On a screen with 100+ resources/mobs at 60fps that's thousands of DOM
+// lookups a second for an element that never changes identity during a session.
+// Cached at module scope (shared by every DrawingUtils subclass/instance) and only
+// re-queried if the cached node ever stops being attached (page navigated away and
+// back, canvas re-created, etc).
+let cachedDrawCanvas = null;
+
 export class DrawingUtils {
     constructor() {
         this.fontSize = "12px";
@@ -27,8 +36,10 @@ export class DrawingUtils {
     getScaledFontSize(baseFontSize, minFontSize = 7) { return Math.max(minFontSize, baseFontSize * this.getZoomLevel() * this.getCanvasScale()); }
     getCanvasSize() {
         if (typeof document !== 'undefined') {
-            const c = document.getElementById('drawCanvas');
-            if (c?.width) return c.width;
+            if (!cachedDrawCanvas || !cachedDrawCanvas.isConnected) {
+                cachedDrawCanvas = document.getElementById('drawCanvas');
+            }
+            if (cachedDrawCanvas?.width) return cachedDrawCanvas.width;
         }
         return settingsSync.getNumber('settingCanvasSize') || 500;
     }

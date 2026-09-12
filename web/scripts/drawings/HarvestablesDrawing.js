@@ -73,14 +73,6 @@ export class HarvestablesDrawing extends DrawingUtils  {
                     draw = "ore_" + harvestableOne.tier + "_" + harvestableOne.charges;
                 }
 
-                window.logger?.debug(CATEGORIES.HARVESTABLES, 'Drawing_UsingStringType', {
-                    id: harvestableOne.id,
-                    stringType: harvestableOne.stringType,
-                    type: harvestableOne.type,
-                    draw,
-                    tier: harvestableOne.tier,
-                    charges: harvestableOne.charges
-                });
             }
 
             // Fallback: use type (typeNumber) if no stringType available
@@ -98,15 +90,6 @@ export class HarvestablesDrawing extends DrawingUtils  {
                     draw = "ore_" + harvestableOne.tier + "_" + harvestableOne.charges;
                 }
 
-                window.logger?.debug(CATEGORIES.HARVESTABLES, 'Drawing_UsingTypeNumber', {
-                    id: harvestableOne.id,
-                    stringType: harvestableOne.stringType,
-                    type: harvestableOne.type,
-                    draw,
-                    tier: harvestableOne.tier,
-                    charges: harvestableOne.charges,
-                    note: 'FALLBACK - no stringType available'
-                });
             }
 
             if (draw === undefined) {

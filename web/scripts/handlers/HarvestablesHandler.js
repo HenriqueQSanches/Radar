@@ -220,6 +220,23 @@ export class HarvestablesHandler
         window.logger?.debug(CATEGORIES.HARVESTABLES, 'Event61_HarvestFinished', {id});
     }
 
+    // Event code 3 (Move) — living resources (Dryads, critters) wander like any other
+    // mob. MobsHandler already tracks this via its own updateMobPosition, but that only
+    // updates the copy used for combat/threat rendering; this handler's copy (the one
+    // actually driving the resource icon on the radar) was never touched, so the icon
+    // stayed frozen at wherever the creature happened to be at spawn. As it wandered
+    // off, the icon increasingly pointed at empty ground — reported as "living fiber
+    // doesn't show up until you kill it" (the corpse's position is fresh/correct since
+    // it's a brand new static harvestable spawn, not a moved one).
+    updateHarvestablePosition(id, posX, posY)
+    {
+        const harvestable = this.harvestableList.find((item) => item.id === id);
+        if (!harvestable) return;
+        harvestable.posX = posX;
+        harvestable.posY = posY;
+        harvestable.touch();
+    }
+
     // Event code 47 (MobChangeState) — a living resource (pelego/critter) is spawned
     // as a mob, so its real enchant often isn't known yet at spawn (Event 40's own
     // enchant param arrives as 0/undefined) and only gets revealed later through this

@@ -30,6 +30,7 @@ describe('PlayersHandler', () => {
 
         window.logger = {debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn()};
         window.currentMapId = 'safe-zone-01';
+        window.localPlayerGuild = undefined;
 
         handler = new PlayersHandler();
     });
@@ -150,17 +151,56 @@ describe('PlayersHandler', () => {
             expect(playSpy).toHaveBeenCalled();
         });
 
-        // @updated 2026-09-11: red zones are unconditional full-loot PvP, same as black
-        // — faction here is just city alignment (see Player constructor comment), not
-        // a danger flag, and 255 (PvP-flagged) only ever shows up in Yellow zones. A
-        // real T6 red-zone session confirmed this: 900+ live player detections across
-        // factions 0/4/5, never once 255, so isPlayerThreat gating red on ===255 meant
-        // the threat alert silently never fired for an entire play session.
-        test('synthetic: passive faction=0 in red zone plays sound', () => {
+        // @reverted 2026-09-12: briefly changed to expect a sound here (treating red
+        // like black), reasoning from a session with 900+ red-zone detections that
+        // never showed faction===255. That reasoning was wrong — confirmed live by the
+        // user with zero PKs active in-game and the radar still alerting on nearly
+        // every player. Red zones require the PK flag (255) same as yellow; being a
+        // different faction/guild there is normal, not dangerous.
+        test('synthetic: passive faction=0 in red zone does not play sound', () => {
             zonesDatabase.getPvpType.mockReturnValue('red');
             const playSpy = vi.spyOn(handler, 'playThreatSound').mockImplementation(() => {});
 
             handler.handleNewPlayerEvent(1, {1: 'Passive', 8: '', 53: 0, 51: null, 40: [], 43: []});
+
+            expect(playSpy).not.toHaveBeenCalled();
+        });
+
+        // @verified 2026-09-12: live bug — a guildmate ("GabiDimi", guild "Candangagem",
+        // the local player's own guild) was alerting as hostile in a red zone. Guildmates
+        // show a blue (friendly) nameplate and can't normally be attacked by you, so they
+        // should never alert regardless of zone/faction.
+        test('synthetic: guildmate in red zone does not play sound', () => {
+            zonesDatabase.getPvpType.mockReturnValue('red');
+            window.localPlayerGuild = 'Candangagem';
+            const playSpy = vi.spyOn(handler, 'playThreatSound').mockImplementation(() => {});
+
+            handler.handleNewPlayerEvent(1, {1: 'GabiDimi', 8: 'Candangagem', 53: 0, 51: null, 40: [], 43: []});
+
+            expect(playSpy).not.toHaveBeenCalled();
+        });
+
+        // @verified 2026-09-12: a guildmate is still exempt even in a black zone, where
+        // otherwise everyone (including passive faction=0) is normally a threat.
+        test('synthetic: guildmate in black zone does not play sound', () => {
+            zonesDatabase.getPvpType.mockReturnValue('black');
+            window.localPlayerGuild = 'Candangagem';
+            const playSpy = vi.spyOn(handler, 'playThreatSound').mockImplementation(() => {});
+
+            handler.handleNewPlayerEvent(1, {1: 'GabiDimi', 8: 'Candangagem', 53: 0, 51: null, 40: [], 43: []});
+
+            expect(playSpy).not.toHaveBeenCalled();
+        });
+
+        // @verified 2026-09-12: a PK-flagged stranger from an unrelated guild is still a
+        // real threat — the guild check only ever suppresses OUR OWN guild, it must not
+        // accidentally swallow a genuine hostile just because they're in some other guild.
+        test('synthetic: PK-flagged stranger from a different guild still alerts in red zone', () => {
+            zonesDatabase.getPvpType.mockReturnValue('red');
+            window.localPlayerGuild = 'Candangagem';
+            const playSpy = vi.spyOn(handler, 'playThreatSound').mockImplementation(() => {});
+
+            handler.handleNewPlayerEvent(1, {1: 'Hostile', 8: 'Some Other Guild', 53: 255, 51: null, 40: [], 43: []});
 
             expect(playSpy).toHaveBeenCalled();
         });
@@ -681,19 +721,17 @@ describe('PlayersHandler', () => {
             expect(handler.getThreatPlayers()).toHaveLength(0);
         });
 
-        // @updated 2026-09-11: red zones are always-on full-loot PvP same as black —
-        // gating on faction===255 here was the same "Pulsating Border" bug the black
-        // zone fix below already addresses, just never extended to red. Confirmed via
-        // a real ~1h play session in a T6 red zone: 900+ real player detections across
-        // factions 0/4/5, zero ever showed 255 (that value only appears from Yellow
-        // zone PvP-flagging), so every single one was silently treated as not-a-threat
-        // — a live, reproduced "no gank warning" bug, not a hypothetical.
-        test('synthetic: red zone returns passive AND hostile as threats', () => {
+        // @reverted 2026-09-12: briefly changed to expect both as threats (treating red
+        // like black); reverted after live confirmation that red zones require the PK
+        // flag (255), same as yellow — a different/passive faction there is normal.
+        test('synthetic: red zone returns only faction=255 as a threat', () => {
             zonesDatabase.getPvpType.mockReturnValue('red');
             handler.handleNewPlayerEvent(1, {1: 'Passive', 8: '', 53: 0, 51: null, 40: [], 43: []});
             handler.handleNewPlayerEvent(2, {1: 'Hostile', 8: '', 53: 255, 51: null, 40: [], 43: []});
 
-            expect(handler.getThreatPlayers()).toHaveLength(2);
+            const threats = handler.getThreatPlayers();
+            expect(threats).toHaveLength(1);
+            expect(threats[0].id).toBe(2);
         });
 
         // @verified 2026-04-24: black zone returns every player regardless of faction (fix for Pulsating Border bug).

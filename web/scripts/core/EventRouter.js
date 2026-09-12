@@ -232,6 +232,20 @@ function handleLegacyMapChangeResponse(Parameters) {
 }
 
 function handleJoinResponse(Parameters, clearHandlersCallback) {
+    // JoinFinished carries the LOCAL player's own character data — nickname at
+    // [2], guild at [58] (confirmed via a live capture: param[2]="Quittii",
+    // param[58]="Candangagem", matching the in-game nameplate exactly).
+    // isPlayerThreat previously only ever saw OTHER players' guild/faction,
+    // never our own, so it couldn't tell "same guild, not a threat" (a blue
+    // nameplate) apart from "different guild in a red/black zone, real
+    // threat" — every guildmate was alerting as if hostile.
+    if (typeof Parameters[58] === 'string') {
+        window.localPlayerGuild = Parameters[58];
+    }
+    if (typeof Parameters[2] === 'string') {
+        window.localPlayerNickname = Parameters[2];
+    }
+
     decodeJoinPosition(Parameters[9]);
     if (typeof Parameters[8] === 'string' && Parameters[8].length > 0) {
         applyMapChange(Parameters[8], 'MapChangedFromJoinMap');
@@ -403,6 +417,7 @@ export function onEvent(Parameters) {
             const posY = Parameters[5];
             mobsHandler.updateMistPosition(id, posX, posY);
             mobsHandler.updateMobPosition(id, posX, posY);
+            harvestablesHandler.updateHarvestablePosition(id, posX, posY);
             playersHandler.handleThreatMovement(id);
             break;
 

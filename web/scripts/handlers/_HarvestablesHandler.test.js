@@ -712,6 +712,27 @@ describe('HarvestablesHandler', () => {
         });
     });
 
+    describe('updateHarvestablePosition (event 3 - Move)', () => {
+        // @updated 2026-09-12: this is the fix for "living fiber doesn't show up until
+        // you kill it" — living resources wander, and the icon's position never moved
+        // with them (only mobsHandler's separate copy did, for combat rendering).
+        test('synthetic: updates posX/posY on an existing living harvestable', () => {
+            const p = {0: 8001, 5: 14, 6: 424, 7: 4, 8: [10, 20], 10: 3, 11: 0};
+            handler.newHarvestableObject(8001, p);
+
+            handler.updateHarvestablePosition(8001, 111, 222);
+
+            const e = handler.getHarvestableList().find(h => h.id === 8001);
+            expect(e.posX).toBe(111);
+            expect(e.posY).toBe(222);
+        });
+
+        // @verified 2026-09-12: unknown id is a no-op, no throw.
+        test('synthetic: unknown id is no-op', () => {
+            expect(() => handler.updateHarvestablePosition(99999, 1, 2)).not.toThrow();
+        });
+    });
+
     describe('updateEnchantEvent (event 47 - MobChangeState, bridged from mobsHandler)', () => {
         function seedLivingHarvestable(id, mobileTypeId, charges = 0) {
             const p = {0: id, 5: 14, 6: mobileTypeId, 7: 4, 8: [-307.5, 59.5], 10: 3, 11: charges};

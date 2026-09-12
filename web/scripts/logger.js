@@ -18,11 +18,12 @@ const INITIAL_RECONNECT_DELAY = 1000;
 // can still turn any of this off/down from the Logging section.
 const DEFAULT_LOG_LEVEL = 'DEBUG';
 const DEFAULT_LOG_TO_SERVER = true;
-// NETWORK is verbose (every raw packet, easily 100k+ lines/session) but it's what actually
-// found the last three "game patched, our parsing broke" bugs (harvestable type ranges,
-// fishing spawn shape, dungeon/mist event code move) — without it those took live
-// reproduction to diagnose; with it, a single post-session log was enough.
-const CATEGORIES_ON_BY_DEFAULT = new Set(['MOBS', 'HARVESTABLES', 'DUNGEONS', 'FISHING', 'NETWORK']);
+// NETWORK used to be on here too (every raw packet, easily 100k+ lines/session) — it
+// found the last three "game patched, our parsing broke" bugs, but reported as making
+// the whole app noticeably heavy on weaker PCs, which every user pays for on every
+// session whether or not anyone's actively diagnosing something. Off by default now;
+// still available from Settings > Logging when actually chasing a parsing bug.
+const CATEGORIES_ON_BY_DEFAULT = new Set(['MOBS', 'HARVESTABLES', 'DUNGEONS', 'FISHING']);
 
 class Logger {
     constructor() {

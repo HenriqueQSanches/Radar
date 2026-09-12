@@ -1,0 +1,429 @@
+<title>OpenRadar Contact Log</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#16130f;
+  --surface:#1e1912;
+  --surface-2:#241e16;
+  --border:#3a2e21;
+  --border-soft:#2b2419;
+  --ink:#ede4d6;
+  --ink-dim:#b3a48f;
+  --ink-faint:#7d715f;
+  --rust:#d9793d;
+  --rust-soft:#d9793d33;
+  --danger:#e2604a;
+  --danger-soft:#e2604a22;
+  --ok:#7cae7c;
+  --ok-soft:#7cae7c22;
+  --pending:#d9b23f;
+  --pending-soft:#d9b23f22;
+  --info:#6fa8c9;
+  --info-soft:#6fa8c922;
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="light"]){
+    --bg:#f4efe6;
+    --surface:#ffffff;
+    --surface-2:#fbf7ef;
+    --border:#ddd0ba;
+    --border-soft:#e8ddc9;
+    --ink:#241d14;
+    --ink-dim:#5c5041;
+    --ink-faint:#8b8070;
+    --rust:#b8611f;
+    --rust-soft:#b8611f22;
+    --danger:#c23e2a;
+    --danger-soft:#c23e2a1a;
+    --ok:#3f7a45;
+    --ok-soft:#3f7a451a;
+    --pending:#a67c1f;
+    --pending-soft:#a67c1f1a;
+    --info:#2f6f8f;
+    --info-soft:#2f6f8f1a;
+  }
+}
+:root[data-theme="light"]{
+  --bg:#f4efe6;
+  --surface:#ffffff;
+  --surface-2:#fbf7ef;
+  --border:#ddd0ba;
+  --border-soft:#e8ddc9;
+  --ink:#241d14;
+  --ink-dim:#5c5041;
+  --ink-faint:#8b8070;
+  --rust:#b8611f;
+  --rust-soft:#b8611f22;
+  --danger:#c23e2a;
+  --danger-soft:#c23e2a1a;
+  --ok:#3f7a45;
+  --ok-soft:#3f7a451a;
+  --pending:#a67c1f;
+  --pending-soft:#a67c1f1a;
+  --info:#2f6f8f;
+  --info-soft:#2f6f8f1a;
+}
+:root[data-theme="dark"]{
+  --bg:#16130f;
+  --surface:#1e1912;
+  --surface-2:#241e16;
+  --border:#3a2e21;
+  --border-soft:#2b2419;
+  --ink:#ede4d6;
+  --ink-dim:#b3a48f;
+  --ink-faint:#7d715f;
+  --rust:#d9793d;
+  --rust-soft:#d9793d33;
+  --danger:#e2604a;
+  --danger-soft:#e2604a22;
+  --ok:#7cae7c;
+  --ok-soft:#7cae7c22;
+  --pending:#d9b23f;
+  --pending-soft:#d9b23f22;
+  --info:#6fa8c9;
+  --info-soft:#6fa8c922;
+}
+
+*{box-sizing:border-box;}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'Work Sans',system-ui,-apple-system,sans-serif;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,.mono{font-family:'Chakra Petch',ui-monospace,'IBM Plex Mono',monospace;font-weight:600;}
+code,.filepath,.tag,.stat-num{font-family:'IBM Plex Mono',ui-monospace,SFMono-Regular,monospace;font-variant-numeric:tabular-nums;}
+
+.wrap{max-width:880px;margin:0 auto;padding:0 24px 96px;}
+
+/* ---------- Header / console band ---------- */
+.console{
+  position:relative;
+  overflow:hidden;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  padding:48px 24px 40px;
+}
+.console::before{
+  content:"";
+  position:absolute;
+  top:-220px; left:50%;
+  width:640px; height:640px;
+  transform:translateX(-50%);
+  background:conic-gradient(from 0deg, var(--rust-soft), transparent 24%, transparent 76%, var(--rust-soft));
+  border-radius:50%;
+  animation:sweep 14s linear infinite;
+  opacity:.55;
+}
+@media (prefers-reduced-motion:reduce){.console::before{animation:none;}}
+@keyframes sweep{to{transform:translateX(-50%) rotate(360deg);}}
+.console-inner{position:relative;max-width:880px;margin:0 auto;}
+.eyebrow{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.72rem;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--rust);
+  display:flex;align-items:center;gap:8px;
+  margin-bottom:14px;
+}
+.eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px var(--ok-soft);}
+h1{
+  font-size:clamp(2.1rem,5vw,3rem);
+  font-weight:700;
+  margin:0 0 10px;
+  text-wrap:balance;
+  letter-spacing:.01em;
+}
+.sub{color:var(--ink-dim);max-width:60ch;margin:0 0 28px;font-size:1.02rem;}
+
+.arc{
+  display:flex;align-items:center;gap:18px;
+  margin-bottom:28px;
+}
+.arc .v{
+  font-size:1.9rem;font-weight:700;color:var(--ink);
+  padding:10px 18px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);
+}
+.arc .v.now{color:var(--rust);border-color:var(--rust);background:var(--rust-soft);}
+.arc .arrow{color:var(--ink-faint);font-size:1.3rem;}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.stat{background:var(--surface-2);padding:16px 14px;}
+.stat-num{display:block;font-size:1.5rem;font-weight:700;color:var(--rust);}
+.stat-label{font-size:.74rem;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.06em;}
+
+/* ---------- Index ---------- */
+nav.index{
+  display:flex;flex-wrap:wrap;gap:8px;
+  padding:20px 0 8px;
+}
+nav.index a{
+  font-size:.82rem;color:var(--ink-dim);text-decoration:none;
+  border:1px solid var(--border-soft);padding:6px 12px;border-radius:999px;
+  transition:border-color .15s, color .15s;
+}
+nav.index a:hover,nav.index a:focus-visible{border-color:var(--rust);color:var(--ink);}
+
+/* ---------- Log entries ---------- */
+.section-label{
+  display:flex;align-items:center;gap:12px;
+  margin:56px 0 18px;
+  color:var(--ink-faint);font-size:.76rem;letter-spacing:.12em;text-transform:uppercase;
+}
+.section-label::after{content:"";flex:1;height:1px;background:var(--border-soft);}
+
+.entry{
+  position:relative;
+  border:1px solid var(--border);
+  background:var(--surface);
+  border-radius:12px;
+  padding:22px 24px 20px;
+  margin-bottom:16px;
+}
+.entry-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:10px;}
+.entry-title{font-size:1.15rem;font-weight:600;margin:0;text-wrap:balance;letter-spacing:.005em;}
+.badges{display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;}
+.badge{
+  font-size:.68rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+  padding:3px 9px;border-radius:5px;white-space:nowrap;
+}
+.badge.fix{color:var(--danger);background:var(--danger-soft);}
+.badge.chore{color:var(--info);background:var(--info-soft);}
+.badge.feature{color:var(--ok);background:var(--ok-soft);}
+.badge.live{color:var(--pending);background:var(--pending-soft);}
+
+.entry p{color:var(--ink-dim);margin:0 0 12px;max-width:68ch;}
+.entry p:last-of-type{margin-bottom:14px;}
+.entry strong{color:var(--ink);font-weight:600;}
+
+.files{display:flex;flex-wrap:wrap;gap:6px;}
+.filepath{
+  font-size:.74rem;color:var(--ink-faint);
+  background:var(--surface-2);border:1px solid var(--border-soft);
+  padding:3px 8px;border-radius:5px;
+}
+
+.evidence{
+  margin-top:14px;padding:12px 14px;
+  background:var(--surface-2);border-left:2px solid var(--pending);border-radius:0 6px 6px 0;
+  font-size:.88rem;color:var(--ink-dim);
+}
+.evidence b{color:var(--pending);font-weight:600;}
+
+/* ---------- Pending ---------- */
+.pending-list{border:1px dashed var(--border);border-radius:12px;padding:4px 24px;}
+.pending-item{
+  display:flex;gap:14px;align-items:flex-start;
+  padding:16px 0;border-bottom:1px solid var(--border-soft);
+}
+.pending-item:last-child{border-bottom:none;}
+.pending-item .mark{color:var(--pending);font-size:1rem;line-height:1.6;flex-shrink:0;}
+.pending-item p{margin:0;color:var(--ink-dim);}
+.pending-item strong{color:var(--ink);}
+
+footer{
+  margin-top:64px;padding-top:24px;border-top:1px solid var(--border-soft);
+  color:var(--ink-faint);font-size:.8rem;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+a{color:inherit;}
+
+::selection{background:var(--rust-soft);}
+</style>
+
+<div class="console">
+  <div class="console-inner">
+    <div class="eyebrow"><span class="dot"></span> RADAR LOG &middot; SESSÃO 2026-09-09 → 2026-09-11</div>
+    <h1>Do bug de tier ao release 1.1</h1>
+    <p class="sub">Tudo que mudou no OpenRadar nessa leva de trabalho — 8 commits, dois deles diagnosticados ao vivo direto dos logs de uma sessão real de jogo.</p>
+
+    <div class="arc">
+      <span class="v">1.0</span>
+      <span class="arrow">→</span>
+      <span class="v now">1.1</span>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><span class="stat-num">8</span><span class="stat-label">commits</span></div>
+      <div class="stat"><span class="stat-num">2</span><span class="stat-label">achados ao vivo</span></div>
+      <div class="stat"><span class="stat-num">720</span><span class="stat-label">testes passando</span></div>
+      <div class="stat"><span class="stat-num">4</span><span class="stat-label">pendências</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <nav class="index">
+    <a href="#release">Nova convenção de release</a>
+    <a href="#tier">Bug de tier de mob</a>
+    <a href="#mist">Ícone das brumas</a>
+    <a href="#flip-capture">Flip: captura</a>
+    <a href="#flip-data">Flip: dados</a>
+    <a href="#flip-cat">Flip: categorias</a>
+    <a href="#flip-public">Flip: dados públicos</a>
+    <a href="#flip-pip">Flip: janela compacta</a>
+    <a href="#enchant">Recurso vivo sem encante</a>
+    <a href="#threat">Alerta de ameaça</a>
+    <a href="#crash">Flip travando</a>
+    <a href="#pending">Pendências</a>
+  </nav>
+
+  <div class="section-label">Infraestrutura de release</div>
+
+  <div class="entry" id="release">
+    <div class="entry-head">
+      <h3 class="entry-title">Nova convenção de nome de release</h3>
+      <div class="badges"><span class="badge chore">chore</span></div>
+    </div>
+    <p>As releases pararam de usar <code>vX.Y.Z</code> (ex: <code>v2.3.1</code>) e passaram a usar só <code>X.Y</code> — <strong>OpenRadar 1.0</strong>, <strong>OpenRadar 1.1</strong>. Apagadas as 8 releases e 11 tags antigas do GitHub (<code>2.2.3</code> até <code>2.3.3</code>) pra começar limpo.</p>
+    <div class="files">
+      <span class="filepath">.github/workflows/release.yml</span>
+      <span class="filepath">cliff.toml</span>
+    </div>
+  </div>
+
+  <div class="section-label">Correções de dados de jogo</div>
+
+  <div class="entry" id="tier">
+    <div class="entry-head">
+      <h3 class="entry-title">Tier de mob mudando sozinho</h3>
+      <div class="badges"><span class="badge fix">fix</span></div>
+    </div>
+    <p><strong>Sintoma:</strong> criaturas trocando de tier sozinhas — um pelego T7 virando T6 depois de morto.</p>
+    <p><strong>Causa:</strong> <code>mobs.min.json</code> desatualizado desde julho — um patch da Albion mexeu na tabela de mobs do jogo e desalinhou a posição de cada um no nosso arquivo vendorizado.</p>
+    <p>Dados rebaixados direto de <code>ao-data/ao-bin-dumps</code>; o offset de leitura (<code>OFFSET = 16</code>) foi conferido e continua correto — só os dados estavam velhos. 68 testes corrigidos.</p>
+    <div class="files">
+      <span class="filepath">web/scripts/data/MobsDatabase.js</span>
+      <span class="filepath">web/ao-bin-dumps/*.min.json</span>
+    </div>
+  </div>
+
+  <div class="entry" id="mist">
+    <div class="entry-head">
+      <h3 class="entry-title">Ícone dos portais de bruma</h3>
+      <div class="badges"><span class="badge feature">visual</span></div>
+    </div>
+    <p>As bolhas coloridas lisas (<code>mist_0</code>–<code>mist_4</code>) eram fáceis de confundir com outros marcadores redondos. Trocadas por um ícone de feitiço não usado em nenhum outro lugar do app — silhueta dentro de um anel rúnico — mantendo as mesmas 5 cores por raridade.</p>
+    <div class="files"><span class="filepath">web/images/Resources/mist_0–4.webp</span></div>
+  </div>
+
+  <div class="section-label">Flip — rastreador de mercado</div>
+
+  <div class="entry" id="flip-capture">
+    <div class="entry-head">
+      <h3 class="entry-title">Flip nunca capturava nada</h3>
+      <div class="badges"><span class="badge fix">fix</span></div>
+    </div>
+    <p>O código comparava o <code>OperationCode</code> do pacote de rede direto — mas no protocolo do jogo (Protocol18) esse campo no wire é sempre <code>1</code>. O código real da operação vem em <code>Parameters[253]</code>. Comparação corrigida.</p>
+    <div class="files"><span class="filepath">internal/marketflip/capture.go</span></div>
+  </div>
+
+  <div class="entry" id="flip-data">
+    <div class="entry-head">
+      <h3 class="entry-title">Cidade errada e preço 10000× maior</h3>
+      <div class="badges"><span class="badge fix">fix</span></div>
+    </div>
+    <p><strong>Cidade sempre "—":</strong> ordens de mercado nunca trazem a cidade certa por ordem individual. Corrigido rastreando a cidade atual do jogador via os eventos de troca de mapa.</p>
+    <p><strong>Preço 10000× maior:</strong> o jogo manda o preço multiplicado por 10000 (convenção do protocolo) e isso nunca era desfeito — uma fibra T2 aparecia a 360000 em vez de 36.</p>
+    <div class="files"><span class="filepath">internal/marketflip/capture.go</span></div>
+  </div>
+
+  <div class="entry" id="flip-cat">
+    <div class="entry-head">
+      <h3 class="entry-title">Categorias novas: Equipamento e Black Market</h3>
+      <div class="badges"><span class="badge feature">feature</span></div>
+    </div>
+    <p>Antes só existia Recursos/Refinados. Agora tem <strong>Equipamento</strong> (usando o campo <code>cat</code> já presente em <code>items.min.json</code>) e <strong>Black Market</strong> (itens de artefato/facção — sufixos <code>_UNDEAD</code>, <code>_KEEPER</code>, <code>_MORGANA</code>, <code>_HELL</code>, <code>_AVALON</code>).</p>
+    <div class="files">
+      <span class="filepath">internal/marketflip/items.go</span>
+      <span class="filepath">internal/templates/pages/flip.gohtml</span>
+    </div>
+  </div>
+
+  <div class="entry" id="flip-public">
+    <div class="entry-head">
+      <h3 class="entry-title">Fallback de dado público de preço</h3>
+      <div class="badges"><span class="badge feature">feature</span></div>
+    </div>
+    <p>Toggle opcional (desligado por padrão): quando ainda não há captura própria suficiente de um item, busca o último preço público conhecido (Albion Online Data Project) — marcado visualmente como "dado público" na tabela, nunca confundido com o que você mesmo capturou.</p>
+    <div class="files">
+      <span class="filepath">internal/marketflip/publicprices.go</span>
+      <span class="filepath">internal/marketflip/opportunities.go</span>
+    </div>
+  </div>
+
+  <div class="entry" id="flip-pip">
+    <div class="entry-head">
+      <h3 class="entry-title">Janela compacta (PiP) do Flip</h3>
+      <div class="badges"><span class="badge feature">feature</span></div>
+    </div>
+    <p>A página cresceu demais (tabelas de oportunidades + ordens), obrigando a minimizar o jogo pra conferir a captura. Botão <strong>Compact window</strong> abre uma janela flutuante separada só com o resumo: ordens, oportunidades, última captura.</p>
+    <div class="files"><span class="filepath">web/scripts/utils/FlipPictureInPictureManager.js</span></div>
+  </div>
+
+  <div class="section-label">Achados ao vivo, direto dos logs</div>
+
+  <div class="entry" id="enchant">
+    <div class="entry-head">
+      <h3 class="entry-title">Recursos vivos travados sem encante</h3>
+      <div class="badges"><span class="badge fix">fix</span><span class="badge live">achado ao vivo</span></div>
+    </div>
+    <p><strong>Sintoma:</strong> alguns recursos vivos (pelegos) simplesmente nunca apareciam no radar, mesmo no filtro certo.</p>
+    <p>Recursos vivos nascem como "mob", e o encantamento real às vezes só chega <em>depois</em> do spawn, por um evento separado. Esse evento já corrigia o combate — mas nunca repassava a correção pro sistema que desenha o ícone e decide o filtro. Um recurso genuinamente T4.2 ficava preso mostrando "sem encante" pra sempre.</p>
+    <div class="evidence"><b>Evidência:</b> 43 de 48 recursos vivos detectados numa sessão real ficaram travados assim a vida toda deles.</div>
+    <div class="files">
+      <span class="filepath">web/scripts/handlers/HarvestablesHandler.js</span>
+      <span class="filepath">web/scripts/core/EventRouter.js</span>
+    </div>
+  </div>
+
+  <div class="entry" id="threat">
+    <div class="entry-head">
+      <h3 class="entry-title">Alerta de ameaça nunca disparava em zona vermelha</h3>
+      <div class="badges"><span class="badge fix">fix</span><span class="badge live">achado ao vivo</span></div>
+    </div>
+    <p>O bug mais sério da leva. Jogador hostil visível no próprio jogo, zero aviso sonoro/visual do radar.</p>
+    <p>O código só considerava "ameaça" quem tinha uma flag específica (<code>faction === 255</code>) — que representa "sinalizado pra PvP", conceito que só existe em zona amarela. Em zona vermelha e preta o PvP é total e incondicional: qualquer jogador é ameaça, flag ou não. Zona preta já tinha sido corrigida assim antes; a vermelha ficou pra trás.</p>
+    <div class="evidence"><b>Evidência:</b> mais de 900 detecções de jogador numa sessão de zona vermelha — nenhuma com <code>faction === 255</code>. O alerta nunca disparou durante a sessão inteira.</div>
+    <div class="files"><span class="filepath">web/scripts/handlers/PlayersHandler.js</span></div>
+  </div>
+
+  <div class="entry" id="crash">
+    <div class="entry-head">
+      <h3 class="entry-title">Flip travando ao clicar na aba</h3>
+      <div class="badges"><span class="badge fix">fix</span><span class="badge live">achado ao vivo</span></div>
+    </div>
+    <p>Toda página do app roda a própria inicialização duas vezes por padrão (navegação normal + uma segunda garantia de que os dados globais já carregaram) — inofensivo na maioria das páginas. O Flip cria um timer de atualização a cada 2s e reconecta botões a cada inicialização: sem limpar a anterior, cada visita dobrava (depois multiplicava) os timers ativos, até travar.</p>
+    <p>Corrigido fazendo a inicialização do Flip sempre limpar a anterior primeiro.</p>
+    <div class="files"><span class="filepath">internal/templates/pages/flip.gohtml</span></div>
+  </div>
+
+  <div class="section-label" id="pending">Ainda não feito</div>
+
+  <div class="pending-list">
+    <div class="pending-item">
+      <span class="mark">▸</span>
+      <p><strong>Ícone do Mist Boss</strong> dá erro 404 (usa o nome bruto do mob como nome de arquivo) — cai num círculo azul de fallback, não quebra nada, mas fica feio.</p>
+    </div>
+    <div class="pending-item">
+      <span class="mark">▸</span>
+      <p><strong><code>typeNumber:29</code> não reconhecido</strong> no banco de recursos estáticos — aviso nos logs, ainda não investigado.</p>
+    </div>
+    <div class="pending-item">
+      <span class="mark">▸</span>
+      <p><strong>Alerta de "recurso encontrado"</strong> — código já existe em <code>HarvestablesHandler.js</code>, mas desligado por padrão e sem interface pra ativar.</p>
+    </div>
+    <div class="pending-item">
+      <span class="mark">▸</span>
+      <p><strong>Rastreador de respawn</strong> de recurso esgotado (guardar posição + avisar quando o tempo real de respawn do jogo bater) — só planejado, não implementado.</p>
+    </div>
+  </div>
+
+  <footer>
+    <span>OpenRadar &middot; radar em tempo real pro Albion Online</span>
+    <span>8 commits &middot; 903a133 → 5e55fa0</span>
+  </footer>
+
+</div>

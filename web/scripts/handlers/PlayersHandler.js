@@ -166,7 +166,7 @@ export class PlayersHandler {
         if (!player || !window.currentMapId) return;
 
         const pvpType = zonesDatabase.getPvpType(window.currentMapId);
-        if (!this.isPlayerThreat(player.faction, pvpType)) return;
+        if (!this.isPlayerThreat(player.faction, pvpType, player.guildName)) return;
 
         if (this.alertedThreatIds.has(player.id)) return;
         this.alertedThreatIds.add(player.id);
@@ -206,19 +206,27 @@ export class PlayersHandler {
         setTimeout(() => flash.remove(), this.FLASH_DURATION_MS);
     }
 
-    isPlayerThreat(faction, pvpType) {
+    isPlayerThreat(faction, pvpType, guildName) {
         if (pvpType === 'safe') return false;
-        // Red and black zones are always-on full-loot PvP — any other player is a
-        // threat regardless of their city-faction alignment (faction here is "which
-        // of the 6 city factions", not a danger flag; see Player constructor comment).
-        // faction===255 marks a player explicitly PvP-flagged, a concept that only
-        // exists in Yellow zones (opt-in PvP) — it basically never appears in a
-        // red/black zone's own player data, which is why gating red on it here
-        // silently never fired: a live session in a T6 red zone (Malag Crevasse)
-        // logged 900+ real player detections across factions 0/4/5 and never once
-        // saw 255, so every single one was (wrongly) treated as not-a-threat.
-        if (pvpType === 'black' || pvpType === 'red') return true;
-        if (pvpType === 'yellow') return faction === 255;
+
+        // Guildmates show a blue (friendly) nameplate and aren't attackable by you
+        // regardless of zone — confirmed live: window.localPlayerGuild is captured
+        // from the JoinFinished response (see EventRouter.handleJoinResponse), and a
+        // guildmate ("GabiDimi", guild "Candangagem" — the user's own guild) was
+        // alerting as hostile in a red zone before this check existed.
+        if (guildName && window.localPlayerGuild && guildName === window.localPlayerGuild) {
+            return false;
+        }
+
+        // @reverted 2026-09-12: an earlier change here treated red zones the same as
+        // black (any player = threat, no PK flag needed), reasoning from a session
+        // where 900+ red-zone detections never showed faction===255. That reasoning
+        // was wrong — confirmed live by the user with zero PKs active in-game and the
+        // radar still alerting on nearly every player: red zones are NOT unconditional
+        // full-loot like black. faction===255 (the PK/hostile flag) is the correct,
+        // and only, signal for red (and yellow) — being a different guild/faction is
+        // completely normal there and never means danger by itself.
+        if (pvpType === 'black') return true;
         return faction === 255;
     }
 
@@ -268,7 +276,7 @@ export class PlayersHandler {
 
         const mapId = window.currentMapId;
         const pvpType = zonesDatabase.getPvpType(mapId);
-        const isThreat = this.isPlayerThreat(faction, pvpType);
+        const isThreat = this.isPlayerThreat(faction, pvpType, guildName);
 
         window.logger?.info(CATEGORIES.PLAYERS, 'PlayerDetected', {
             id,
@@ -383,7 +391,7 @@ export class PlayersHandler {
 
     triggerHostileAlert(player) {
         const pvpType = zonesDatabase.getPvpType(window.currentMapId);
-        if (!this.isPlayerThreat(player.faction, pvpType)) return;
+        if (!this.isPlayerThreat(player.faction, pvpType, player.guildName)) return;
 
         this._emitThreatAlert(player);
 
@@ -487,6 +495,6 @@ export class PlayersHandler {
 
     getThreatPlayers() {
         const pvpType = zonesDatabase.getPvpType(window.currentMapId);
-        return this.playersList.filter(p => this.isPlayerThreat(p.faction, pvpType));
+        return this.playersList.filter(p => this.isPlayerThreat(p.faction, pvpType, p.guildName));
     }
 }
