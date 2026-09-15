@@ -877,6 +877,33 @@ describe('MobsHandler', () => {
             expect(mobs[0].type).toBe(EnemyType.MistBoss);
         });
 
+        // @verified 2026-09-13: mobs.min.json has no category ("c") field at all for
+        // T4-T8_MOB_MISTS_GRIFFIN/FAIRYDRAGON/SPIDER, so they fell to the default ->
+        // EnemyType.Enemy, gated behind settingNormalEnemy same as common trash mobs —
+        // reported live as "they just don't show up" (the user had settingNormalEnemy
+        // off). At 5600-8100 HP they're far tougher than trash, so MiniBoss (its own
+        // toggle) is both accurate and fixes the visibility complaint.
+        test("synthetic: uniqueName containing 'MISTS_GRIFFIN' -> EnemyType.MiniBoss despite undefined category", () => {
+            spawnWithDbInfo(1100, {isHarvestable: false, category: undefined, uniqueName: 'T6_MOB_MISTS_GRIFFIN', tier: 6});
+            const mobs = handler.getMobList();
+            expect(mobs).toHaveLength(1);
+            expect(mobs[0].type).toBe(EnemyType.MiniBoss);
+        });
+
+        test("synthetic: uniqueName containing 'MISTS_FAIRYDRAGON' -> EnemyType.MiniBoss despite undefined category", () => {
+            spawnWithDbInfo(1101, {isHarvestable: false, category: undefined, uniqueName: 'T5_MOB_MISTS_FAIRYDRAGON', tier: 5});
+            const mobs = handler.getMobList();
+            expect(mobs).toHaveLength(1);
+            expect(mobs[0].type).toBe(EnemyType.MiniBoss);
+        });
+
+        test("synthetic: uniqueName containing 'MISTS_SPIDER' -> EnemyType.MiniBoss despite undefined category", () => {
+            spawnWithDbInfo(1102, {isHarvestable: false, category: undefined, uniqueName: 'T7_MOB_MISTS_SPIDER', tier: 7});
+            const mobs = handler.getMobList();
+            expect(mobs).toHaveLength(1);
+            expect(mobs[0].type).toBe(EnemyType.MiniBoss);
+        });
+
         // @verified 2026-04-18: uniqueName containing '_ELITE' yields MiniBoss.
         test("synthetic: uniqueName '_ELITE' -> EnemyType.MiniBoss", () => {
             // synthetic: ELITE heuristic test.

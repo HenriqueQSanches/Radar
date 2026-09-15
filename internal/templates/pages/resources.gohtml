@@ -102,6 +102,55 @@
         </div>
     </div>
 
+    <!-- Respawn Times -->
+    <div class="card bg-base-200">
+        <div class="card-body">
+            <h2 class="text-xl font-semibold text-base-content mb-4 flex items-center gap-2">
+                <i data-lucide="timer" class="w-5 h-5 text-primary"></i>
+                <span data-i18n="resources.respawn.title">Respawn Times</span>
+            </h2>
+            <p class="text-xs text-base-content/50 mb-4" data-i18n="resources.respawn.description">
+                Informational only — how long a depleted node takes to respawn, straight from the game's own data. Doesn't track anything, just a reference while you plan a route.
+            </p>
+            <div class="overflow-x-auto">
+                <table class="table table-zebra table-sm">
+                    <thead>
+                        <tr>
+                            <th data-i18n="resources.respawn.resource">Resource</th>
+                            <th>T1</th><th>T2</th><th>T3</th><th>T4</th>
+                            <th>T5</th><th>T6</th><th>T7</th><th>T8</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td data-i18n="market.resource.wood">Wood</td>
+                            <td>2min</td><td>1min</td><td>2min</td><td>4min</td>
+                            <td>12min</td><td>15min</td><td>15min</td><td>15min</td>
+                        </tr>
+                        <tr>
+                            <td data-i18n="market.resource.stone">Stone</td>
+                            <td>1min</td><td>1min</td><td>2min</td><td>4min</td>
+                            <td>12min</td><td>15min</td><td>15min</td><td>15min</td>
+                        </tr>
+                        <tr>
+                            <td data-i18n="market.resource.fiber">Fiber</td>
+                            <td>—</td><td>1min</td><td>2min</td><td>4min</td>
+                            <td>12min</td><td>15min</td><td>15min</td><td>15min</td>
+                        </tr>
+                        <tr>
+                            <td data-i18n="market.resource.ore">Ore</td>
+                            <td>—</td><td>1min</td><td>2min</td><td>4min</td>
+                            <td>12min</td><td>15min</td><td>15min</td><td>15min</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-xs text-base-content/50 mt-3" data-i18n="resources.respawn.hideNote">
+                Hide isn't listed — it doesn't come from a fixed ground node like the others, it comes from skinning a living creature, so there's no fixed node-respawn timer to show.
+            </p>
+        </div>
+    </div>
+
     <!-- Visual & Tools -->
     <div class="card bg-base-200">
         <div class="card-body">

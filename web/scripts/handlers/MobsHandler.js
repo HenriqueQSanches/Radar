@@ -574,6 +574,17 @@ export class MobsHandler {
             return EnemyType.MistBoss;
         }
 
+        // Named Mist roaming creatures (Griffin/Fairydragon/Spider — mobs.min.json has
+        // no category ("c") field for these at all, so they fell through to the
+        // generic default -> EnemyType.Enemy, gated behind settingNormalEnemy same as
+        // every common trash mob. Reported as "they just don't show up" — the user
+        // had settingNormalEnemy off (to reduce clutter) which hid these along with
+        // it. At 5600-8100 HP they hit far harder than trash, so MiniBoss tier (its
+        // own toggle, settingMiniBossEnemy) is the accurate classification anyway.
+        if (name.includes('MISTS_GRIFFIN') || name.includes('MISTS_FAIRYDRAGON') || name.includes('MISTS_SPIDER')) {
+            return EnemyType.MiniBoss;
+        }
+
         // VETERAN mobs (elite versions) - MiniBoss tier
         // Example: T6_MOB_MORGANA_CROSSBOWMAN_VETERAN (has category="static" but is elite)
         // Exclude VETERAN_CHAMPION (already handled by category="champion")
