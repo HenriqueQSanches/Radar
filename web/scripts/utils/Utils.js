@@ -93,6 +93,7 @@ function cleanupStaleEntities() {
     const cleanedRenderCache = PlayerListRenderer.cleanupStaleCache(activePlayerIds);
 
     if (cleanedPlayers || cleanedMobs || cleanedHarvestables || cleanedFishing || cleanedRenderCache) {
+        radarRenderer?.markDirty();
         window.logger?.debug(CATEGORIES.SYSTEM, 'StaleEntityCleanup', {
             players: cleanedPlayers,
             mobs: cleanedMobs,
@@ -159,6 +160,7 @@ function clearHandlers(preserveSession = false) {
     handlers.mobs.Clear();
     handlers.players.Clear();
     handlers.wispCage.Clear();
+    radarRenderer?.markDirty();
 
     if (!preserveSession) {
         try {
@@ -237,6 +239,9 @@ export async function initRadar() {
 
         eventQueue = getEventQueue();
         eventQueue.setFlushCallback((messageType, params) => {
+            // Anything coming off the wire can move or change what's drawn; the
+            // renderer only repaints while something like this has happened recently.
+            radarRenderer?.markDirty();
             switch (messageType) {
                 case 'request':
                     EventRouter.onRequest(params);

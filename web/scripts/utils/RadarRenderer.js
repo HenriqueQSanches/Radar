@@ -4,6 +4,21 @@ import settingsSync from "./SettingsSync.js";
 import zonesDatabase from "../data/ZonesDatabase.js";
 import {shouldRenderLivingResource, shouldRenderStaticResource} from './LivingResourceFilter.js';
 import {EnemyType} from '../handlers/MobsHandler.js';
+import {spriteCache} from './SpriteCache.js';
+
+// The loop used to repaint all four canvas layers 30 times a second whether or not
+// anything had changed, which kept the GPU (the one resource the game is already
+// saturating) busy even with the player standing still in town. Now a frame is only
+// drawn while something recently happened (markDirty), while an animation is running,
+// or once a second as a safety net.
+//
+// SETTLE_MS: how long after the last change the loop keeps drawing, so the position
+// interpolation (lerp towards the target, t = dt/100ms) has visibly settled before the
+// radar goes quiet.
+const SETTLE_MS = 500;
+// Upper bound on how stale the picture can get if some change ever slips past
+// markDirty: an idle radar still redraws once a second instead of 30 times.
+const IDLE_FRAME_INTERVAL_MS = 1000;
 
 export class RadarRenderer {
     constructor(dependencies) {
@@ -27,6 +42,11 @@ export class RadarRenderer {
         this.lastFrameTime = 0;
         this.lastClusterUpdate = 0;
         this.cachedClusters = null;
+
+        this.dirtyUntil = 0;
+        this.lastRenderTime = 0;
+        this._onSettingChanged = () => this.markDirty();
+        this._onViewportChanged = () => this.markDirty();
     }
 
     /**
@@ -36,7 +56,21 @@ export class RadarRenderer {
         const { contexts } = this.canvasManager.initialize();
         this.contexts = contexts;
 
+        settingsSync.on?.('*', this._onSettingChanged);
+        if (typeof window !== 'undefined') {
+            window.addEventListener('canvasSizeChanged', this._onViewportChanged);
+            window.addEventListener('resize', this._onViewportChanged);
+        }
+        this.markDirty();
+
         window.logger?.info(CATEGORIES.MAP, 'RadarRendererInitialized', {});
+    }
+
+    /**
+     * Flag that something drawn on the radar changed, so the next frames are rendered.
+     */
+    markDirty() {
+        this.dirtyUntil = performance.now() + SETTLE_MS;
     }
 
     /**
@@ -47,6 +81,7 @@ export class RadarRenderer {
     setLocalPlayerPosition(x, y) {
         this.lpX = x;
         this.lpY = y;
+        this.markDirty();
     }
 
     /**
@@ -55,6 +90,7 @@ export class RadarRenderer {
      */
     setMap(mapData) {
         this.map = mapData;
+        this.markDirty();
     }
 
 
@@ -76,6 +112,12 @@ export class RadarRenderer {
             window.logger?.info(CATEGORIES.MAP, 'RadarRendererGameLoopStopped', {});
         }
 
+        settingsSync.off?.('*', this._onSettingChanged);
+        if (typeof window !== 'undefined') {
+            window.removeEventListener('canvasSizeChanged', this._onViewportChanged);
+            window.removeEventListener('resize', this._onViewportChanged);
+        }
+
         this.canvasManager?.destroy();
     }
 
@@ -92,9 +134,39 @@ export class RadarRenderer {
 
         this.lastFrameTime = currentTime - (elapsed % this.FRAME_TIME);
 
+        if (!this.shouldRender(currentTime)) return;
+
         this.update();
         this.render();
+        this.lastRenderTime = currentTime;
         window.pipManager?.onRadarRendered();
+    }
+
+    shouldRender(now) {
+        if (now < this.dirtyUntil) return true;
+        if (now - this.lastRenderTime >= IDLE_FRAME_INTERVAL_MS) return true;
+        return this.hasActiveAnimation(now);
+    }
+
+    // Overlays that animate on their own clock (no event behind them) still need every frame.
+    hasActiveAnimation(now) {
+        const players = this.handlers.playersHandler;
+
+        if (settingsSync.getBool('settingFlash') && players?.lastFlashAt) {
+            const elapsed = now - players.lastFlashAt;
+            if (elapsed >= 0 && elapsed <= (players.FLASH_DURATION_MS || 300)) return true;
+        }
+
+        if (settingsSync.getBool('settingFlashDangerousPlayer')
+            && (players?.getThreatPlayers?.()?.length ?? 0) > 0) {
+            return true;
+        }
+
+        if (settingsSync.getBool('settingResourceClusters') && (this.cachedClusters?.length ?? 0) > 0) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -342,14 +414,30 @@ export class RadarRenderer {
     }
 
     /**
-     * Render distance rings centered on player
+     * Render distance rings centered on player. Dashed arcs are re-stroked by the CPU
+     * on every call, so the rings are rasterized once per (canvas size, zoom) and blitted.
      */
     renderDistanceRings(ctx) {
         const canvasSize = ctx.canvas.width;
-        const center = canvasSize / 2;
-        const distances = [10, 20];
         const isSmall = typeof window !== 'undefined' && window.innerWidth < 640;
         const zoomLevel = isSmall ? 0.9 : (settingsSync.getFloat('settingRadarZoom') || 1.0);
+
+        const sprite = spriteCache.get(`rings|${canvasSize}|${zoomLevel}`, () => {
+            const made = spriteCache.createCanvas(canvasSize, canvasSize);
+            if (!made) return null;
+            this.paintDistanceRings(made.ctx, canvasSize, zoomLevel);
+            return {canvas: made.canvas};
+        });
+        if (sprite) {
+            ctx.drawImage(sprite.canvas, 0, 0);
+            return;
+        }
+        this.paintDistanceRings(ctx, canvasSize, zoomLevel);
+    }
+
+    paintDistanceRings(ctx, canvasSize, zoomLevel) {
+        const center = canvasSize / 2;
+        const distances = [10, 20];
         const pixelsPerMeter = (canvasSize / 60) * zoomLevel;
 
         ctx.save();
@@ -387,9 +475,9 @@ export class RadarRenderer {
 
         const pvpStyles = {
             'black': {icon: '\u{1F480}', color: '#ff4444'},
-            'red': {icon: '\u{2694}\uFE0F', color: '#ff8800'},
+            'red': {icon: '\u{2694}️', color: '#ff8800'},
             'yellow': {icon: '\u{1F536}', color: '#ffff00'},
-            'safe': {icon: '\u{1F6E1}\uFE0F', color: '#44ff44'}
+            'safe': {icon: '\u{1F6E1}️', color: '#44ff44'}
         };
         const style = pvpStyles[pvpType] || pvpStyles.safe;
 
@@ -397,19 +485,40 @@ export class RadarRenderer {
         const fontPx = Math.max(8, Math.round(11 * scale));
         const boxH = Math.round(22 * scale) + 4;
         const zoneText = `${zoneName}${tier ? ` (${tier})` : ''} ${style.icon}`;
-        ctx.font = `bold ${fontPx}px monospace`;
+        const font = `bold ${fontPx}px monospace`;
+
+        // Box at (10, 10). The sprite keeps a 1px margin around it so the 1px stroke
+        // straddling the box edge is not clipped, hence the (9, 9) blit.
+        const sprite = spriteCache.get(`zone|${ctx.canvas.width}|${style.color}|${zoneText}`, () => {
+            const textWidth = spriteCache.measureTextWidth(font, zoneText);
+            if (textWidth === null) return null;
+            const made = spriteCache.createCanvas(textWidth + 16 + 2, boxH + 2);
+            if (!made) return null;
+            this.paintZoneInfo(made.ctx, 1, 1, zoneText, textWidth, boxH, font, style.color);
+            return {canvas: made.canvas};
+        });
+        if (sprite) {
+            ctx.drawImage(sprite.canvas, 9, 9);
+            return;
+        }
+
+        ctx.font = font;
         const textWidth = ctx.measureText(zoneText).width;
+        this.paintZoneInfo(ctx, 10, 10, zoneText, textWidth, boxH, font, style.color);
+    }
 
+    paintZoneInfo(ctx, x, y, zoneText, textWidth, boxH, font, color) {
+        ctx.font = font;
         ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.fillRect(10, 10, textWidth + 16, boxH);
-        ctx.strokeStyle = style.color;
+        ctx.fillRect(x, y, textWidth + 16, boxH);
+        ctx.strokeStyle = color;
         ctx.lineWidth = 1;
-        ctx.strokeRect(10, 10, textWidth + 16, boxH);
+        ctx.strokeRect(x, y, textWidth + 16, boxH);
 
-        ctx.fillStyle = style.color;
+        ctx.fillStyle = color;
         ctx.textAlign = 'left';
         ctx.textBaseline = 'top';
-        ctx.fillText(zoneText, 18, 16);
+        ctx.fillText(zoneText, x + 8, y + 6);
     }
 
     /**
@@ -433,15 +542,32 @@ export class RadarRenderer {
         const lineHeight = Math.max(11, Math.round(14 * scale));
         const padX = Math.max(4, Math.round(8 * scale));
         const padY = Math.max(4, Math.round(8 * scale));
-
-        ctx.font = `bold ${fontPx}px monospace`;
+        const font = `bold ${fontPx}px monospace`;
         const labels = stats.map(s => `${s.emoji} ${s.count} ${s.label}`);
+        const boxHeight = padY + stats.length * lineHeight + padY;
+
+        const sprite = spriteCache.get(`stats|${canvasSize}|${labels.join('|')}`, () => {
+            const widths = labels.map(t => spriteCache.measureTextWidth(font, t));
+            if (widths.some(w => w === null)) return null;
+            const boxWidth = Math.ceil(Math.max(...widths)) + padX * 2;
+            const made = spriteCache.createCanvas(boxWidth + 2, boxHeight + 2);
+            if (!made) return null;
+            this.paintStatsBox(made.ctx, 1, 1, boxWidth, boxHeight, stats, labels, font, padX, padY, lineHeight);
+            return {canvas: made.canvas, boxWidth};
+        });
+        if (sprite) {
+            ctx.drawImage(sprite.canvas, canvasSize - sprite.boxWidth - 10 - 1, 10 - 1);
+            return;
+        }
+
+        ctx.font = font;
         const maxTextWidth = labels.reduce((m, t) => Math.max(m, ctx.measureText(t).width), 0);
         const boxWidth = Math.ceil(maxTextWidth) + padX * 2;
-        const boxHeight = padY + stats.length * lineHeight + padY;
-        const boxX = canvasSize - boxWidth - 10;
-        const boxY = 10;
+        this.paintStatsBox(ctx, canvasSize - boxWidth - 10, 10, boxWidth, boxHeight, stats, labels, font, padX, padY, lineHeight);
+    }
 
+    paintStatsBox(ctx, boxX, boxY, boxWidth, boxHeight, stats, labels, font, padX, padY, lineHeight) {
+        ctx.font = font;
         ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
         ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
@@ -458,7 +584,9 @@ export class RadarRenderer {
     }
 
     /**
-     * Render threat border when hostile players detected
+     * Render threat border when hostile players detected. The 24px glow is a full-canvas
+     * blur; it's rasterized once at full opacity and faded with globalAlpha per frame,
+     * which composes to the same pulse without re-blurring 30 times a second.
      */
     renderThreatBorder(ctx) {
         if (!settingsSync.getBool('settingFlashDangerousPlayer')) return;
@@ -470,10 +598,27 @@ export class RadarRenderer {
         const pulse = Math.sin(Date.now() / 140) * 0.35 + 0.6;
         const canvasSize = ctx.canvas.width;
 
+        const sprite = spriteCache.get(`threatBorder|${canvasSize}`, () => {
+            const made = spriteCache.createCanvas(canvasSize, canvasSize);
+            if (!made) return null;
+            this.paintThreatBorder(made.ctx, canvasSize, 1);
+            return {canvas: made.canvas};
+        });
+        if (sprite) {
+            ctx.save();
+            ctx.globalAlpha = pulse;
+            ctx.drawImage(sprite.canvas, 0, 0);
+            ctx.restore();
+            return;
+        }
+        this.paintThreatBorder(ctx, canvasSize, pulse);
+    }
+
+    paintThreatBorder(ctx, canvasSize, alpha) {
         ctx.save();
-        ctx.shadowColor = `rgba(255, 50, 50, ${pulse})`;
+        ctx.shadowColor = `rgba(255, 50, 50, ${alpha})`;
         ctx.shadowBlur = 24;
-        ctx.strokeStyle = `rgba(255, 50, 50, ${pulse})`;
+        ctx.strokeStyle = `rgba(255, 50, 50, ${alpha})`;
         ctx.lineWidth = 5;
         ctx.strokeRect(3, 3, canvasSize - 6, canvasSize - 6);
         ctx.restore();

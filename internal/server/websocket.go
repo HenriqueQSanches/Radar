@@ -34,6 +34,10 @@ type WSStats struct {
 
 // WebSocketHandler manages WebSocket connections and broadcasts
 type WebSocketHandler struct {
+	// The value says whether the client receives event broadcasts. A ?role=logger
+	// socket (see web/scripts/logger.js) only pushes browser logs upstream and never
+	// reads, so streaming every game event into it just doubled the traffic each
+	// open page paid for.
 	clients   map[*websocket.Conn]bool
 	clientsMu sync.RWMutex
 	upgrader  websocket.Upgrader
@@ -94,6 +98,10 @@ func (ws *WebSocketHandler) flushBatch() {
 	ws.batchBuffer = make([]interface{}, 0, MaxBatchSize)
 	ws.batchMu.Unlock()
 
+	if ws.subscriberCount() == 0 {
+		return
+	}
+
 	msg := &WSBatchMessage{Type: "batch", Messages: batch}
 	data, err := json.Marshal(msg)
 	if err != nil {
@@ -112,7 +120,10 @@ func (ws *WebSocketHandler) flushBatch() {
 	var sentCount uint64
 
 	ws.clientsMu.RLock()
-	for client := range ws.clients {
+	for client, subscribed := range ws.clients {
+		if !subscribed {
+			continue
+		}
 		if err := client.WriteMessage(websocket.TextMessage, data); err != nil {
 			failedClients = append(failedClients, client)
 		} else {
@@ -173,7 +184,7 @@ func (ws *WebSocketHandler) handleConnection(w http.ResponseWriter, r *http.Requ
 		logger.PrintWarn("WS", "Connection rejected: max clients reached (%d)", MaxWebSocketClients)
 		return
 	}
-	ws.clients[conn] = true
+	ws.clients[conn] = r.URL.Query().Get("role") != "logger"
 	clientCount := len(ws.clients)
 	ws.clientsMu.Unlock()
 
@@ -279,4 +290,17 @@ func (ws *WebSocketHandler) ClientCount() int {
 	ws.clientsMu.RLock()
 	defer ws.clientsMu.RUnlock()
 	return len(ws.clients)
+}
+
+// subscriberCount returns how many connected clients receive event broadcasts.
+func (ws *WebSocketHandler) subscriberCount() int {
+	ws.clientsMu.RLock()
+	defer ws.clientsMu.RUnlock()
+	n := 0
+	for _, subscribed := range ws.clients {
+		if subscribed {
+			n++
+		}
+	}
+	return n
 }

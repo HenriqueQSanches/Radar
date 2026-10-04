@@ -65,6 +65,7 @@ func main() {
 		return
 	}
 
+	limitRuntimeFootprint()
 	printBanner()
 
 	for {
@@ -402,11 +403,13 @@ func (app *App) onPhotonParseError(reason string, payloadLen int) {
 
 func (app *App) onPhotonEvent(event *photon.EventData) {
 	photon.PostProcessEvent(event)
-	realCode := event.Parameters[252]
-	app.logger.Debug("EVENT_CAPTURE", fmt.Sprintf("Event_%v", realCode), map[string]interface{}{
-		"code":       realCode,
-		"paramCount": len(event.Parameters),
-	}, nil)
+	if app.logger.IsEnabled() {
+		realCode := event.Parameters[252]
+		app.logger.Debug("EVENT_CAPTURE", fmt.Sprintf("Event_%v", realCode), map[string]interface{}{
+			"code":       realCode,
+			"paramCount": len(event.Parameters),
+		}, nil)
+	}
 	app.wsHandler.BroadcastEvent(event)
 }
 

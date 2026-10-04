@@ -80,9 +80,11 @@ export class MapDrawing extends DrawingUtils
         {
             imageCache.preloadImageAndAddToList(src, "Maps")
             .then(() => {
+                this.requestRedraw();
                 window.logger?.info(CATEGORIES.MAP, 'map_loaded', {src: src});
             })
             .catch((error) => {
+                this.requestRedraw();
                 // Mist/Avalon zones are procedurally generated per instance (uuid-style id),
                 // so there's genuinely no map image for them — remember that so the next draw
                 // shows an explanatory label instead of retrying the fetch every frame.

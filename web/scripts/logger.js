@@ -174,7 +174,10 @@ function cleanupLoggerSocket() {
 function connectLoggerWebSocket() {
     cleanupLoggerSocket();
     try {
-        socket = new WebSocket(buildWsUrl());
+        // This socket only ever sends logs upstream. Without the role tag the server
+        // treated it as one more radar client and streamed every game event into it
+        // too, doubling the WebSocket traffic every page paid for nothing.
+        socket = new WebSocket(buildWsUrl() + '?role=logger');
         socket.addEventListener('open', onLoggerSocketOpen);
         socket.addEventListener('close', onLoggerSocketClose);
         socket.addEventListener('error', onLoggerSocketError);

@@ -8,6 +8,10 @@ export class SettingsSync {
         this.listeners = new Map();
         this.isInitialized = false;
         this.cache = new Map();
+        // Parsed getJSON results, keyed by setting. The resource filter grid is read for
+        // every drawn resource on every frame; re-parsing the same JSON thousands of
+        // times a second was pure waste.
+        this.jsonCache = new Map();
 
         this._boundMessageHandler = (event) => this.handleMessage(event.data);
         this._boundStorageHandler = (event) => {
@@ -55,6 +59,7 @@ export class SettingsSync {
             } else {
                 this.cache.delete(data.key);
             }
+            this.jsonCache.delete(data.key);
 
             const listeners = this.listeners.get(data.key) || [];
             listeners.forEach(callback => {
@@ -145,7 +150,13 @@ export class SettingsSync {
     getJSON(key, defaultValue = null) {
         const value = this._getCached(key);
         if (value === null || value === '') return defaultValue;
-        try { return JSON.parse(value); }
+        const cached = this.jsonCache.get(key);
+        if (cached && cached.raw === value) return cached.parsed;
+        try {
+            const parsed = JSON.parse(value);
+            this.jsonCache.set(key, {raw: value, parsed});
+            return parsed;
+        }
         catch (error) {
             window.logger?.error(CATEGORIES.SYSTEM, 'SettingsSyncJSONParseFailed', {
                 key,
@@ -192,6 +203,7 @@ export class SettingsSync {
         }
         this.listeners.clear();
         this.cache.clear();
+        this.jsonCache.clear();
         this.isInitialized = false;
     }
 }

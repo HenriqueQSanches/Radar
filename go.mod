@@ -11,6 +11,7 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/segmentio/encoding v0.5.4
 	github.com/stretchr/testify v1.11.1
+	golang.org/x/sys v0.44.0
 )
 
 require (
@@ -37,7 +38,6 @@ require (
 	github.com/segmentio/asm v1.2.1 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	golang.org/x/net v0.54.0 // indirect
-	golang.org/x/sys v0.44.0 // indirect
 	golang.org/x/text v0.37.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

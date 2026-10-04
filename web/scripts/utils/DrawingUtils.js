@@ -1,6 +1,7 @@
 import {CATEGORIES} from "../constants/LoggerConstants.js";
 import imageCache from "./ImageCache.js";
 import settingsSync from "./SettingsSync.js";
+import {spriteCache} from "./SpriteCache.js";
 
 const SCALE_FACTOR = 1.0;
 const BASE_ZOOM = 4;
@@ -44,6 +45,13 @@ export class DrawingUtils {
         return settingsSync.getNumber('settingCanvasSize') || 500;
     }
     getCanvasCenter() { return this.getCanvasSize() / 2; }
+
+    // Images load asynchronously; now that the renderer skips frames while nothing
+    // changes, a finished load has to ask for one or the icon would only show up on
+    // the next unrelated change.
+    requestRedraw() {
+        if (typeof window !== 'undefined') window.radarRenderer?.markDirty?.();
+    }
 
     drawFilledCircle(context, x, y, radius, color) {
         context.beginPath();
@@ -95,20 +103,22 @@ export class DrawingUtils {
         }
 
         const tierFontSize = this.getMarkerSize(baseSize * 0.55);
-        ctx.fillStyle = '#FFFFFF';
-        ctx.shadowColor = 'rgba(0,0,0,0.7)';
-        ctx.shadowBlur = 3;
-        ctx.font = `bold ${tierFontSize}px ${this.fontFamily}`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
+        const tierStyle = {
+            font: `bold ${tierFontSize}px ${this.fontFamily}`,
+            fillStyle: '#FFFFFF',
+            shadowColor: 'rgba(0,0,0,0.7)',
+            shadowBlur: 3,
+            textAlign: 'center',
+            textBaseline: 'middle',
+        };
 
         if (enchant > 0) {
-            ctx.fillText(`T${tier}`, x - size * 0.12, y);
+            spriteCache.drawText(ctx, `T${tier}`, tierStyle, x - size * 0.12, y);
             const enchantFontSize = this.getMarkerSize(baseSize * 0.30);
-            ctx.font = `bold ${enchantFontSize}px ${this.fontFamily}`;
-            ctx.fillText(`+${enchant}`, x + size * 0.28, y - size * 0.18);
+            const enchantStyle = {...tierStyle, font: `bold ${enchantFontSize}px ${this.fontFamily}`};
+            spriteCache.drawText(ctx, `+${enchant}`, enchantStyle, x + size * 0.28, y - size * 0.18);
         } else {
-            ctx.fillText(`T${tier}`, x, y);
+            spriteCache.drawText(ctx, `T${tier}`, tierStyle, x, y);
         }
 
         ctx.restore();
@@ -152,12 +162,18 @@ export class DrawingUtils {
             ctx.drawImage(preloadedImage, x - scaledSize / 2, y - scaledSize / 2, scaledSize, scaledSize);
         } else {
             imageCache.preloadImageAndAddToList(src, folder)
-                .then(() => window.logger?.info(CATEGORIES.SYSTEM, 'item_loaded', {src, folder}))
-                .catch((error) => window.logger?.warn(CATEGORIES.SYSTEM, 'item_load_failed', {
-                    src,
-                    folder,
-                    error: error?.message
-                }));
+                .then(() => {
+                    this.requestRedraw();
+                    window.logger?.info(CATEGORIES.SYSTEM, 'item_loaded', {src, folder});
+                })
+                .catch((error) => {
+                    this.requestRedraw();
+                    window.logger?.warn(CATEGORIES.SYSTEM, 'item_load_failed', {
+                        src,
+                        folder,
+                        error: error?.message
+                    });
+                });
         }
     }
 
@@ -235,10 +251,12 @@ export class DrawingUtils {
         ctx.lineWidth = 1;
         ctx.stroke();
 
-        ctx.shadowColor = "rgba(0,0,0,0.9)";
-        ctx.shadowBlur = 2;
-        ctx.fillStyle = "#FFFFFF";
-        ctx.fillText(text, rectX + padding, rectY + fontSize);
+        spriteCache.drawText(ctx, text, {
+            font: `bold ${fontSize}px monospace`,
+            fillStyle: '#FFFFFF',
+            shadowColor: 'rgba(0,0,0,0.9)',
+            shadowBlur: 2,
+        }, rectX + padding, rectY + fontSize);
         ctx.restore();
     }
 
@@ -291,10 +309,12 @@ export class DrawingUtils {
         ctx.lineWidth = 1;
         ctx.stroke();
 
-        ctx.shadowColor = "rgba(0,0,0,0.9)";
-        ctx.shadowBlur = 2;
-        ctx.fillStyle = "#FFFFFF";
-        ctx.fillText(text, rectX + padding, rectY + fontSize);
+        spriteCache.drawText(ctx, text, {
+            font: `bold ${fontSize}px monospace`,
+            fillStyle: '#FFFFFF',
+            shadowColor: 'rgba(0,0,0,0.9)',
+            shadowBlur: 2,
+        }, rectX + padding, rectY + fontSize);
         ctx.restore();
     }
 
@@ -324,18 +344,18 @@ export class DrawingUtils {
         ctx.strokeRect(barX, barY, width, height);
 
         const hpFontSize = this.getScaledFontSize(11, 7);
-        ctx.font = `bold ${hpFontSize}px monospace`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-
         let hpText = maxHP < 10000 ? `${Math.round(currentHP)}/${maxHP}` : `${Math.round(hpPercent)}%`;
 
-        ctx.shadowColor = "rgba(0, 0, 0, 1.0)";
-        ctx.shadowBlur = 4;
-        ctx.shadowOffsetX = 1;
-        ctx.shadowOffsetY = 1;
-        ctx.fillStyle = "#FFFFFF";
-        ctx.fillText(hpText, x, barY + height / 2);
+        spriteCache.drawText(ctx, hpText, {
+            font: `bold ${hpFontSize}px monospace`,
+            fillStyle: '#FFFFFF',
+            textAlign: 'center',
+            textBaseline: 'middle',
+            shadowColor: 'rgba(0, 0, 0, 1.0)',
+            shadowBlur: 4,
+            shadowOffsetX: 1,
+            shadowOffsetY: 1,
+        }, x, barY + height / 2);
         ctx.restore();
     }
 
@@ -471,15 +491,9 @@ export class DrawingUtils {
         let boxY = infoY;
         if (infoY < 8) boxY = cy + visualRadius + offset8;
 
-        const grad = ctx.createLinearGradient(infoX, boxY, infoX, boxY + infoH);
-        grad.addColorStop(0, (cluster.count <= 3 && totalStacks <= 6) ? 'rgba(100,200,255,0.9)' : ((cluster.count <=6 || totalStacks<=18) ? 'rgba(255,210,100,0.95)': 'rgba(255,100,100,0.95)'));
-        grad.addColorStop(1, 'rgba(0,0,0,0.6)');
-
-        ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 6; ctx.fillStyle = grad; const rbox = this.getScaledSize(8);
-        ctx.beginPath(); ctx.moveTo(infoX + rbox, boxY); ctx.lineTo(infoX + infoW - rbox, boxY); ctx.quadraticCurveTo(infoX + infoW, boxY, infoX + infoW, boxY + rbox);
-        ctx.lineTo(infoX + infoW, boxY + infoH - rbox); ctx.quadraticCurveTo(infoX + infoW, boxY + infoH, infoX + infoW - rbox, boxY + infoH);
-        ctx.lineTo(infoX + rbox, boxY + infoH); ctx.quadraticCurveTo(infoX, boxY + infoH, infoX, boxY + infoH - rbox); ctx.lineTo(infoX, boxY + rbox);
-        ctx.quadraticCurveTo(infoX, boxY, infoX + rbox, boxY); ctx.closePath(); ctx.fill(); ctx.restore();
+        const topColor = (cluster.count <= 3 && totalStacks <= 6) ? 'rgba(100,200,255,0.9)' : ((cluster.count <=6 || totalStacks<=18) ? 'rgba(255,210,100,0.95)': 'rgba(255,100,100,0.95)');
+        const rbox = this.getScaledSize(8);
+        this.drawClusterInfoBackground(ctx, infoX, boxY, infoW, infoH, rbox, topColor);
 
         ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1; ctx.strokeRect(infoX + 0.5, boxY + 0.5, infoW - 1, infoH - 1);
 
@@ -487,6 +501,33 @@ export class DrawingUtils {
         ctx.font = `bold ${fontSize1}px monospace`; ctx.fillText(line1, infoX + infoW / 2, boxY + this.getScaledSize(8) + fontSize1 - 2);
         ctx.font = `${fontSize2}px monospace`; ctx.fillStyle = 'rgba(255,255,255,0.95)'; ctx.fillText(line2, infoX + infoW / 2, boxY + this.getScaledSize(8) + fontSize1 + lineSpacing + fontSize2 - 2);
         ctx.textAlign = 'start';
+    }
+
+    // The info box background is a blurred-shadow rounded rect; cached as a sprite per
+    // (size, color) so the blur runs once instead of on every frame the cluster pulses.
+    drawClusterInfoBackground(ctx, x, y, w, h, radius, topColor) {
+        const paint = (c, ox, oy) => {
+            const grad = c.createLinearGradient(ox, oy, ox, oy + h);
+            grad.addColorStop(0, topColor);
+            grad.addColorStop(1, 'rgba(0,0,0,0.6)');
+            c.save(); c.shadowColor = 'rgba(0,0,0,0.6)'; c.shadowBlur = 6; c.fillStyle = grad;
+            c.beginPath(); c.moveTo(ox + radius, oy); c.lineTo(ox + w - radius, oy); c.quadraticCurveTo(ox + w, oy, ox + w, oy + radius);
+            c.lineTo(ox + w, oy + h - radius); c.quadraticCurveTo(ox + w, oy + h, ox + w - radius, oy + h);
+            c.lineTo(ox + radius, oy + h); c.quadraticCurveTo(ox, oy + h, ox, oy + h - radius); c.lineTo(ox, oy + radius);
+            c.quadraticCurveTo(ox, oy, ox + radius, oy); c.closePath(); c.fill(); c.restore();
+        };
+        const pad = 14;
+        const sprite = spriteCache.get(['clusterBox', w, h, radius, topColor].join('|'), () => {
+            const made = spriteCache.createCanvas(w + pad * 2, h + pad * 2);
+            if (!made) return null;
+            paint(made.ctx, pad, pad);
+            return {canvas: made.canvas};
+        });
+        if (sprite) {
+            ctx.drawImage(sprite.canvas, Math.round(x) - pad, Math.round(y) - pad);
+            return;
+        }
+        paint(ctx, x, y);
     }
 
     convertGameUnitsToMeters(gameUnits) {

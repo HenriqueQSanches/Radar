@@ -91,6 +91,17 @@ O `IniciarRadar.bat` baixava e abria o Radar, mas se o Npcap (driver do qual tod
 ### Instalador nunca percebia versão nova do Radar
 Depois da primeira vez, rodar o `IniciarRadar.bat` de novo sempre abria a mesma versão baixada antes, mesmo que já tivesse saído um release novo no GitHub — ele só baixava se o `.exe` não existisse. Agora ele compara a versão local com a última tag do repositório e, se forem diferentes, pergunta se você quer atualizar.
 
+### Queda de FPS no jogo com o radar aberto
+Vários relatos de FPS caindo dentro do Albion com o radar ligado, e voltando ao normal ao fechar, inclusive com o log de depuração desligado. Fui medir onde o radar gastava recurso e o grosso não era o log: era o desenho. O radar redesenhava as quatro camadas do canvas 30 vezes por segundo mesmo com você parado no banco sem nada mudando, e cada texto com sombra (contagem de recurso, distância, vida do mob, selo de tier) obrigava o navegador a fazer um desfoque na GPU a cada frame, dezenas de vezes por quadro. A GPU é justamente o que o jogo já usa no limite, então qualquer trabalho extra ali vira queda de FPS. O que mudou, sem alterar nada do que aparece na tela:
+
+- O radar só redesenha quando algo mudou (chegou pacote do jogo, você andou, mexeu numa configuração, carregou uma imagem) ou enquanto uma animação está rodando (borda de ameaça, flash, anéis de cluster). Parado, ele cai de 30 pra 1 redesenho por segundo, que fica como rede de segurança. Como o PiP só recebe quadro quando o canvas muda, o Windows também para de recompor a janelinha em cima do jogo o tempo todo.
+- Textos com sombra, os anéis de distância, a borda vermelha de ameaça e as caixinhas de zona e contagem são desenhados uma vez num canvas escondido e depois só copiados, em vez de refeitos a cada frame.
+- O filtro de tier/encanto dos recursos era lido do localStorage e convertido de JSON pra cada recurso desenhado em cada frame; agora fica convertido uma vez até a configuração mudar.
+- O processo do radar roda com prioridade abaixo do normal no Windows e limitado a dois núcleos, pra quando o processador estiver no limite quem espera seja o radar e não o jogo (o Npcap guarda os pacotes no kernel enquanto isso, não se perde nada).
+- O logger do navegador abria uma segunda conexão com o servidor que recebia todos os eventos do jogo sem usar nenhum, dobrando o tráfego de cada página aberta. Agora ela se identifica e só manda log.
+
+Uma observação: qualquer janela por cima do jogo em tela cheia (o PiP do radar, o Discord, qualquer overlay) tira o jogo do modo de apresentação direta do Windows e custa alguns FPS por conta própria. Isso não dá pra resolver no código; se o FPS importa mais que o radar flutuando, vale deixar o radar num segundo monitor ou atrás do jogo com o alerta sonoro ligado.
+
 ## Como rodar
 
 Precisa de [Go](https://go.dev/) e [Node.js](https://nodejs.org/) instalados, e do [Npcap](https://npcap.com/) pra capturar o tráfego.

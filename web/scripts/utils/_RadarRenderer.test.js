@@ -1,7 +1,7 @@
 // synthetic: narrow coverage of _collectClusterCandidates(); assertions only reach the living/static filter gate,
 // so no pcap fixture is needed and the full RadarRenderer setup (canvas, game loop, zones) is stubbed out.
 
-import {describe, test, expect, beforeEach, vi} from 'vitest';
+import {describe, test, expect, beforeEach, afterEach, vi} from 'vitest';
 
 vi.mock('./SettingsSync.js', () => ({
     default: {
@@ -112,5 +112,132 @@ describe('RadarRenderer._collectClusterCandidates', () => {
         });
 
         expect(renderer._collectClusterCandidates()).toHaveLength(1);
+    });
+});
+
+// synthetic: the loop only draws while something changed recently, an overlay is animating,
+// or once a second as a safety net. update()/render() are stubbed; only the gate is exercised.
+describe('RadarRenderer change-driven rendering', () => {
+    let now;
+    let renderer;
+
+    function makeIdleRenderer(extraHandlers = {}) {
+        const r = new RadarRenderer({
+            handlers: {
+                harvestablesHandler: {harvestableList: []},
+                mobsHandler: {mobsList: []},
+                playersHandler: {lastFlashAt: 0, FLASH_DURATION_MS: 300, getThreatPlayers: () => []},
+                ...extraHandlers,
+            },
+            drawings: {},
+            drawingUtils: {detectClusters: vi.fn(() => [])},
+        });
+        r.update = vi.fn();
+        r.render = vi.fn();
+        return r;
+    }
+
+    function tick(ms) {
+        now += ms;
+        renderer.gameLoop();
+    }
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        now = 10000;
+        vi.spyOn(performance, 'now').mockImplementation(() => now);
+        vi.stubGlobal('requestAnimationFrame', vi.fn(() => 1));
+        vi.stubGlobal('cancelAnimationFrame', vi.fn());
+        window.logger = {debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn()};
+        renderer = makeIdleRenderer();
+    });
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+        vi.restoreAllMocks();
+    });
+
+    test('draws the first frame, then stays quiet while nothing changes', () => {
+        tick(0);
+        expect(renderer.render).toHaveBeenCalledTimes(1);
+
+        tick(40);
+        tick(40);
+        tick(40);
+        expect(renderer.render).toHaveBeenCalledTimes(1);
+        expect(renderer.update).toHaveBeenCalledTimes(1);
+    });
+
+    test('markDirty keeps frames flowing until the interpolation has settled', () => {
+        tick(0);
+        renderer.markDirty();
+
+        tick(40);
+        tick(40);
+        expect(renderer.render).toHaveBeenCalledTimes(3);
+
+        // 500ms settle window: past it (and short of the 1s safety frame) nothing is drawn.
+        tick(600);
+        expect(renderer.render).toHaveBeenCalledTimes(3);
+    });
+
+    test('an idle radar still repaints once a second as a safety net', () => {
+        tick(0);
+        tick(500);
+        expect(renderer.render).toHaveBeenCalledTimes(1);
+
+        tick(600);
+        expect(renderer.render).toHaveBeenCalledTimes(2);
+    });
+
+    test('local player movement and map changes mark the radar dirty', () => {
+        tick(0);
+        renderer.setLocalPlayerPosition(12, 34);
+        tick(40);
+        expect(renderer.render).toHaveBeenCalledTimes(2);
+
+        tick(600);
+        tick(40);
+        const before = renderer.render.mock.calls.length;
+        renderer.setMap({id: 'X'});
+        tick(40);
+        expect(renderer.render).toHaveBeenCalledTimes(before + 1);
+    });
+
+    test('a visible threat border keeps animating every frame', () => {
+        renderer = makeIdleRenderer({
+            playersHandler: {lastFlashAt: 0, FLASH_DURATION_MS: 300, getThreatPlayers: () => [{id: 1}]},
+        });
+        tick(0);
+        tick(40);
+        tick(40);
+        expect(renderer.render).toHaveBeenCalledTimes(3);
+    });
+
+    test('the screen flash keeps animating only while it is fading', () => {
+        const players = {lastFlashAt: 0, FLASH_DURATION_MS: 300, getThreatPlayers: () => []};
+        renderer = makeIdleRenderer({playersHandler: players});
+        tick(0);
+
+        players.lastFlashAt = now;
+        tick(40);
+        tick(40);
+        expect(renderer.render).toHaveBeenCalledTimes(3);
+
+        tick(400);
+        expect(renderer.render).toHaveBeenCalledTimes(3);
+    });
+
+    test('still honours the 30fps throttle while dirty', () => {
+        tick(0);
+        renderer.markDirty();
+        tick(40);
+        expect(renderer.render).toHaveBeenCalledTimes(2);
+
+        tick(10);
+        tick(10);
+        expect(renderer.render).toHaveBeenCalledTimes(2);
+        tick(10);
+        expect(renderer.render).toHaveBeenCalledTimes(3);
     });
 });
