@@ -102,6 +102,9 @@ Vários relatos de FPS caindo dentro do Albion com o radar ligado, e voltando ao
 
 Uma observação: qualquer janela por cima do jogo em tela cheia (o PiP do radar, o Discord, qualquer overlay) tira o jogo do modo de apresentação direta do Windows e custa alguns FPS por conta própria. Isso não dá pra resolver no código; se o FPS importa mais que o radar flutuando, vale deixar o radar num segundo monitor ou atrás do jogo com o alerta sonoro ligado.
 
+### Grifo, Dragão Fada e Tecelã (aranha) das Brumas encantadas não apareciam
+Um patch do Albion deslocou em uma posição os campos do evento de mob novo: o nome do portal de Bruma passou pro campo 33, o encanto pro 34, e o campo 31 passou a trazer o nome desses bichos (`MISTS_...`). O radar lia o 31 como portal, então esses bichos iam parar na lista de portais e nunca eram identificados como mob. Agora só vira portal o que tem nome de portal no campo 33, e Grifo, Dragão Fada, Tecelã e Aranha de Cristal aparecem com ícone próprio, cada um com a sua caixinha na página de Inimigos (ligadas por padrão). Mesma correção que o OpenRadar original fez.
+
 ## Como rodar
 
 Precisa de [Go](https://go.dev/) e [Node.js](https://nodejs.org/) instalados, e do [Npcap](https://npcap.com/) pra capturar o tráfego.

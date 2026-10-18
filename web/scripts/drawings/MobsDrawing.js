@@ -116,9 +116,22 @@ export class MobsDrawing extends DrawingUtils
 
                 drawId = settingsSync.getBool("settingEnemiesID");
             }
+            else if (mobOne.type == EnemyType.MistBoss && mobOne.mistBoss)
+            {
+                // Mists-only creatures (Griffin, Fairydragon, Spider, Crystal Spider): each has
+                // its own toggle on the Enemies page, on unless the player turned it off.
+                const settingName = mobOne.mistBoss.setting;
+                const accepted = settingsSync.getBool(settingName, true);
+                this._logVerdictOnChange(mobOne, accepted, {gate: 'mistBoss', settingName});
+                if (!accepted) continue;
+
+                imageName = mobOne.mistBoss.icon;
+                imageFolder = "Resources";
+                drawId = settingsSync.getBool("settingEnemiesID");
+            }
             else if (mobOne.type == EnemyType.MistBoss)
             {
-                // No settings gate exists for Mist bosses today — logged as always-accepted so a
+                // Mist portal wisps: no settings gate, logged as always-accepted so a
                 // report of "mist boss not showing" is distinguishable from "never reaches here".
                 this._logVerdictOnChange(mobOne, true, {gate: 'mistBoss'});
 

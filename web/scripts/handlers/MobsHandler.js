@@ -15,6 +15,27 @@ export const EnemyType =
         Events: 9,
     };
 
+// Mist portal wisps carry a MISTS_ prefixed tag in the NewMob event; nothing else should be
+// routed to the mist portal list.
+const MIST_PORTAL_NAME_PREFIX = 'MISTS_';
+
+// Farmable creatures that only spawn inside enchanted Mists. Each one has its own toggle on
+// the Enemies page and its own icon in web/images/Resources.
+const MIST_BOSSES = [
+    {match: '_MOB_MISTS_FAIRYDRAGON', icon: 'FAIRYDRAGON', setting: 'settingBossFairyDragon'},
+    {match: '_MOB_MISTS_GRIFFIN', icon: 'GRIFFIN', setting: 'settingBossGriffin'},
+    {match: '_MOB_MISTS_SPIDER', icon: 'VEILWEAVER', setting: 'settingBossVeilWeaver'},
+    {match: '_MOB_ARCANE_CRYSTALSPIDER', icon: 'CRYSTALSPIDER', setting: 'settingBossCrystalSpider'},
+];
+
+export function findMistBoss(uniqueName) {
+    return MIST_BOSSES.find(b => typeof uniqueName === 'string' && uniqueName.includes(b.match)) ?? null;
+}
+
+export function isMistPortalName(name) {
+    return typeof name === 'string' && name.toUpperCase().startsWith(MIST_PORTAL_NAME_PREFIX);
+}
+
 export function getSettingNameForEnemyType(type) {
     switch (type) {
         case EnemyType.Enemy: return 'settingNormalEnemy';
@@ -41,6 +62,7 @@ class Mob {
         this.identified = false;
         this.category = null;           // Mob category from database (boss, miniboss, champion, etc.)
         this.namelocatag = null;        // Localization tag for translated name
+        this.mistBoss = null;           // MIST_BOSSES entry when this is a Mists-only creature
         this.exp = 0;
         this.hX = 0;
         this.hY = 0;
@@ -101,7 +123,7 @@ export class MobsHandler {
 
     /**
      * Calculate enchantment level from game parameters
-     * Uses parameters[33] directly (server data is reliable)
+     * Uses parameters[34] directly (server data is reliable)
      */
     calculateEnchantment(paramsEnchant) {
         if (paramsEnchant !== null && paramsEnchant !== undefined) {
@@ -143,16 +165,14 @@ export class MobsHandler {
             const posY = this.normalizeNumber(loc[1], 0);
             const healthNormalized = this.normalizeNumber(parameters[2], 255);  // Current HP (0-255)
             const maxHealth = this.normalizeNumber(parameters[13], 0);          // Max HP (real value)
-            const enchant = this.normalizeNumber(parameters[33], 0) || 0;
+            const enchant = this.normalizeNumber(parameters[34], 0) || 0;
             const rarity = this.normalizeNumber(parameters[19], null);
 
-            let name;
-            try {
-                name = parameters[32] || parameters[31] || null;
-            } catch (e) {
-                window.logger?.error(CATEGORIES.MOBS, 'new_mob_error', e);
-                name = null;
-            }
+            // A game patch shifted these by one: the portal tag now sits at [33], the enchant at
+            // [34], and [31] carries MISTS_ prefixed creature names (Griffin, Fairydragon,
+            // Spider). Reading [31] as a portal tag sent those creatures to the mist portal list,
+            // so they were never identified as mobs and never showed on the radar.
+            const name = parameters[33] || null;
 
             // 🐛 DEBUG: Log raw parameters from server
             window.logger?.debug(CATEGORIES.MOBS, 'new_mob_raw', {
@@ -161,12 +181,13 @@ export class MobsHandler {
                     health_normalized: parameters[2],
                     maxHP: parameters[13],
                     rarity: parameters[19],
-                    enchant: parameters[33],
+                    enchant: parameters[34],
+                    creatureName: parameters[31],
                     name
                 }
             });
 
-            if (name) {
+            if (isMistPortalName(name)) {
                 this.AddMist(mobId, posX, posY, name, enchant);
             } else {
                 this.AddEnemy(mobId, typeId, posX, posY, healthNormalized, maxHealth, enchant, rarity);
@@ -229,6 +250,7 @@ export class MobsHandler {
         mob.uniqueName = undefined;
         mob.category = null;
         mob.namelocatag = null;
+        mob.mistBoss = null;
         let hasKnownInfo = false;
 
         if (dbInfo && dbInfo.isHarvestable) {
@@ -254,7 +276,8 @@ export class MobsHandler {
             });
         } else if (dbInfo) {
             // Hostile mob from MobsDatabase
-            mob.type = this._getEnemyTypeFromCategory(dbInfo.category, dbInfo.uniqueName);
+            mob.mistBoss = findMistBoss(dbInfo.uniqueName);
+            mob.type = mob.mistBoss ? EnemyType.MistBoss : this._getEnemyTypeFromCategory(dbInfo.category, dbInfo.uniqueName);
             mob.name = dbInfo.uniqueName;  // For Mist Boss filtering
             mob.tier = dbInfo.tier || 0;   // Store tier for hostile mobs
             mob.category = dbInfo.category || null;  // Store category for badge display
@@ -572,17 +595,6 @@ export class MobsHandler {
         // enemies toggled off for combat-noise reasons. MistBoss has no visibility setting.
         if (name.includes('MISTS_PORTAL_WISP')) {
             return EnemyType.MistBoss;
-        }
-
-        // Named Mist roaming creatures (Griffin/Fairydragon/Spider — mobs.min.json has
-        // no category ("c") field for these at all, so they fell through to the
-        // generic default -> EnemyType.Enemy, gated behind settingNormalEnemy same as
-        // every common trash mob. Reported as "they just don't show up" — the user
-        // had settingNormalEnemy off (to reduce clutter) which hid these along with
-        // it. At 5600-8100 HP they hit far harder than trash, so MiniBoss tier (its
-        // own toggle, settingMiniBossEnemy) is the accurate classification anyway.
-        if (name.includes('MISTS_GRIFFIN') || name.includes('MISTS_FAIRYDRAGON') || name.includes('MISTS_SPIDER')) {
-            return EnemyType.MiniBoss;
         }
 
         // VETERAN mobs (elite versions) - MiniBoss tier

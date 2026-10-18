@@ -227,7 +227,7 @@ describe('MobsDrawing DEAD critter routing (user live-test 2026-04-24: dead crit
     // T6_MOB_CRITTER_FIBER_SWAMP_DEAD's typeId from 557 to 561 (+4, same
     // drift as the rest of the mob table this patch).
     test('pcap-derived full-flow: DEAD Fiber carcass typeId=534 renders via Living filter', () => {
-        const p = normalizeParams({'0': 99561, '1': 561, '2': 255, '7': [0, 0], '13': 1564, '33': 0});
+        const p = normalizeParams({'0': 99561, '1': 561, '2': 255, '7': [0, 0], '13': 1564, '34': 0});
 
         mockSettings(livingOn('Fiber'), staticOff('Fiber'));
         mobsHandler.NewMobEvent(p);
@@ -255,7 +255,7 @@ describe('MobsDrawing DEAD critter routing (user live-test 2026-04-24: dead crit
     // @updated 2026-09-09: same +4 drift as typeId=534 above —
     // T5_MOB_CRITTER_FIBER_SWAMP_DEAD's typeId shifted from 555 to 559.
     test('pcap-derived full-flow: DEAD Fiber carcass typeId=532 renders via Living T5 filter', () => {
-        const p = normalizeParams({'0': 99559, '1': 559, '2': 255, '7': [0, 0], '13': 1367, '33': 0});
+        const p = normalizeParams({'0': 99559, '1': 559, '2': 255, '7': [0, 0], '13': 1367, '34': 0});
 
         mockSettings(livingOn('Fiber'), staticOff('Fiber'));
         mobsHandler.NewMobEvent(p);
@@ -459,5 +459,50 @@ describe('MobsDrawing hostile/drone/events filter at render (moved from spawn)',
         drawing.invalidate(ctx, [hostile({id: 1, type: EnemyType.Enemy})]);
         expect(drawing.drawFilledCircle).toHaveBeenCalledWith(ctx, 10, 20, 6, expect.any(String));
         expect(drawing.getMarkerSize).toHaveBeenCalledWith(6);
+    });
+});
+
+describe('MobsDrawing Mists-only creatures', () => {
+    let drawing;
+    let ctx;
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        window.logger = {debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn()};
+        drawing = new MobsDrawing();
+        drawing.DrawCustomImage = vi.fn();
+        drawing.transformPoint = vi.fn((x, y) => ({x, y}));
+        drawing.drawTextItems = vi.fn();
+        drawing.drawFilledCircle = vi.fn();
+        drawing.drawDistanceIndicator = vi.fn();
+        drawing.drawHealthBar = vi.fn();
+        drawing.getEnemyColor = vi.fn(() => '#ffffff');
+        drawing.getScaledSize = vi.fn(s => s);
+        drawing.getMarkerSize = vi.fn(s => s);
+        drawing.getScaledFontSize = vi.fn(s => s);
+        ctx = {font: '', measureText: vi.fn(() => ({width: 12}))};
+    });
+
+    function griffin() {
+        return {
+            id: 1, typeId: 421, hX: 10, hY: 20, tier: 6, enchantmentLevel: 1,
+            name: 'T6_MOB_MISTS_GRIFFIN', identified: true, maxHealth: 6548,
+            type: EnemyType.MistBoss,
+            mistBoss: {match: '_MOB_MISTS_GRIFFIN', icon: 'GRIFFIN', setting: 'settingBossGriffin'},
+            getCurrentHP: () => 6548,
+        };
+    }
+
+    test('griffin renders with its own icon even with normal and mini-boss enemies off', () => {
+        settingsSync.getBool.mockImplementation((key, d) =>
+            key === 'settingNormalEnemy' || key === 'settingMiniBossEnemy' ? false : (d ?? true));
+        drawing.invalidate(ctx, [griffin()]);
+        expect(drawing.DrawCustomImage).toHaveBeenCalledWith(ctx, expect.any(Number), expect.any(Number), 'GRIFFIN', 'Resources', 40);
+    });
+
+    test('griffin is hidden when its own toggle is off', () => {
+        settingsSync.getBool.mockImplementation((key, d) => key === 'settingBossGriffin' ? false : (d ?? true));
+        drawing.invalidate(ctx, [griffin()]);
+        expect(drawing.DrawCustomImage).not.toHaveBeenCalled();
     });
 });
