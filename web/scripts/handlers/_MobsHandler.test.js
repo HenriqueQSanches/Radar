@@ -23,13 +23,6 @@ const allTrueSettings = {
     e4: Array(8).fill(true),
 };
 
-// The mobs pcap fixture was captured before a game patch shifted the NewMob layout by one
-// (portal tag 32 -> 33, enchant 33 -> 34). Replays it in the current layout.
-function fromLegacyLayout(stringKeyed) {
-    const p = normalizeParams(stringKeyed);
-    return {...p, 32: undefined, 33: p[32], 34: p[33]};
-}
-
 describe('MobsHandler', () => {
     let handler;
     let dbs;
@@ -48,18 +41,19 @@ describe('MobsHandler', () => {
     // -------------------------------------------------------------------------
 
     describe('NewMobEvent (event 123)', () => {
-        // @verified 2026-04-18: Mist spawn adds to mistList with 'solo' type heuristic (pcap predates the layout shift, see fromLegacyLayout).
-        test('pcap-derived spawn: mist MISTS_SOLO_YELLOW adds to mistList', async () => {
-            const fx = await loadFixture('mobs', 'spawn');
-            const msg = fx.messages.find(m => m.parameters['32'] === 'MISTS_SOLO_YELLOW');
-            expect(msg).toBeDefined();
-            const p = fromLegacyLayout(msg.parameters);
+        // Live capture 2026-10-18: the mist portal wisp arrives with its tag at [33] and is
+        // identified by typeId 120 (MOB_UNIQUE_MISTS_PORTAL_WISP), drawn as a MistBoss.
+        test('live-shaped spawn: mist portal wisp is identified as MistBoss, not sent to mistList', () => {
+            const p = normalizeParams({'0': 19843, '1': 120, '2': 255, '7': [-137.4, 223.0], '13': 1, '19': 1, '33': 'MISTS_SOLO_BLACK', '34': 0});
 
             handler.NewMobEvent(p);
 
-            const sizes = handler.getSize();
-            expect(sizes.mists).toBe(1);
-            expect(sizes.mobs).toBe(0);
+            expect(handler.getSize().mists).toBe(0);
+            const mobs = handler.getMobList();
+            expect(mobs).toHaveLength(1);
+            expect(mobs[0].type).toBe(EnemyType.MistBoss);
+            expect(mobs[0].name).toBe('MOB_UNIQUE_MISTS_PORTAL_WISP');
+            expect(mobs[0].mistBoss).toBeNull();
         });
 
         // @verified 2026-04-18: living Hide mob typeId=424 (T3_MOB_DYNAMIC_HIDE_SWAMP_GIANTTOAD, real DB lt=3).
@@ -94,7 +88,7 @@ describe('MobsHandler', () => {
 
         // @verified 2026-04-26: wire 526 (hp=1367) -> T5_MOB_CRITTER_FIBER, combat tier 5.
         test('issue #92: wire typeId 526 resolves to T5_MOB_CRITTER_FIBER with combat tier 5', () => {
-            const p = normalizeParams({'0': 99526, '1': 526, '2': 255, '7': [0, 0], '13': 1367, '34': 0});
+            const p = normalizeParams({'0': 99526, '1': 526, '2': 255, '7': [0, 0], '13': 1367, '33': 0});
 
             handler.NewMobEvent(p);
 
@@ -109,7 +103,7 @@ describe('MobsHandler', () => {
         // @updated 2026-09-09: wire 561 (hp=1564) -> T6_MOB_CRITTER_FIBER_SWAMP_DEAD, combat tier 6.
         // (was wire 557 before the September mob-dump update shifted this row.)
         test('issue #92: wire typeId 561 resolves to T6_MOB_CRITTER_FIBER_SWAMP_DEAD with combat tier 6', () => {
-            const p = normalizeParams({'0': 99561, '1': 561, '2': 255, '7': [0, 0], '13': 1564, '34': 0});
+            const p = normalizeParams({'0': 99561, '1': 561, '2': 255, '7': [0, 0], '13': 1564, '33': 0});
 
             handler.NewMobEvent(p);
 
@@ -124,7 +118,7 @@ describe('MobsHandler', () => {
         // @updated 2026-07-18: wire 396 (hp=1032) -> T5_MOB_HIDE_MISTS_OWL, combat tier 5.
         // (was wire 374/hp=1094 before the July mob-dump update shifted this row.)
         test('issue #92: wire typeId 396 resolves to T5_MOB_HIDE_MISTS_OWL with combat tier 5', () => {
-            const p = normalizeParams({'0': 99396, '1': 396, '2': 255, '7': [0, 0], '13': 1032, '34': 0});
+            const p = normalizeParams({'0': 99396, '1': 396, '2': 255, '7': [0, 0], '13': 1032, '33': 0});
 
             handler.NewMobEvent(p);
 
@@ -141,7 +135,7 @@ describe('MobsHandler', () => {
         test('synthetic: living Hide mob typeId=428 adds as LivingSkinnable with tier=5', () => {
             // synthetic: no raw message with param[1]=428 in spawn fixture; tests real DB path for this typeId.
             // '13' (maxHP) must match the DB row's hp: lookups are hp-anchored against offset drift.
-            const p = normalizeParams({'0': 9000, '1': 428, '2': 255, '7': [0, 0], '13': 1162, '19': 90, '34': 0});
+            const p = normalizeParams({'0': 9000, '1': 428, '2': 255, '7': [0, 0], '13': 1162, '19': 90, '33': 0});
             handler.NewMobEvent(p);
             const mobs = handler.getMobList();
             expect(mobs).toHaveLength(1);
@@ -182,7 +176,7 @@ describe('MobsHandler', () => {
         // matching how the original pcap capture (wire 529, not itself one
         // of the colliding rows) exercised this path.
         test('synthetic spawn: wire 540 no longer guesses a specific resource type (hp collides across Fiber/Ore)', () => {
-            const p = normalizeParams({'0': 99540, '1': 540, '2': 255, '7': [0, 0], '13': 856, '34': 0});
+            const p = normalizeParams({'0': 99540, '1': 540, '2': 255, '7': [0, 0], '13': 856, '33': 0});
 
             handler.NewMobEvent(p);
 
@@ -195,7 +189,7 @@ describe('MobsHandler', () => {
         // (T4 Fiber/Ore critters, hp=1203). Wire 545 doesn't itself match
         // that hp, forcing the window fallback that finds both types.
         test('synthetic spawn: wire 545 no longer guesses a specific resource type (hp collides across Fiber/Ore)', () => {
-            const p = normalizeParams({'0': 99545, '1': 545, '2': 255, '7': [0, 0], '13': 1203, '34': 0});
+            const p = normalizeParams({'0': 99545, '1': 545, '2': 255, '7': [0, 0], '13': 1203, '33': 0});
 
             handler.NewMobEvent(p);
 
@@ -258,7 +252,7 @@ describe('MobsHandler', () => {
         // that hp, forcing the window fallback. Switched from a frozen pcap
         // fixture to a direct synthetic spawn.
         test('synthetic spawn: wire 566 no longer guesses a specific resource type (hp collides across Fiber/Ore)', () => {
-            const p = normalizeParams({'0': 99566, '1': 566, '2': 255, '7': [0, 0], '13': 1367, '34': 0});
+            const p = normalizeParams({'0': 99566, '1': 566, '2': 255, '7': [0, 0], '13': 1367, '33': 0});
 
             handler.NewMobEvent(p);
 
@@ -271,7 +265,7 @@ describe('MobsHandler', () => {
         // critters, hp=1564). Wire 568 doesn't itself match that hp,
         // forcing the window fallback.
         test('synthetic spawn: wire 568 no longer guesses a specific resource type (hp collides across Fiber/Ore/Rock)', () => {
-            const p = normalizeParams({'0': 99568, '1': 568, '2': 255, '7': [0, 0], '13': 1564, '34': 0});
+            const p = normalizeParams({'0': 99568, '1': 568, '2': 255, '7': [0, 0], '13': 1564, '33': 0});
 
             handler.NewMobEvent(p);
 
@@ -305,7 +299,7 @@ describe('MobsHandler', () => {
         // current typeId matches its own dump row before any window/tie-break
         // logic runs, so it still resolves unambiguously to tier 4.
         test('synthetic: Wood Mists critter typeId=676 (T4_MOB_CRITTER_WOOD_MISTS_GREEN) rendered with harvest tier 4', () => {
-            const p = normalizeParams({'0': 99676, '1': 676, '2': 255, '7': [0, 0], '13': 1443, '34': 0});
+            const p = normalizeParams({'0': 99676, '1': 676, '2': 255, '7': [0, 0], '13': 1443, '33': 0});
 
             handler.NewMobEvent(p);
 
@@ -341,7 +335,7 @@ describe('MobsHandler', () => {
 
         // @verified 2026-04-26: wire 581 -> T6_MOB_CRITTER_HIDE_MISTCOUGAR_VETERAN.
         test('roads veteran: wire 581 resolves to T6_MOB_CRITTER_HIDE_MISTCOUGAR_VETERAN with tier 6', () => {
-            const p = normalizeParams({'0': 99581, '1': 581, '2': 255, '7': [0, 0], '13': 3674, '34': 0});
+            const p = normalizeParams({'0': 99581, '1': 581, '2': 255, '7': [0, 0], '13': 3674, '33': 0});
             handler.NewMobEvent(p);
             const mobs = handler.getMobList();
             expect(mobs).toHaveLength(1);
@@ -353,7 +347,7 @@ describe('MobsHandler', () => {
 
         // @verified 2026-04-26: wire 586 -> T6_MOB_CRITTER_HIDE_MISTCOUGAR_ELITE.
         test('roads elite: wire 586 resolves to T6_MOB_CRITTER_HIDE_MISTCOUGAR_ELITE with tier 6', () => {
-            const p = normalizeParams({'0': 99586, '1': 586, '2': 255, '7': [0, 0], '13': 7906, '34': 0});
+            const p = normalizeParams({'0': 99586, '1': 586, '2': 255, '7': [0, 0], '13': 7906, '33': 0});
             handler.NewMobEvent(p);
             const mobs = handler.getMobList();
             expect(mobs).toHaveLength(1);
@@ -366,7 +360,7 @@ describe('MobsHandler', () => {
         // @updated 2026-09-09: wire 667 (was 663 before the September mob-dump
         // update shifted this row) -> T6_MOB_CRITTER_FIBER_ROADS_VETERAN.
         test('roads veteran: wire 667 resolves to T6_MOB_CRITTER_FIBER_ROADS_VETERAN with tier 6', () => {
-            const p = normalizeParams({'0': 99667, '1': 667, '2': 255, '7': [0, 0], '13': 4592, '34': 0});
+            const p = normalizeParams({'0': 99667, '1': 667, '2': 255, '7': [0, 0], '13': 4592, '33': 0});
             handler.NewMobEvent(p);
             const mobs = handler.getMobList();
             expect(mobs).toHaveLength(1);
@@ -379,7 +373,7 @@ describe('MobsHandler', () => {
         // @updated 2026-09-09: wire 674 (was 670 before the September mob-dump
         // update shifted this row) -> T8_MOB_CRITTER_FIBER_ROADS_ELITE.
         test('roads elite: wire 674 resolves to T8_MOB_CRITTER_FIBER_ROADS_ELITE with tier 8', () => {
-            const p = normalizeParams({'0': 99674, '1': 674, '2': 255, '7': [0, 0], '13': 14688, '34': 0});
+            const p = normalizeParams({'0': 99674, '1': 674, '2': 255, '7': [0, 0], '13': 14688, '33': 0});
             handler.NewMobEvent(p);
             const mobs = handler.getMobList();
             expect(mobs).toHaveLength(1);
@@ -392,7 +386,7 @@ describe('MobsHandler', () => {
         // @updated 2026-09-09: wire 650 (was 646 before the September mob-dump
         // update shifted this row) -> T4_MOB_CRITTER_ORE_ROADS_VETERAN.
         test('roads veteran: wire 650 resolves to T4_MOB_CRITTER_ORE_ROADS_VETERAN with tier 4', () => {
-            const p = normalizeParams({'0': 99650, '1': 650, '2': 255, '7': [0, 0], '13': 3970, '34': 0});
+            const p = normalizeParams({'0': 99650, '1': 650, '2': 255, '7': [0, 0], '13': 3970, '33': 0});
             handler.NewMobEvent(p);
             const mobs = handler.getMobList();
             expect(mobs).toHaveLength(1);
@@ -407,7 +401,7 @@ describe('MobsHandler', () => {
         // ambiguity reported live. getMobInfo now refuses to guess which one
         // this is instead of arbitrarily picking Rock.
         test('roads elite: wire 620 no longer guesses a specific resource type (hp collides with Ore/Fiber)', () => {
-            const p = normalizeParams({'0': 99620, '1': 620, '2': 255, '7': [0, 0], '13': 9883, '34': 0});
+            const p = normalizeParams({'0': 99620, '1': 620, '2': 255, '7': [0, 0], '13': 9883, '33': 0});
             handler.NewMobEvent(p);
             const mobs = handler.getMobList();
             expect(mobs).toHaveLength(1);
@@ -416,7 +410,7 @@ describe('MobsHandler', () => {
 
         // @verified 2026-04-26: wire 603 -> T8_MOB_CRITTER_WOOD_ROADS_ELITE.
         test('roads elite: wire 603 resolves to T8_MOB_CRITTER_WOOD_ROADS_ELITE with tier 8', () => {
-            const p = normalizeParams({'0': 99603, '1': 603, '2': 255, '7': [0, 0], '13': 17625, '34': 0});
+            const p = normalizeParams({'0': 99603, '1': 603, '2': 255, '7': [0, 0], '13': 17625, '33': 0});
             handler.NewMobEvent(p);
             const mobs = handler.getMobList();
             expect(mobs).toHaveLength(1);
@@ -491,7 +485,7 @@ describe('MobsHandler', () => {
         // @verified 2026-04-18: unknown typeId (out-of-range, no DB entry) defaults to EnemyType.Enemy.
         test('synthetic: unknown typeId with no db entry defaults to EnemyType.Enemy', () => {
             // synthetic: typeId 9999 is out of range in mobs.min.json (len=4595); tests the no-db-entry path.
-            const p = normalizeParams({'0': 8001, '1': 9999, '2': 255, '7': [0, 0], '13': 500, '34': 0});
+            const p = normalizeParams({'0': 8001, '1': 9999, '2': 255, '7': [0, 0], '13': 500, '33': 0});
             handler.NewMobEvent(p);
             const mobs = handler.getMobList();
             expect(mobs).toHaveLength(1);
@@ -501,7 +495,7 @@ describe('MobsHandler', () => {
         // @verified 2026-04-18: low healthNormalized < 10 is clamped to 255 at spawn.
         test('synthetic: spawn with parameters[2] < 10 clamps health to 255', () => {
             // synthetic: typeId 9999 is out of range; tests the fortNPC low-HP-spawn fix branch.
-            const p = normalizeParams({'0': 8002, '1': 9999, '2': 5, '7': [0, 0], '13': 500, '34': 0});
+            const p = normalizeParams({'0': 8002, '1': 9999, '2': 5, '7': [0, 0], '13': 500, '33': 0});
             handler.NewMobEvent(p);
             const mobs = handler.getMobList();
             expect(mobs).toHaveLength(1);
@@ -511,28 +505,27 @@ describe('MobsHandler', () => {
         // @verified 2026-04-18: duplicate id second NewMobEvent is a no-op (first wins).
         test('synthetic: duplicate id second NewMobEvent does not duplicate entry', () => {
             // synthetic: typeId 9999 out of range; tests the early-return guard in AddEnemy.
-            const p = normalizeParams({'0': 8003, '1': 9999, '2': 255, '7': [10, 20], '13': 500, '34': 0});
+            const p = normalizeParams({'0': 8003, '1': 9999, '2': 255, '7': [10, 20], '13': 500, '33': 0});
             handler.NewMobEvent(p);
-            const p2 = normalizeParams({'0': 8003, '1': 9999, '2': 200, '7': [99, 99], '13': 500, '34': 0});
+            const p2 = normalizeParams({'0': 8003, '1': 9999, '2': 200, '7': [99, 99], '13': 500, '33': 0});
             handler.NewMobEvent(p2);
             const mobs = handler.getMobList();
             expect(mobs).toHaveLength(1);
             expect(mobs[0].posX).toBe(10);
         });
 
-        // parameters[31] now carries Mists creature names; only parameters[33] is a portal tag.
-        test('synthetic: MISTS_ name in parameters[31] is a creature, not a portal', () => {
-            const p = normalizeParams({'0': 8004, '1': 94, '2': 255, '7': [0, 0], '13': 1, '31': 'MISTS_DUO_GREEN', '34': 0});
-            handler.NewMobEvent(p);
+        // Text in [31]/[32] no longer diverts a spawn away from mob identification.
+        test('synthetic: MISTS_ text in parameters[31] or [32] still spawns a mob', () => {
+            handler.NewMobEvent(normalizeParams({'0': 8004, '1': 94, '2': 255, '7': [0, 0], '13': 1, '31': 'MISTS_DUO_GREEN'}));
+            handler.NewMobEvent(normalizeParams({'0': 8008, '1': 94, '2': 255, '7': [0, 0], '13': 1, '32': 'MISTS_SOLO_YELLOW'}));
             expect(handler.getSize().mists).toBe(0);
-            expect(handler.getSize().mobs).toBe(1);
+            expect(handler.getSize().mobs).toBe(2);
         });
 
-        // Live report 2026-10-18: Griffin/Fairydragon/Spider in enchanted Mists never showed.
+        // Report 2026-10-18: Griffin/Fairydragon/Spider in enchanted Mists never showed.
         // T6_MOB_MISTS_GRIFFIN is mobs.min.json idx 405 -> wire typeId 421.
-        test('synthetic: Mists griffin with creature name in parameters[31] spawns as a mist boss', () => {
-            const p = normalizeParams({'0': 8007, '1': 421, '2': 255, '7': [0, 0], '13': 6548, '31': 'MISTS_GRIFFIN', '34': 1});
-            handler.NewMobEvent(p);
+        test('synthetic: Mists griffin with MISTS_ text in parameters[31] spawns as a mist boss', () => {
+            handler.NewMobEvent(normalizeParams({'0': 8007, '1': 421, '2': 255, '7': [0, 0], '13': 6548, '31': 'MISTS_GRIFFIN'}));
             expect(handler.getSize().mists).toBe(0);
             const mobs = handler.getMobList();
             expect(mobs).toHaveLength(1);
@@ -543,7 +536,7 @@ describe('MobsHandler', () => {
         // @verified 2026-04-24: enemy filters moved to render; spawn always stores, and mob.identified pins the db-match state for the render gate.
         test('synthetic: settingNormalEnemy=false no longer blocks spawn, mob lands with identified=true', () => {
             settingsSync.getBool.mockImplementation((key) => key !== 'settingNormalEnemy');
-            const p = normalizeParams({'0': 8005, '1': 2067, '2': 255, '7': [0, 0], '13': 500, '34': 0});
+            const p = normalizeParams({'0': 8005, '1': 2067, '2': 255, '7': [0, 0], '13': 500, '33': 0});
             handler.NewMobEvent(p);
             const list = handler.getMobList();
             expect(list).toHaveLength(1);
@@ -553,23 +546,13 @@ describe('MobsHandler', () => {
         // @verified 2026-04-24: unknown mob also always spawns with identified=false so the render gate can use settingShowUnmanagedEnemies.
         test('synthetic: settingShowUnmanagedEnemies=false no longer blocks spawn, unknown mob lands with identified=false', () => {
             settingsSync.getBool.mockImplementation((key) => key !== 'settingShowUnmanagedEnemies');
-            const p = normalizeParams({'0': 8006, '1': 9999, '2': 255, '7': [0, 0], '13': 500, '34': 0});
+            const p = normalizeParams({'0': 8006, '1': 9999, '2': 255, '7': [0, 0], '13': 500, '33': 0});
             handler.NewMobEvent(p);
             const list = handler.getMobList();
             expect(list).toHaveLength(1);
             expect(list[0].identified).toBe(false);
         });
 
-        // @verified 2026-04-18: two distinct mist spawns both land in mistList.
-        test('pcap-derived spawn: two mist messages add two entries to mistList', async () => {
-            const fx = await loadFixture('mobs', 'spawn');
-            const mists = fx.messages.filter(m => m.parameters['32'] === 'MISTS_SOLO_YELLOW');
-            expect(mists.length).toBeGreaterThanOrEqual(2);
-            for (const msg of mists) {
-                handler.NewMobEvent(fromLegacyLayout(msg.parameters));
-            }
-            expect(handler.getSize().mists).toBe(mists.length);
-        });
 
         // @verified 2026-04-26: 62 cells covering family x tier x variant.
         // Wire typeId = canonical uniqueName idx + OFFSET (16). Expected tier = combat tier.
@@ -668,7 +651,7 @@ describe('MobsHandler', () => {
                     '2': 255,
                     '7': [0, 0],
                     '13': hp,
-                    '34': 0,
+                    '33': 0,
                 });
 
                 handler.NewMobEvent(params);
@@ -696,7 +679,7 @@ describe('MobsHandler', () => {
                 e4: Array(8).fill(true),
             };
             settingsSync.getJSON.mockReturnValue(e0OffSettings);
-            const p = normalizeParams({'0': 91000, '1': 373, '2': 255, '7': [0, 0], '13': 1000, '34': 0});
+            const p = normalizeParams({'0': 91000, '1': 373, '2': 255, '7': [0, 0], '13': 1000, '33': 0});
 
             handler.NewMobEvent(p);
 
@@ -709,7 +692,7 @@ describe('MobsHandler', () => {
         // @verified 2026-04-19: updateEnchantEvent mutates enchant on existing mob, entity survives spawn-filter gap.
         test('HARV-2: updateEnchantEvent mutates enchantmentLevel on mob already in mobsList', () => {
             settingsSync.getJSON.mockReturnValue({e0: Array(8).fill(true), e1: Array(8).fill(true), e2: Array(8).fill(true), e3: Array(8).fill(true), e4: Array(8).fill(true)});
-            const spawnParams = normalizeParams({'0': 91500, '1': 373, '2': 255, '7': [0, 0], '13': 1000, '34': 0});
+            const spawnParams = normalizeParams({'0': 91500, '1': 373, '2': 255, '7': [0, 0], '13': 1000, '33': 0});
             handler.NewMobEvent(spawnParams);
             expect(handler.getMobList()).toHaveLength(1);
 
@@ -733,7 +716,7 @@ describe('MobsHandler', () => {
             settingsSync.getJSON.mockReturnValue(e0OffOnlyE2On);
             // typeId 399 (T4_MOB_HIDE_MISTS_GIANTSTAG) — was 395 before the
             // September mob-dump update shifted this row onto an unrelated mob.
-            const spawnParams = normalizeParams({'0': 92000, '1': 399, '2': 255, '7': [0, 0], '13': 1000, '34': 0});
+            const spawnParams = normalizeParams({'0': 92000, '1': 399, '2': 255, '7': [0, 0], '13': 1000, '33': 0});
             handler.NewMobEvent(spawnParams);
 
             handler.updateEnchantEvent({0: 92000, 1: 2});
@@ -756,7 +739,7 @@ describe('MobsHandler', () => {
             expect(houndTypeId).not.toBeNull();
             const collidingHp = dbs.mobsDatabase.mobsById.get(houndTypeId).hp;
 
-            const spawnParams = normalizeParams({'0': 93000, '1': foxTypeId, '2': 255, '7': [0, 0], '13': collidingHp, '34': 0});
+            const spawnParams = normalizeParams({'0': 93000, '1': foxTypeId, '2': 255, '7': [0, 0], '13': collidingHp, '33': 0});
             handler.NewMobEvent(spawnParams);
             expect(handler.getMobList()[0].tier).toBe(6);
 
@@ -777,7 +760,7 @@ describe('MobsHandler', () => {
     describe('_getEnemyTypeFromCategory heuristics', () => {
         function spawnWithDbInfo(id, dbInfo) {
             vi.spyOn(dbs.mobsDatabase, 'getMobInfo').mockReturnValueOnce(dbInfo);
-            const p = normalizeParams({'0': id, '1': id, '2': 255, '7': [0, 0], '13': 500, '34': 0});
+            const p = normalizeParams({'0': id, '1': id, '2': 255, '7': [0, 0], '13': 500, '33': 0});
             handler.NewMobEvent(p);
         }
 
@@ -945,7 +928,7 @@ describe('MobsHandler', () => {
         function addMob(id, maxHealth = 500) {
             // synthetic typeIds in range 5001+ are out of range in real DB -> null -> unmanaged Enemy.
             vi.spyOn(dbs.mobsDatabase, 'getMobInfo').mockReturnValueOnce(null);
-            handler.NewMobEvent(normalizeParams({'0': id, '1': id, '2': 200, '7': [0, 0], '13': maxHealth, '34': 0}));
+            handler.NewMobEvent(normalizeParams({'0': id, '1': id, '2': 200, '7': [0, 0], '13': maxHealth, '33': 0}));
         }
 
         // @verified 2026-04-18: valid currentHP normalizes health proportionally.
@@ -984,7 +967,7 @@ describe('MobsHandler', () => {
     describe('updateMobHealthRegen (event 91)', () => {
         function addMob(id) {
             vi.spyOn(dbs.mobsDatabase, 'getMobInfo').mockReturnValueOnce(null);
-            handler.NewMobEvent(normalizeParams({'0': id, '1': id, '2': 200, '7': [0, 0], '13': 500, '34': 0}));
+            handler.NewMobEvent(normalizeParams({'0': id, '1': id, '2': 200, '7': [0, 0], '13': 500, '33': 0}));
         }
 
         // @verified 2026-04-18: sets mob.health directly to parameters[2].
@@ -1007,7 +990,7 @@ describe('MobsHandler', () => {
     describe('updateMobHealthBulk (event 7)', () => {
         function addMob(id, maxHealth = 500) {
             vi.spyOn(dbs.mobsDatabase, 'getMobInfo').mockReturnValueOnce(null);
-            handler.NewMobEvent(normalizeParams({'0': id, '1': id, '2': 200, '7': [0, 0], '13': maxHealth, '34': 0}));
+            handler.NewMobEvent(normalizeParams({'0': id, '1': id, '2': 200, '7': [0, 0], '13': maxHealth, '33': 0}));
         }
 
         // @characterization 2026-04-18: bulk update uses parameters[0] as the single mob id for all entries.
@@ -1044,11 +1027,11 @@ describe('MobsHandler', () => {
     describe('position updates', () => {
         function addMob(id) {
             vi.spyOn(dbs.mobsDatabase, 'getMobInfo').mockReturnValueOnce(null);
-            handler.NewMobEvent(normalizeParams({'0': id, '1': id, '2': 200, '7': [0, 0], '13': 500, '34': 0}));
+            handler.NewMobEvent(normalizeParams({'0': id, '1': id, '2': 200, '7': [0, 0], '13': 500, '33': 0}));
         }
 
         function addMist(id) {
-            handler.NewMobEvent(normalizeParams({'0': id, '1': 94, '2': 255, '7': [0, 0], '13': 1, '33': 'MISTS_SOLO_YELLOW', '34': 0}));
+            handler.AddMist(id, 0, 0, 'MISTS_SOLO_YELLOW', 0);
         }
 
         // @verified 2026-04-18: updateMobPosition updates posX, posY, and touches lastUpdateTime.
@@ -1094,11 +1077,11 @@ describe('MobsHandler', () => {
     describe('enchant updates', () => {
         function addMob(id) {
             vi.spyOn(dbs.mobsDatabase, 'getMobInfo').mockReturnValueOnce(null);
-            handler.NewMobEvent(normalizeParams({'0': id, '1': id, '2': 200, '7': [0, 0], '13': 500, '34': 0}));
+            handler.NewMobEvent(normalizeParams({'0': id, '1': id, '2': 200, '7': [0, 0], '13': 500, '33': 0}));
         }
 
         function addMist(id) {
-            handler.NewMobEvent(normalizeParams({'0': id, '1': 94, '2': 255, '7': [0, 0], '13': 1, '33': 'MISTS_SOLO_YELLOW', '34': 0}));
+            handler.AddMist(id, 0, 0, 'MISTS_SOLO_YELLOW', 0);
         }
 
         // @verified 2026-04-18: updateEnchantEvent sets enchantmentLevel on the mob.
@@ -1140,11 +1123,11 @@ describe('MobsHandler', () => {
     describe('lifecycle', () => {
         function addMob(id) {
             vi.spyOn(dbs.mobsDatabase, 'getMobInfo').mockReturnValueOnce(null);
-            handler.NewMobEvent(normalizeParams({'0': id, '1': id, '2': 200, '7': [0, 0], '13': 500, '34': 0}));
+            handler.NewMobEvent(normalizeParams({'0': id, '1': id, '2': 200, '7': [0, 0], '13': 500, '33': 0}));
         }
 
         function addMist(id) {
-            handler.NewMobEvent(normalizeParams({'0': id, '1': 94, '2': 255, '7': [0, 0], '13': 1, '33': 'MISTS_SOLO_YELLOW', '34': 0}));
+            handler.AddMist(id, 0, 0, 'MISTS_SOLO_YELLOW', 0);
         }
 
         // @verified 2026-04-18: removeMob removes the matching mob by id.
@@ -1217,11 +1200,11 @@ describe('MobsHandler', () => {
     describe('cleanupStaleEntities', () => {
         function addMob(id) {
             vi.spyOn(dbs.mobsDatabase, 'getMobInfo').mockReturnValueOnce(null);
-            handler.NewMobEvent(normalizeParams({'0': id, '1': id, '2': 200, '7': [0, 0], '13': 500, '34': 0}));
+            handler.NewMobEvent(normalizeParams({'0': id, '1': id, '2': 200, '7': [0, 0], '13': 500, '33': 0}));
         }
 
         function addMist(id) {
-            handler.NewMobEvent(normalizeParams({'0': id, '1': 94, '2': 255, '7': [0, 0], '13': 1, '33': 'MISTS_SOLO_YELLOW', '34': 0}));
+            handler.AddMist(id, 0, 0, 'MISTS_SOLO_YELLOW', 0);
         }
 
         // @verified 2026-04-18: stale mob (lastUpdateTime old) is removed; fresh mob survives.
@@ -1265,7 +1248,7 @@ describe('MobsHandler', () => {
             // synthetic: adds 5 mobs then trims to 3; typeIds 9100-9104 are out of range in real DB.
             for (let i = 0; i < 5; i++) {
                 vi.spyOn(dbs.mobsDatabase, 'getMobInfo').mockReturnValueOnce(null);
-                handler.NewMobEvent(normalizeParams({'0': 9100 + i, '1': 9100 + i, '2': 200, '7': [0, 0], '13': 500, '34': 0}));
+                handler.NewMobEvent(normalizeParams({'0': 9100 + i, '1': 9100 + i, '2': 200, '7': [0, 0], '13': 500, '33': 0}));
                 handler.mobsList[i].lastUpdateTime = Date.now() + i * 1000;
             }
             const removed = handler.enforceMaxSize(3, 50);
@@ -1278,7 +1261,7 @@ describe('MobsHandler', () => {
             // synthetic: adds 4 mists then trims to 2.
             const names = ['MISTS_SOLO_YELLOW', 'MISTS_GROUP_RED', 'MISTS_SOLO_BLUE', 'MISTS_GROUP_GREEN'];
             for (let i = 0; i < 4; i++) {
-                handler.NewMobEvent(normalizeParams({'0': 9200 + i, '1': 94, '2': 255, '7': [0, 0], '13': 1, '33': names[i], '34': 0}));
+                handler.AddMist(9200 + i, 0, 0, names[i], 0);
                 handler.mistList[i].lastUpdateTime = Date.now() + i * 1000;
             }
             const removed = handler.enforceMaxSize(500, 2);
@@ -1290,7 +1273,7 @@ describe('MobsHandler', () => {
         test('synthetic: enforceMaxSize returns 0 when counts are under limits', () => {
             // synthetic: happy path - nothing trimmed; typeId 9300 is out of range.
             vi.spyOn(dbs.mobsDatabase, 'getMobInfo').mockReturnValueOnce(null);
-            handler.NewMobEvent(normalizeParams({'0': 9300, '1': 9300, '2': 200, '7': [0, 0], '13': 500, '34': 0}));
+            handler.NewMobEvent(normalizeParams({'0': 9300, '1': 9300, '2': 200, '7': [0, 0], '13': 500, '33': 0}));
             expect(handler.enforceMaxSize(500, 50)).toBe(0);
         });
     });
@@ -1303,31 +1286,30 @@ describe('MobsHandler', () => {
         // @verified 2026-04-18: name containing 'solo' (case-insensitive) sets type=0.
         test('synthetic: mist name containing "solo" sets type=0', () => {
             // synthetic: tests the solo heuristic in the Mist constructor.
-            handler.NewMobEvent(normalizeParams({'0': 9400, '1': 94, '2': 255, '7': [0, 0], '13': 1, '33': 'MISTS_SOLO_YELLOW', '34': 0}));
+            handler.AddMist(9400, 0, 0, 'MISTS_SOLO_YELLOW', 0);
             expect(handler.mistList[0].type).toBe(0);
         });
 
         // @verified 2026-04-18: name not containing 'solo' sets type=1.
         test('synthetic: mist name not containing "solo" sets type=1', () => {
             // synthetic: tests the non-solo branch in the Mist constructor.
-            handler.NewMobEvent(normalizeParams({'0': 9401, '1': 94, '2': 255, '7': [0, 0], '13': 1, '33': 'MISTS_GROUP_RED', '34': 0}));
+            handler.AddMist(9401, 0, 0, 'MISTS_GROUP_RED', 0);
             expect(handler.mistList[0].type).toBe(1);
         });
 
         // @verified 2026-04-18: AddMist with duplicate id is a no-op (touch only, no second push).
         test('synthetic: duplicate mist id is a no-op (touch, not re-added)', () => {
             // synthetic: tests the duplicate guard in AddMist.
-            handler.NewMobEvent(normalizeParams({'0': 9402, '1': 94, '2': 255, '7': [0, 0], '13': 1, '33': 'MISTS_SOLO_YELLOW', '34': 0}));
-            handler.NewMobEvent(normalizeParams({'0': 9402, '1': 94, '2': 255, '7': [5, 5], '13': 1, '33': 'MISTS_SOLO_YELLOW', '34': 0}));
+            handler.AddMist(9402, 0, 0, 'MISTS_SOLO_YELLOW', 0);
+            handler.AddMist(9402, 5, 5, 'MISTS_SOLO_YELLOW', 0);
             expect(handler.getSize().mists).toBe(1);
         });
 
-        // Wisp rarity arrives via Parameters[34] since the game patch that shifted the NewMob layout.
-        test('MIST-6: AddMist forwards Parameters[34] to Mist.enchant', () => {
-            handler.NewMobEvent(normalizeParams({'0': 9410, '1': 94, '2': 255, '7': [0, 0], '13': 1, '33': 'MISTS_SOLO_YELLOW', '34': 0}));
+        test('MIST-6: AddMist stores the enchant on Mist.enchant', () => {
+            handler.AddMist(9410, 0, 0, 'MISTS_SOLO_YELLOW', 0);
             expect(handler.mistList[0].enchant).toBe(0);
 
-            handler.NewMobEvent(normalizeParams({'0': 9411, '1': 94, '2': 255, '7': [0, 0], '13': 1, '33': 'MISTS_SOLO_YELLOW', '34': 1}));
+            handler.AddMist(9411, 0, 0, 'MISTS_SOLO_YELLOW', 1);
             expect(handler.mistList[1].enchant).toBe(1);
         });
     });

@@ -15,10 +15,6 @@ export const EnemyType =
         Events: 9,
     };
 
-// Mist portal wisps carry a MISTS_ prefixed tag in the NewMob event; nothing else should be
-// routed to the mist portal list.
-const MIST_PORTAL_NAME_PREFIX = 'MISTS_';
-
 // Farmable creatures that only spawn inside enchanted Mists. Each one has its own toggle on
 // the Enemies page and its own icon in web/images/Resources.
 const MIST_BOSSES = [
@@ -30,10 +26,6 @@ const MIST_BOSSES = [
 
 export function findMistBoss(uniqueName) {
     return MIST_BOSSES.find(b => typeof uniqueName === 'string' && uniqueName.includes(b.match)) ?? null;
-}
-
-export function isMistPortalName(name) {
-    return typeof name === 'string' && name.toUpperCase().startsWith(MIST_PORTAL_NAME_PREFIX);
 }
 
 export function getSettingNameForEnemyType(type) {
@@ -123,7 +115,7 @@ export class MobsHandler {
 
     /**
      * Calculate enchantment level from game parameters
-     * Uses parameters[34] directly (server data is reliable)
+     * Uses parameters[33] directly (server data is reliable)
      */
     calculateEnchantment(paramsEnchant) {
         if (paramsEnchant !== null && paramsEnchant !== undefined) {
@@ -165,14 +157,8 @@ export class MobsHandler {
             const posY = this.normalizeNumber(loc[1], 0);
             const healthNormalized = this.normalizeNumber(parameters[2], 255);  // Current HP (0-255)
             const maxHealth = this.normalizeNumber(parameters[13], 0);          // Max HP (real value)
-            const enchant = this.normalizeNumber(parameters[34], 0) || 0;
+            const enchant = this.normalizeNumber(parameters[33], 0) || 0;
             const rarity = this.normalizeNumber(parameters[19], null);
-
-            // A game patch shifted these by one: the portal tag now sits at [33], the enchant at
-            // [34], and [31] carries MISTS_ prefixed creature names (Griffin, Fairydragon,
-            // Spider). Reading [31] as a portal tag sent those creatures to the mist portal list,
-            // so they were never identified as mobs and never showed on the radar.
-            const name = parameters[33] || null;
 
             // 🐛 DEBUG: Log raw parameters from server
             window.logger?.debug(CATEGORIES.MOBS, 'new_mob_raw', {
@@ -181,17 +167,20 @@ export class MobsHandler {
                     health_normalized: parameters[2],
                     maxHP: parameters[13],
                     rarity: parameters[19],
-                    enchant: parameters[34],
-                    creatureName: parameters[31],
-                    name
+                    enchant: parameters[33],
+                    text31: parameters[31],
+                    text32: parameters[32],
+                    text33: parameters[33],
                 }
             });
 
-            if (isMistPortalName(name)) {
-                this.AddMist(mobId, posX, posY, name, enchant);
-            } else {
-                this.AddEnemy(mobId, typeId, posX, posY, healthNormalized, maxHealth, enchant, rarity);
-            }
+            // Every NewMob goes through database identification. A game patch moved the text
+            // fields: live captures (2026-10-18) show the mist portal tag at [33]
+            // ("MISTS_SOLO_BLACK") and [31] carrying MISTS_ creature names. Routing on [32]/[31]
+            // sent the Griffin/Fairydragon/Spider of enchanted Mists to the mist portal list,
+            // where they were never identified and never drawn. The portal wisp itself is
+            // identified by typeId (MOB_UNIQUE_MISTS_PORTAL_WISP) and drawn as a MistBoss.
+            this.AddEnemy(mobId, typeId, posX, posY, healthNormalized, maxHealth, enchant, rarity);
         } catch (e) {
             // ❌ ERROR (always logged) - Critical error in NewMobEvent
             if (window.logger) {
