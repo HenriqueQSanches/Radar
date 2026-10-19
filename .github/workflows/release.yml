@@ -67,8 +67,16 @@ jobs:
 
       - uses: docker/setup-buildx-action@v4
 
-      - name: Build all artifacts
-        run: make all-in-one VERSION=${{ env.VERSION }}
+      # The Windows .exe is built natively in enhance-windows and overlaid in the release job
+      # (which also regenerates the checksums), so the Docker mingw build is skipped here. It
+      # downloaded the Npcap SDK from npcap.com, which broke the release whenever that site was
+      # unreachable (expired certificate on 2026-10-18), for a binary that was thrown away.
+      - name: Build Linux binary and READMEs
+        run: |
+          trap 'make restore-assets' EXIT
+          make assets
+          make build-linux VERSION=${{ env.VERSION }}
+          make readmes VERSION=${{ env.VERSION }}
 
       - uses: actions/upload-artifact@v7
         with:
