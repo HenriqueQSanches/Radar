@@ -70,6 +70,21 @@
         </div>
     </div>
 
+    <!-- Most expensive resource today (Albion Online Data Project, Americas) -->
+    <div class="card bg-base-200">
+        <div class="card-body p-3 sm:p-4">
+            <div class="flex flex-wrap items-center gap-3">
+                <button id="topPriceBtn" data-i18n="radar.topPrice.button" class="btn btn-primary btn-sm">Most expensive resource today</button>
+                <span id="topPriceStatus" class="text-xs text-base-content/50"></span>
+            </div>
+            <div id="topPriceResult" class="hidden mt-3 text-sm">
+                <p id="topPriceBest" class="text-base font-semibold text-base-content"></p>
+                <ul id="topPriceRunners" class="mt-1 space-y-0.5 text-base-content/70"></ul>
+                <p id="topPriceNote" class="mt-2 text-xs text-base-content/50" data-i18n="radar.topPrice.note">Lowest active sell order per city, as last seen by a player running the Albion Data Client. Prices older than 24h are ignored.</p>
+            </div>
+        </div>
+    </div>
+
     <!-- Detected Players Section -->
     <div id="playersSection" class="card bg-base-200">
         <div class="card-body">
@@ -346,6 +361,52 @@ window.onGlobalsReady(function() {
     }
     window.addEventListener('storage', storageHandler);
     cleanup.push(() => window.removeEventListener('storage', storageHandler));
+
+    // Most expensive resource today
+    const topPriceBtn = document.getElementById('topPriceBtn');
+    const topPriceStatus = document.getElementById('topPriceStatus');
+    const topPriceResult = document.getElementById('topPriceResult');
+    const topPriceBest = document.getElementById('topPriceBest');
+    const topPriceRunners = document.getElementById('topPriceRunners');
+    const t = (key) => window.i18n?.t(key) ?? key;
+
+    function formatTopEntry(e) {
+        const tier = e.enchant > 0 ? `T${e.tier}.${e.enchant}` : `T${e.tier}`;
+        const price = e.price.toLocaleString();
+        const age = e.ageMinutes < 60
+            ? `${e.ageMinutes} ${t('radar.topPrice.minutes')}`
+            : `${Math.round(e.ageMinutes / 60)} ${t('radar.topPrice.hours')}`;
+        return `${tier} ${e.resource} ${t('radar.topPrice.in')} ${e.city}: ${price} ${t('radar.topPrice.silver')} (${t('radar.topPrice.seen')} ${age})`;
+    }
+
+    addListener(topPriceBtn, 'click', async () => {
+        topPriceBtn.disabled = true;
+        topPriceStatus.textContent = t('radar.topPrice.loading');
+        try {
+            const resp = await fetch('/api/market/top');
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.error || resp.statusText);
+            if (!data.best) {
+                topPriceStatus.textContent = t('radar.topPrice.empty');
+                topPriceResult.classList.add('hidden');
+                return;
+            }
+            topPriceBest.textContent = formatTopEntry(data.best);
+            topPriceRunners.innerHTML = '';
+            for (const e of data.runners || []) {
+                const li = document.createElement('li');
+                li.textContent = formatTopEntry(e);
+                topPriceRunners.appendChild(li);
+            }
+            topPriceStatus.textContent = '';
+            topPriceResult.classList.remove('hidden');
+        } catch (err) {
+            topPriceStatus.textContent = `${t('radar.topPrice.error')} ${err.message}`;
+            topPriceResult.classList.add('hidden');
+        } finally {
+            topPriceBtn.disabled = false;
+        }
+    });
 });
 </script>
 {{end}}

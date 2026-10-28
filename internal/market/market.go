@@ -1,4 +1,4 @@
-// Package market fetches raw-resource and fish sell prices from the Albion
+// Package market fetches raw-resource sell prices from the Albion
 // Online Data Project's public API (no local Albion Data Client needed —
 // that app only contributes data, it doesn't gate reading it).
 package market
@@ -41,20 +41,6 @@ var resources = []resourceDef{
 	{"ORE", "Minério"},
 }
 
-// fishDef is one fish family; tiers 4-8 are queried for each, at enchant 0
-// only (fish doesn't carry enchantment).
-type fishDef struct {
-	code string // wire code suffix, e.g. "FRESHWATER_ALL_COMMON"
-	name string // PT-BR display name
-}
-
-var fishTypes = []fishDef{
-	{"FRESHWATER_ALL_COMMON", "Peixe de Água Doce"},
-	{"FRESHWATER_ALL_RARE", "Peixe de Água Doce Raro"},
-	{"SALTWATER_ALL_COMMON", "Peixe de Água Salgada"},
-	{"SALTWATER_ALL_RARE", "Peixe de Água Salgada Raro"},
-}
-
 // itemMeta maps an Albion Online Data Project item_id back to the
 // resource/tier/enchant it represents.
 type itemMeta struct {
@@ -81,22 +67,6 @@ func buildItems() (ids []string, meta map[string]itemMeta) {
 				ids = append(ids, enchantedID)
 				meta[enchantedID] = itemMeta{resource: r.name, tier: tier, enchant: 1}
 			}
-		}
-	}
-	return ids, meta
-}
-
-// buildFishItems returns every fish item id to query — T4-T8, freshwater and
-// saltwater, common and rare — and its resource/tier lookup.
-func buildFishItems() (ids []string, meta map[string]itemMeta) {
-	const tierCount = 5 // T4-T8
-	ids = make([]string, 0, len(fishTypes)*tierCount)
-	meta = make(map[string]itemMeta, len(fishTypes)*tierCount)
-	for _, f := range fishTypes {
-		for tier := 4; tier <= 8; tier++ {
-			id := fmt.Sprintf("T%d_FISH_%s", tier, f.code)
-			ids = append(ids, id)
-			meta[id] = itemMeta{resource: f.name, tier: tier}
 		}
 	}
 	return ids, meta
@@ -133,11 +103,9 @@ type Client struct {
 	// at an httptest.Server instead of the live API.
 	baseURL string
 
-	mu           sync.Mutex
-	routeCache   []Entry
-	routeCached  time.Time
-	fishCache    []Entry
-	fishCachedAt time.Time
+	mu          sync.Mutex
+	routeCache  []Entry
+	routeCached time.Time
 }
 
 func NewClient(region Region) *Client {
@@ -235,69 +203,56 @@ func (c *Client) BestRoute() ([]Entry, error) {
 	return entries, nil
 }
 
-// CityRanking is one city's average raw-resource sell price, used to answer
-// "which city is selling resources for more, overall" rather than "which
-// resource sells for more, and where" (that's BestRoute).
-type CityRanking struct {
-	City         string  `json:"city"`
-	AveragePrice float64 `json:"averagePrice"`
-	SampleCount  int     `json:"sampleCount"`
+// maxAge is how old a price may be and still count as "today's" price. The
+// Data Project only knows a price from the last player with the Data Client
+// who opened that market, so an older observation is more likely to be gone.
+const maxAge = 24 * time.Hour
+
+// TopPrice is the answer to "which raw resource is selling for the most right
+// now, and where": the single highest sell price across every resource, tier
+// and city with a fresh enough observation, plus the next best entries so the
+// player can compare, and how many stale rows were ignored.
+type TopPrice struct {
+	Best    *TopEntry  `json:"best"`
+	Runners []TopEntry `json:"runners"`
+	Stale   int        `json:"stale"`
 }
 
-// BestCities ranks each of the standard trade cities by its average
-// T2-T8 resource sell price, highest average first. It reuses BestRoute's
-// (cached) entries rather than issuing a separate request.
-func (c *Client) BestCities() ([]CityRanking, error) {
+// TopEntry is an Entry with the observation's age already computed.
+type TopEntry struct {
+	Entry
+	AgeMinutes int `json:"ageMinutes"`
+}
+
+// dataProjectTime is the API's timestamp layout: ISO 8601 without a zone, in UTC.
+const dataProjectTime = "2006-01-02T15:04:05"
+
+// Top returns the highest raw-resource sell price seen within maxAge, with up
+// to `runners` further entries, highest first. Reuses BestRoute's cache.
+func (c *Client) Top(runners int) (TopPrice, error) {
 	entries, err := c.BestRoute()
 	if err != nil {
-		return nil, err
+		return TopPrice{}, err
 	}
-
-	sums := make(map[string]int)
-	counts := make(map[string]int)
-	for _, e := range entries {
-		sums[e.City] += e.Price
-		counts[e.City]++
-	}
-
-	rankings := make([]CityRanking, 0, len(sums))
-	for city, sum := range sums {
-		rankings = append(rankings, CityRanking{
-			City:         city,
-			AveragePrice: float64(sum) / float64(counts[city]),
-			SampleCount:  counts[city],
-		})
-	}
-
-	sort.Slice(rankings, func(i, j int) bool { return rankings[i].AveragePrice > rankings[j].AveragePrice })
-
-	return rankings, nil
+	return top(entries, time.Now().UTC(), runners), nil
 }
 
-// FishPrices returns every T4-T8 fish family's sell price across the
-// standard trade cities, highest price first — same shape as BestRoute, just
-// for fish instead of raw resources. Results are cached for cacheTTL.
-func (c *Client) FishPrices() ([]Entry, error) {
-	c.mu.Lock()
-	if c.fishCache != nil && time.Since(c.fishCachedAt) < cacheTTL {
-		cached := c.fishCache
-		c.mu.Unlock()
-		return cached, nil
+func top(entries []Entry, now time.Time, runners int) TopPrice {
+	result := TopPrice{Runners: []TopEntry{}}
+	for _, e := range entries {
+		seen, err := time.Parse(dataProjectTime, e.UpdatedAt)
+		if err != nil || now.Sub(seen) > maxAge || seen.After(now.Add(time.Hour)) {
+			result.Stale++
+			continue
+		}
+		te := TopEntry{Entry: e, AgeMinutes: int(now.Sub(seen).Minutes())}
+		if result.Best == nil {
+			result.Best = &te
+			continue
+		}
+		if len(result.Runners) < runners {
+			result.Runners = append(result.Runners, te)
+		}
 	}
-	c.mu.Unlock()
-
-	ids, meta := buildFishItems()
-	entries, err := c.fetchEntries(ids, meta)
-	if err != nil {
-		return nil, err
-	}
-
-	sort.Slice(entries, func(i, j int) bool { return entries[i].Price > entries[j].Price })
-
-	c.mu.Lock()
-	c.fishCache = entries
-	c.fishCachedAt = time.Now()
-	c.mu.Unlock()
-
-	return entries, nil
+	return result
 }

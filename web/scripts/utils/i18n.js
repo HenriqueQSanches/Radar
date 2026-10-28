@@ -41,6 +41,16 @@ const translations = {
         "radar.players.passive": "Passive",
         "radar.players.empty": "No players detected yet",
         "radar.players.scanning": "Scanning...",
+        "radar.topPrice.button": "Most expensive resource today",
+        "radar.topPrice.loading": "Checking...",
+        "radar.topPrice.empty": "No price seen in the last 24h.",
+        "radar.topPrice.error": "Lookup failed:",
+        "radar.topPrice.in": "in",
+        "radar.topPrice.silver": "silver",
+        "radar.topPrice.seen": "seen",
+        "radar.topPrice.minutes": "min ago",
+        "radar.topPrice.hours": "h ago",
+        "radar.topPrice.note": "Lowest active sell order per city, as last seen by a player running the Albion Data Client. Prices older than 24h are ignored. Americas server.",
 
 
 
@@ -363,6 +373,16 @@ const translations = {
         "radar.players.passive": "Passivos",
         "radar.players.empty": "Nenhum jogador detectado ainda",
         "radar.players.scanning": "Escaneando...",
+        "radar.topPrice.button": "Recurso mais caro hoje",
+        "radar.topPrice.loading": "Consultando...",
+        "radar.topPrice.empty": "Nenhum preço das últimas 24h.",
+        "radar.topPrice.error": "Falha na consulta:",
+        "radar.topPrice.in": "em",
+        "radar.topPrice.silver": "prata",
+        "radar.topPrice.seen": "visto há",
+        "radar.topPrice.minutes": "min",
+        "radar.topPrice.hours": "h",
+        "radar.topPrice.note": "Menor ordem de venda ativa por cidade, como vista pela última vez por um jogador com o Albion Data Client. Preços com mais de 24h são ignorados. Servidor Americas.",
 
 
 

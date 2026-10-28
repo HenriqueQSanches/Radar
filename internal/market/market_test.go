@@ -122,106 +122,36 @@ func TestBuildItems_CoversT2ThroughT8AndOnlyT4PlusGetEnchantedVariant(t *testing
 	}
 }
 
-func TestBestCities_RanksByAveragePriceDescending(t *testing.T) {
-	// Caerleon: (100+300)/2 = 200. Thetford: 400/1 = 400. Thetford should rank first.
-	body := `[
-		{"item_id":"T5_ORE","city":"Caerleon","sell_price_min":100},
-		{"item_id":"T5_ROCK","city":"Caerleon","sell_price_min":300},
-		{"item_id":"T5_ORE","city":"Thetford","sell_price_min":400}
-	]`
+func TestTop_PicksFreshestHighestAndCountsStale(t *testing.T) {
+	now := time.Date(2026, 10, 27, 12, 0, 0, 0, time.UTC)
+	entries := []Entry{
+		{Resource: "Minério", Tier: 8, Enchant: 1, City: "Caerleon", Price: 9000, UpdatedAt: "2026-10-20T12:00:00"}, // a week old
+		{Resource: "Madeira", Tier: 7, Enchant: 0, City: "Lymhurst", Price: 5000, UpdatedAt: "2026-10-27T10:30:00"},
+		{Resource: "Fibra", Tier: 6, Enchant: 1, City: "Martlock", Price: 4000, UpdatedAt: "2026-10-27T11:59:00"},
+		{Resource: "Pedra", Tier: 5, Enchant: 0, City: "Thetford", Price: 300, UpdatedAt: "0001-01-01T00:00:00"},
+		{Resource: "Couro", Tier: 4, Enchant: 0, City: "Bridgewatch", Price: 200, UpdatedAt: "not-a-date"},
+	}
 
-	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(body))
-	})
+	got := top(entries, now, 1)
 
-	rankings, err := client.BestCities()
-	if err != nil {
-		t.Fatalf("BestCities returned error: %v", err)
+	if got.Best == nil || got.Best.Resource != "Madeira" || got.Best.City != "Lymhurst" {
+		t.Fatalf("best = %+v, want Madeira at Lymhurst", got.Best)
 	}
-	if len(rankings) != 2 {
-		t.Fatalf("expected 2 city rankings, got %d: %+v", len(rankings), rankings)
+	if got.Best.AgeMinutes != 90 {
+		t.Errorf("best age = %d minutes, want 90", got.Best.AgeMinutes)
 	}
-	if rankings[0].City != "Thetford" || rankings[0].AveragePrice != 400 {
-		t.Errorf("expected Thetford/400 first, got %+v", rankings[0])
+	if len(got.Runners) != 1 || got.Runners[0].Resource != "Fibra" {
+		t.Errorf("runners = %+v, want one Fibra entry", got.Runners)
 	}
-	if rankings[1].City != "Caerleon" || rankings[1].AveragePrice != 200 || rankings[1].SampleCount != 2 {
-		t.Errorf("expected Caerleon/200 (2 samples) second, got %+v", rankings[1])
+	if got.Stale != 3 {
+		t.Errorf("stale = %d, want 3", got.Stale)
 	}
 }
 
-func TestBestCities_ReusesBestRouteCache(t *testing.T) {
-	calls := 0
-	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		calls++
-		w.Write([]byte(`[{"item_id":"T5_ORE","city":"Thetford","sell_price_min":100}]`))
-	})
-
-	if _, err := client.BestRoute(); err != nil {
-		t.Fatalf("BestRoute returned error: %v", err)
-	}
-	if _, err := client.BestCities(); err != nil {
-		t.Fatalf("BestCities returned error: %v", err)
-	}
-	if calls != 1 {
-		t.Errorf("expected BestCities to reuse BestRoute's cache, got %d upstream requests", calls)
-	}
-}
-
-func TestBuildFishItems_CoversAllFamiliesAndTiers(t *testing.T) {
-	ids, meta := buildFishItems()
-
-	if _, ok := meta["T3_FISH_FRESHWATER_ALL_COMMON"]; ok {
-		t.Error("T3 is below fish scope (T4-T8) and should not be queried")
-	}
-	if m, ok := meta["T4_FISH_FRESHWATER_ALL_COMMON"]; !ok || m.tier != 4 {
-		t.Errorf("expected T4_FISH_FRESHWATER_ALL_COMMON to map to tier 4, got %+v (ok=%v)", m, ok)
-	}
-	if m, ok := meta["T8_FISH_SALTWATER_ALL_RARE"]; !ok || m.tier != 8 {
-		t.Errorf("expected T8_FISH_SALTWATER_ALL_RARE to map to tier 8, got %+v (ok=%v)", m, ok)
-	}
-	// 4 fish families * 5 tiers (4-8) = 20
-	if len(ids) != 20 {
-		t.Errorf("expected 20 fish item ids, got %d", len(ids))
-	}
-}
-
-func TestFishPrices_FiltersZeroPricesAndSorts(t *testing.T) {
-	body := `[
-		{"item_id":"T5_FISH_FRESHWATER_ALL_COMMON","city":"Thetford","sell_price_min":100},
-		{"item_id":"T8_FISH_SALTWATER_ALL_RARE","city":"Caerleon","sell_price_min":4998},
-		{"item_id":"T4_FISH_FRESHWATER_ALL_COMMON","city":"Martlock","sell_price_min":0}
-	]`
-
-	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(body))
-	})
-
-	entries, err := client.FishPrices()
-	if err != nil {
-		t.Fatalf("FishPrices returned error: %v", err)
-	}
-	if len(entries) != 2 {
-		t.Fatalf("expected 2 entries (zero-price row dropped), got %d: %+v", len(entries), entries)
-	}
-	if entries[0].Price != 4998 || entries[0].City != "Caerleon" {
-		t.Errorf("expected highest price first (Caerleon/4998), got %+v", entries[0])
-	}
-}
-
-func TestFishPrices_UsesSeparateCacheFromBestRoute(t *testing.T) {
-	calls := 0
-	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		calls++
-		w.Write([]byte(`[{"item_id":"T5_ORE","city":"Thetford","sell_price_min":100},{"item_id":"T5_FISH_FRESHWATER_ALL_COMMON","city":"Thetford","sell_price_min":100}]`))
-	})
-
-	if _, err := client.BestRoute(); err != nil {
-		t.Fatalf("BestRoute returned error: %v", err)
-	}
-	if _, err := client.FishPrices(); err != nil {
-		t.Fatalf("FishPrices returned error: %v", err)
-	}
-	if calls != 2 {
-		t.Errorf("expected BestRoute and FishPrices to hit upstream independently, got %d calls", calls)
+func TestTop_NoFreshEntriesLeavesBestNil(t *testing.T) {
+	now := time.Date(2026, 10, 27, 12, 0, 0, 0, time.UTC)
+	got := top([]Entry{{Price: 1, UpdatedAt: "2026-01-01T00:00:00"}}, now, 3)
+	if got.Best != nil || len(got.Runners) != 0 || got.Stale != 1 {
+		t.Fatalf("got %+v, want no best, no runners, 1 stale", got)
 	}
 }
