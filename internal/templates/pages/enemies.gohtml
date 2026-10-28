@@ -10,7 +10,7 @@
                 </div>
                 <!-- Preset Buttons -->
                 <div class="flex flex-wrap items-center gap-2">
-                    <button onclick="applyEnemyPreset('all')" data-i18n="enemies.preset.all" class="btn btn-primary btn-xs">All</button>
+                    <button id="btnSelectAll" data-i18n="common.selectAll" class="btn btn-primary btn-xs">Select all</button>
                     <div class="join">
                         <button onclick="applyEnemyPreset('bosses')" data-i18n="enemies.preset.bosses" class="btn btn-secondary btn-xs join-item">Bosses
                         </button>
@@ -18,7 +18,7 @@
                             Mini-Boss+
                         </button>
                     </div>
-                    <button onclick="applyEnemyPreset('clear')" data-i18n="enemies.preset.clear" class="btn btn-error btn-xs">Clear</button>
+                    <button id="btnClearAll" data-i18n="common.clearAll" class="btn btn-error btn-xs">Clear all</button>
                 </div>
             </div>
         </div>
@@ -232,6 +232,7 @@
 <script>
     (async function () {
         const {registerPage, reinitCurrentPage} = await import('/scripts/core/PageController.js');
+        const {bindBulkSelectButtons} = await import('/scripts/utils/BulkSelect.js');
 
         let cleanup = [];
 
@@ -262,9 +263,7 @@
                     'settingShowEventEnemies': false
                 };
 
-                if (preset === 'all') {
-                    Object.keys(settings).forEach(k => settings[k] = true);
-                } else if (preset === 'bosses') {
+                if (preset === 'bosses') {
                     settings['settingBossEnemy'] = true;
                     settings['settingBossCrystalSpider'] = true;
                     settings['settingBossFairyDragon'] = true;
@@ -418,6 +417,8 @@
             bindClickCheckbox("settingBossFairyDragon");
             bindClickCheckbox("settingBossVeilWeaver");
             bindClickCheckbox("settingBossGriffin");
+
+            bindBulkSelectButtons(addListener);
 
             // Debug options
             bindClickCheckbox("settingEnemiesHealthBar");

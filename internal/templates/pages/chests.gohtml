@@ -3,8 +3,16 @@
     <!-- Page Header -->
     <div class="card bg-base-200">
         <div class="card-body">
-            <h1 data-i18n="chests.title" class="text-3xl font-bold text-base-content">Chests & Dungeons</h1>
-            <p data-i18n="chests.subtitle" class="text-base-content/60 mt-2">Configure chest, mist, and dungeon detection settings.</p>
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <h1 data-i18n="chests.title" class="text-3xl font-bold text-base-content">Chests & Dungeons</h1>
+                    <p data-i18n="chests.subtitle" class="text-base-content/60 mt-2">Configure chest, mist, and dungeon detection settings.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button id="btnSelectAll" data-i18n="common.selectAll" class="btn btn-primary btn-xs">Select all</button>
+                    <button id="btnClearAll" data-i18n="common.clearAll" class="btn btn-error btn-xs">Clear all</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -257,6 +265,7 @@
 <script>
     (async function () {
         const {registerPage, reinitCurrentPage} = await import('/scripts/core/PageController.js');
+        const {bindBulkSelectButtons} = await import('/scripts/utils/BulkSelect.js');
 
         let cleanup = [];
 
@@ -302,6 +311,8 @@
 
             // Dungeons
             ["settingDungeonSolo", "settingDungeonDuo", "settingDungeonE0", "settingDungeonE1", "settingDungeonE2", "settingDungeonE3", "settingDungeonE4", "settingDungeonCorrupted", "settingDungeonHellgate"].forEach(bindCheckbox);
+
+            bindBulkSelectButtons(addListener);
         }
 
         function destroyChestsPage() {

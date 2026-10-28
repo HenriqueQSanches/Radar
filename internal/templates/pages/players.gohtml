@@ -3,8 +3,16 @@
     <!-- Page Header -->
     <div class="card bg-base-200">
         <div class="card-body">
-            <h1 data-i18n="players.title" class="text-3xl font-bold text-base-content">Players</h1>
-            <p data-i18n="players.subtitle" class="text-base-content/60 mt-2">Configure player detection and display settings.</p>
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <h1 data-i18n="players.title" class="text-3xl font-bold text-base-content">Players</h1>
+                    <p data-i18n="players.subtitle" class="text-base-content/60 mt-2">Configure player detection and display settings.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button id="btnSelectAll" data-i18n="common.selectAll" class="btn btn-primary btn-xs">Select all</button>
+                    <button id="btnClearAll" data-i18n="common.clearAll" class="btn btn-error btn-xs">Clear all</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -169,6 +177,7 @@
 <script>
     (async function () {
         const {registerPage, reinitCurrentPage} = await import('/scripts/core/PageController.js');
+        const {bindBulkSelectButtons} = await import('/scripts/utils/BulkSelect.js');
 
         let cleanup = [];
 
@@ -194,6 +203,8 @@
             ["settingShowPlayers", "settingItems", "settingShowSpells", "settingShowPlayerHealthBar",
                 "settingSound", "settingFlash", "settingFlashDangerousPlayer", "settingPassivePlayers", "settingFactionPlayers",
                 "settingDangerousPlayers"].forEach(bindCheckbox);
+
+            bindBulkSelectButtons(addListener);
 
             const settingMaxPlayersDisplay = document.getElementById("settingMaxPlayersDisplay");
             if (settingMaxPlayersDisplay) {

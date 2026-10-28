@@ -17,6 +17,8 @@ const translations = {
         "nav.ignorelist": "Ignore List",
         "nav.settings": "Settings",
         "nav.about": "About",
+        "common.selectAll": "Select all",
+        "common.clearAll": "Clear all",
 
         "header.connected": "Connected",
         "header.disconnected": "Disconnected",
@@ -83,10 +85,8 @@ const translations = {
 
         "enemies.title": "Enemies",
         "enemies.subtitle": "Configure enemy and mob detection settings.",
-        "enemies.preset.all": "All",
         "enemies.preset.bosses": "Bosses",
         "enemies.preset.miniboss": "Mini-Boss+",
-        "enemies.preset.clear": "Clear",
         "enemies.section.classic": "Classic Enemies",
         "enemies.all": "All",
         "enemies.allTip": "Toggle all enemy types at once.",
@@ -339,6 +339,8 @@ const translations = {
         "nav.ignorelist": "Lista de Ignorados",
         "nav.settings": "Configurações",
         "nav.about": "Sobre",
+        "common.selectAll": "Marcar tudo",
+        "common.clearAll": "Limpar tudo",
 
         "header.connected": "Conectado",
         "header.disconnected": "Desconectado",
@@ -405,10 +407,8 @@ const translations = {
 
         "enemies.title": "Inimigos",
         "enemies.subtitle": "Configure a detecção de inimigos e mobs.",
-        "enemies.preset.all": "Todos",
         "enemies.preset.bosses": "Chefes",
         "enemies.preset.miniboss": "Mini-Chefe+",
-        "enemies.preset.clear": "Limpar",
         "enemies.section.classic": "Inimigos Clássicos",
         "enemies.all": "Todos",
         "enemies.allTip": "Liga ou desliga todos os tipos de inimigo de uma vez.",

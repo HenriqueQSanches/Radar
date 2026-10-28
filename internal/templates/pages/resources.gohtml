@@ -3,9 +3,15 @@
     <!-- Page Header with Presets -->
     <div class="card bg-base-200">
         <div class="card-body">
-            <div>
-                <h1 data-i18n="resources.title" class="text-3xl font-bold text-base-content">Resources</h1>
-                <p data-i18n="resources.subtitle" class="text-base-content/60 mt-2">Configure which resources to display on the radar.</p>
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <h1 data-i18n="resources.title" class="text-3xl font-bold text-base-content">Resources</h1>
+                    <p data-i18n="resources.subtitle" class="text-base-content/60 mt-2">Configure which resources to display on the radar.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button id="btnSelectAll" data-i18n="common.selectAll" class="btn btn-primary btn-xs">Select all</button>
+                    <button id="btnClearAll" data-i18n="common.clearAll" class="btn btn-error btn-xs">Clear all</button>
+                </div>
             </div>
         </div>
     </div>
@@ -248,6 +254,15 @@
 <script>
     (async function () {
         const {registerPage, reinitCurrentPage} = await import('/scripts/core/PageController.js');
+        const {bindBulkSelectButtons} = await import('/scripts/utils/BulkSelect.js');
+
+        let cleanup = [];
+        function addListener(el, event, handler) {
+            if (el) {
+                el.addEventListener(event, handler);
+                cleanup.push(() => el.removeEventListener(event, handler));
+            }
+        }
 
         const gridContainerIds = [
             'static-fiber-grid', 'static-hide-grid', 'static-wood-grid', 'static-ore-grid', 'static-rock-grid',
@@ -256,6 +271,7 @@
 
         function initResourcesPage() {
             const settingsSync = window.settingsSync;
+            cleanup = [];
             const {
                 attachCheckboxListeners,
                 generateResourceGrid,
@@ -382,6 +398,8 @@
             bindNumber("settingClusterRadius", 30);
             bindNumber("settingClusterMinSize", 2);
 
+            bindBulkSelectButtons(addListener);
+
             // Initialize tier buttons after grids are rendered
             setTimeout(() => {
                 attachCheckboxListeners();
@@ -409,6 +427,8 @@
         }
 
         function destroyResourcesPage() {
+            cleanup.forEach(fn => fn());
+            cleanup = [];
             // Clear all grid containers to release DOM nodes and event listeners
             gridContainerIds.forEach(id => {
                 const container = document.getElementById(id);
