@@ -1,6 +1,6 @@
 {{define "layouts/base.gohtml"}}
 <!DOCTYPE html>
-<html data-theme="ferrugem" lang="en">
+<html data-theme="sombra" lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -114,7 +114,6 @@
                     {{else if eq .Page "resources"}}{{template "pages/resources" .}}
                     {{else if eq .Page "enemies"}}{{template "pages/enemies" .}}
                     {{else if eq .Page "chests"}}{{template "pages/chests" .}}
-                    {{else if eq .Page "ignorelist"}}{{template "pages/ignorelist" .}}
                     {{else if eq .Page "settings"}}{{template "pages/settings" .}}
                     {{else if eq .Page "about"}}{{template "pages/about" .}}
                     {{else}}{{template "pages/radar" .}}{{end}}
@@ -125,7 +124,6 @@
                 {{else if eq .Page "resources"}}{{template "scripts/resources" .}}
                 {{else if eq .Page "enemies"}}{{template "scripts/enemies" .}}
                 {{else if eq .Page "chests"}}{{template "scripts/chests" .}}
-                {{else if eq .Page "ignorelist"}}{{template "scripts/ignorelist" .}}
                 {{else if eq .Page "settings"}}{{template "scripts/settings" .}}
                 {{end}}
             </main>

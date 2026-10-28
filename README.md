@@ -60,7 +60,7 @@ O jogo recicla os ids internos em poucos segundos entre objetos completamente di
 ### Recorte circular no PiP
 O conteúdo da janelinha flutuante do PiP agora é recortado em círculo com um anel na cor de destaque do tema atual, em vez de copiar o quadrado cru do radar com os cantos mortos.
 
-### Tradução quebrada em Baús, Inimigos, Jogadores, Recursos e Lista de Ignorados
+### Tradução quebrada em Baús, Inimigos, Jogadores e Recursos
 Quando o alternador de idioma foi adicionado, só cobriu Radar/Mercado/Configurações/Sobre — essas outras 5 páginas continuavam com texto fixo em inglês mesmo trocando pra português. Adicionei o mesmo mecanismo (atributo `data-i18n` + chave no dicionário) nelas também.
 
 ### Instalador não avisava quando faltava o Npcap
@@ -97,6 +97,15 @@ Saíram as animações de página, as sombras, o desfoque dos balões e as trans
 
 ### Flip, Fazenda e Mercado removidos
 As três abas saíram do radar, junto com a captura local de ordens de mercado (`market_flip.json`). O que valia a pena delas virou o botão "Recurso mais caro de hoje" acima.
+
+### Atualização Dragonfire: raridade das brumas e encanto dos mobs
+O patch Dragonfire do Albion inseriu um campo no evento de portal (nome da bruma passou do campo 15 para o 16, raridade do 8 para o 9) e no evento de mob (encanto do campo 33 para o 34). Sem isso, toda bruma aparecia como comum (E0), os filtros E1 a E4 não faziam nada e o encanto dos mobs saía zerado. Os campos antigos continuam aceitos, caso o jogo volte atrás.
+
+### Scripts presos no cache do navegador depois de atualizar
+O navegador guardava o JavaScript por 1 hora, então logo depois de uma atualização a página nova rodava com o código da versão anterior (textos como `common.selectAll` crus e opções antigas). Agora cada versão do radar identifica seus scripts, e o navegador confere a cada carga se mudou.
+
+### Tema "Sombra" e botão de diagnóstico
+Cores neutras: preto, roxo discreto para o principal e vermelho escuro para ações de limpar. Em Configurações > Logging entrou o botão "Ligar diagnóstico completo", que liga DEBUG, log em disco e todas as categorias de uma vez para relatar um bug. A Lista de Ignorados saiu do menu.
 
 ## Como rodar
 

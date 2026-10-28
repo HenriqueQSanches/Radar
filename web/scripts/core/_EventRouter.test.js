@@ -1353,6 +1353,16 @@ describe('EventRouter', () => {
             expect(handlers.dungeonsHandler.dungeonEvent).not.toHaveBeenCalled();
         });
 
+
+        // Dragonfire inserted a parameter at [4]: the tag now sits at [16].
+        test('event 325 with param[16] starting MISTS_DUNGEON routes to mistsDungeonHandler.addPortal', () => {
+            const p = {0: 3, 1: [10, 20], 3: '', 4: 0, 16: 'MISTS_DUNGEON_SOLO_BLACK', 252: 325};
+
+            EventRouter.onEvent(p);
+
+            expect(handlers.mistsDungeonHandler.addPortal).toHaveBeenCalledWith(3, 10, 20, 'MISTS_DUNGEON_SOLO_BLACK');
+            expect(handlers.dungeonsHandler.dungeonEvent).not.toHaveBeenCalled();
+        });
         // @verified 2026-05-16: regression. Standard random dungeon (no MISTS_DUNGEON tag) still
         // routes to dungeonsHandler.
         test('event 325 without MISTS_DUNGEON tag routes to dungeonsHandler.dungeonEvent', () => {

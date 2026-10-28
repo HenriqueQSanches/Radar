@@ -371,3 +371,31 @@ describe('DungeonsHandler', () => {
         });
     });
 });
+
+describe('Dragonfire layout (name at [16], enchant at [9])', () => {
+    let handler;
+    beforeEach(() => {
+        localStorage.clear();
+        handler = new DungeonsHandler();
+    });
+
+    test('mist portal with name at [16] and enchant at [9] renders mist_<enchant>', () => {
+        handler.dungeonEvent({0: 7, 1: [1, 2], 3: '', 4: 0, 5: 'SHARED_MIST_WISP_PORTAL_MOB', 8: true, 9: 3, 16: 'MISTS_DUO_BLACK', 252: 325});
+        expect(handler.dungeonList).toHaveLength(1);
+        expect(handler.dungeonList[0].isMist).toBe(true);
+        expect(handler.dungeonList[0].enchant).toBe(3);
+        expect(handler.dungeonList[0].drawName).toBe('mist_3');
+    });
+
+    test('pre-Dragonfire layout still works ([15] name, [8] enchant)', () => {
+        handler.dungeonEvent({0: 8, 1: [1, 2], 3: '', 8: 2, 15: 'MISTS_SOLO_YELLOW', 252: 325});
+        expect(handler.dungeonList[0].enchant).toBe(2);
+        expect(handler.dungeonList[0].drawName).toBe('mist_2');
+    });
+
+    test('a boolean at [8] and no [9] means enchant 0, never a broken setting key', () => {
+        handler.dungeonEvent({0: 9, 1: [1, 2], 3: 'T6_PORTAL_SOLO', 8: true, 252: 325});
+        expect(handler.dungeonList[0].enchant).toBe(0);
+        expect(handler.dungeonList[0].drawName).toBe('dungeon_0');
+    });
+});

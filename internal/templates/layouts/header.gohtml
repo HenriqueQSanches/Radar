@@ -62,7 +62,7 @@
 
         switch(status) {
             case 'connected':
-                dot.classList.add('status-success', 'animate-pulse');
+                dot.classList.add('status-success');
                 text.textContent = window.i18n?.t('header.connected') ?? 'Connected';
                 text.classList.add('text-base-content/80');
                 break;
@@ -72,7 +72,7 @@
                 text.classList.add('text-error');
                 break;
             case 'connecting':
-                dot.classList.add('status-warning', 'animate-pulse');
+                dot.classList.add('status-warning');
                 text.textContent = window.i18n?.t('header.connecting') ?? 'Connecting...';
                 text.classList.add('text-warning');
                 break;

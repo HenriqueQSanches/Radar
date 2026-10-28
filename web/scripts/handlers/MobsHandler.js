@@ -157,7 +157,10 @@ export class MobsHandler {
             const posY = this.normalizeNumber(loc[1], 0);
             const healthNormalized = this.normalizeNumber(parameters[2], 255);  // Current HP (0-255)
             const maxHealth = this.normalizeNumber(parameters[13], 0);          // Max HP (real value)
-            const enchant = this.normalizeNumber(parameters[33], 0) || 0;
+            // Enchant sits at [34] since Dragonfire ([33] now carries the mist portal tag
+            // on wisps); [33] is kept as a fallback for the previous layout.
+            const enchant = [parameters[34], parameters[33]]
+                .find(v => Number.isInteger(v) && v >= 0 && v <= 4) ?? 0;
             const rarity = this.normalizeNumber(parameters[19], null);
 
             // 🐛 DEBUG: Log raw parameters from server

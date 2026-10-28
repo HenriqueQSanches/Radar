@@ -94,16 +94,15 @@ export class DungeonsHandler
 
         const id = parameters[0];
         const position = parameters[1];
-        // Post-Knightfall the Mist portal name moved from Parameters[3] to Parameters[15].
-        const name = parameters[3] || parameters[15] || '';
-        // Parameters[8] used to be the enchant (0-4) directly; as of the 2026-08-31 event-code
-        // move (323 -> 325) it's now a boolean (observed `true` on both regular and mist
-        // portals), so it no longer carries a tier at all. Fall back to 0 (unenchanted) rather
-        // than trust a non-numeric value blindly — an invalid enchant would build a
-        // "settingMistEtrue"-style key that never matches any real setting, silently hiding
-        // every portal again the same way the missing position did.
-        const rawEnchant = parameters[8];
-        const enchant = Number.isInteger(rawEnchant) && rawEnchant >= 0 && rawEnchant <= 4 ? rawEnchant : 0;
+        // The Mist portal name moved from [3] to [15] (Knightfall) and then to [16]
+        // (Dragonfire inserted a parameter at [4]). Older layouts are kept as fallbacks.
+        const name = [parameters[3], parameters[16], parameters[15]]
+            .find(v => typeof v === 'string' && v !== '') ?? '';
+        // Enchant/rarity (0-4): [9] since Dragonfire, [8] before it. Only an integer in
+        // range counts; anything else (the boolean seen at [8] after 2026-08-31) means 0,
+        // so a bad value never builds a "settingMistEtrue" key that hides every portal.
+        const enchant = [parameters[9], parameters[8]]
+            .find(v => Number.isInteger(v) && v >= 0 && v <= 4) ?? 0;
 
         this.addDungeon(id, position[0], position[1], name, enchant);
     }

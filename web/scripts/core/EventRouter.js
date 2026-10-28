@@ -513,7 +513,8 @@ export function onEvent(Parameters) {
             break;
 
         case EventCodes.NewRandomDungeonExit: {
-            const tag = Parameters[15];
+            // Dragonfire inserted a parameter at [4]; the Mists tag moved from [15] to [16].
+            const tag = [Parameters[16], Parameters[15]].find(v => typeof v === 'string');
             if (typeof tag === 'string' && tag.startsWith('MISTS_DUNGEON')) {
                 const pos = Parameters[1];
                 if (Array.isArray(pos) && pos.length === 2) {

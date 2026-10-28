@@ -162,6 +162,10 @@
                         <option value="DEBUG" data-i18n="settings.logging.level.debug">DEBUG - Everything</option>
                     </select>
                     <p data-i18n="settings.logging.logLevelDesc" class="text-xs text-base-content/50 mt-2">Controls minimum log level displayed</p>
+                    <button id="diagnosticsOnBtn" class="btn btn-secondary btn-sm mt-3">
+                        <span data-i18n="settings.logging.diagnosticsBtn">Turn on full diagnostics</span>
+                    </button>
+                    <p data-i18n="settings.logging.diagnosticsDesc" class="text-xs text-base-content/50 mt-2">DEBUG level, log to disk and every category on, for reporting a bug. Set the level back to WARN when done.</p>
                 </div>
 
                 <!-- Output Destination -->
@@ -484,6 +488,21 @@
 
             bindBackendCheckbox("settingServerLogsEnabled", "/api/settings/logging", "serverLogsEnabled");
             bindBackendCheckbox("settingPcapRecording", "/api/settings/logging", "pcapRecording");
+
+            // One click to collect everything for a bug report: DEBUG, on-disk log and all
+            // categories. Reflects in the controls above without a reload.
+            addListener(document.getElementById('diagnosticsOnBtn'), 'click', () => {
+                settingsSync.set('logLevel', 'DEBUG');
+                if (logLevelEl) logLevelEl.value = 'DEBUG';
+                ['settingLogToServer', 'categorySystem', 'categoryNetwork', 'categoryMap', 'categoryPlayers',
+                    'categoryMobs', 'categoryHarvestables', 'categoryDungeons', 'categoryFishing', 'categoryRendering'
+                ].forEach(key => {
+                    settingsSync.setBool(key, true);
+                    const el = document.getElementById(key);
+                    if (el) el.checked = true;
+                });
+                if (window.toast) window.toast.success(window.i18n.t('settings.logging.diagnosticsOn'));
+            });
 
             // Download debug logs
             const downloadBtn = document.getElementById('downloadLogsBtn');

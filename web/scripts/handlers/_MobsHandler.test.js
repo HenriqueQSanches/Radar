@@ -1314,3 +1314,28 @@ describe('MobsHandler', () => {
         });
     });
 });
+
+describe('enchant parameter layout', () => {
+    let handler;
+    beforeEach(() => {
+        localStorage.clear();
+        window.logger = {debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn()};
+        installRealDatabasesOnWindow();
+        handler = new MobsHandler();
+    });
+
+    test('Dragonfire: enchant is read from [34]', () => {
+        handler.NewMobEvent(normalizeParams({'0': 1, '1': 9999, '2': 255, '7': [0, 0], '13': 500, '34': 2}));
+        expect(handler.getMobList()[0].enchantmentLevel).toBe(2);
+    });
+
+    test('previous layout: enchant at [33] still works when [34] is absent', () => {
+        handler.NewMobEvent(normalizeParams({'0': 2, '1': 9999, '2': 255, '7': [0, 0], '13': 500, '33': 3}));
+        expect(handler.getMobList()[0].enchantmentLevel).toBe(3);
+    });
+
+    test('a mist portal tag at [33] is not mistaken for an enchant', () => {
+        handler.NewMobEvent(normalizeParams({'0': 3, '1': 120, '2': 255, '7': [0, 0], '13': 1, '33': 'MISTS_SOLO_BLACK', '34': 0}));
+        expect(handler.getMobList()[0].enchantmentLevel).toBe(0);
+    });
+});

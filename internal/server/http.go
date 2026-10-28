@@ -166,15 +166,14 @@ func (s *HTTPServer) setupRoutes() {
 
 	// Page routes - SSR with Go templates
 	pageRoutes := map[string]string{
-		"/":           "radar",
-		"/home":       "radar",
-		"/players":    "players",
-		"/resources":  "resources",
-		"/enemies":    "enemies",
-		"/chests":     "chests",
-		"/ignorelist": "ignorelist",
-		"/settings":   "settings",
-		"/about":      "about",
+		"/":          "radar",
+		"/home":      "radar",
+		"/players":   "players",
+		"/resources": "resources",
+		"/enemies":   "enemies",
+		"/chests":    "chests",
+		"/settings":  "settings",
+		"/about":     "about",
 	}
 
 	for route, page := range pageRoutes {
@@ -214,14 +213,13 @@ func (s *HTTPServer) setupRoutes() {
 func (s *HTTPServer) renderPage(w http.ResponseWriter, r *http.Request, page string) {
 	// Get page title
 	titles := map[string]string{
-		"radar":      "Radar",
-		"players":    "Players",
-		"resources":  "Resources",
-		"enemies":    "Enemies",
-		"chests":     "Chests",
-		"ignorelist": "Ignore List",
-		"settings":   "Settings",
-		"about":      "About",
+		"radar":     "Radar",
+		"players":   "Players",
+		"resources": "Resources",
+		"enemies":   "Enemies",
+		"chests":    "Chests",
+		"settings":  "Settings",
+		"about":     "About",
 	}
 	title := titles[page]
 	if title == "" && page != "" {
@@ -327,9 +325,27 @@ func (s *HTTPServer) gzipFSHandlerDirect(
 	fsys fs.FS,
 	cacheDuration time.Duration,
 ) http.Handler {
+	// Scripts and styles are versioned with the binary: after an update the browser
+	// must not keep serving the previous release's JS for up to an hour next to the
+	// new HTML (seen as raw "common.selectAll" labels and stale settings code). The
+	// ETag is the build version, so an unchanged build still answers 304 cheaply.
+	etag := fmt.Sprintf(`"%s"`, s.version)
+	versioned := cacheDuration > 0
+	if versioned {
+		cacheDuration = 0 // setCacheHeaders must not add a max-age on top of no-cache
+	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		urlPath := strings.TrimPrefix(r.URL.Path, prefix)
 		acceptsGzip := strings.Contains(r.Header.Get("Accept-Encoding"), "gzip")
+
+		if versioned {
+			w.Header().Set("ETag", etag)
+			if r.Header.Get("If-None-Match") == etag {
+				w.WriteHeader(http.StatusNotModified)
+				return
+			}
+			w.Header().Set("Cache-Control", "no-cache")
+		}
 
 		// Try serving .gz file if client accepts gzip
 		if acceptsGzip {

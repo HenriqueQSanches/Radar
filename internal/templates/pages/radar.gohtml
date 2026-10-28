@@ -77,9 +77,19 @@
                 <button id="topPriceBtn" data-i18n="radar.topPrice.button" class="btn btn-primary btn-sm">Most expensive resource today</button>
                 <span id="topPriceStatus" class="text-xs text-base-content/50"></span>
             </div>
-            <div id="topPriceResult" class="hidden mt-3 text-sm">
-                <p id="topPriceBest" class="text-base font-semibold text-base-content"></p>
-                <ul id="topPriceRunners" class="mt-1 space-y-0.5 text-base-content/70"></ul>
+            <div id="topPriceResult" class="hidden mt-3">
+                <table class="table table-sm w-full max-w-2xl">
+                    <thead>
+                        <tr class="text-base-content/60">
+                            <th data-i18n="radar.topPrice.colResource">Resource</th>
+                            <th data-i18n="radar.topPrice.colTier">Tier</th>
+                            <th data-i18n="radar.topPrice.colCity">City</th>
+                            <th class="text-right" data-i18n="radar.topPrice.colPrice">Price</th>
+                            <th class="text-right" data-i18n="radar.topPrice.colSeen">Seen</th>
+                        </tr>
+                    </thead>
+                    <tbody id="topPriceRows"></tbody>
+                </table>
                 <p id="topPriceNote" class="mt-2 text-xs text-base-content/50" data-i18n="radar.topPrice.note">Lowest active sell order per city, as last seen by a player running the Albion Data Client. Prices older than 24h are ignored.</p>
             </div>
         </div>
@@ -366,17 +376,31 @@ window.onGlobalsReady(function() {
     const topPriceBtn = document.getElementById('topPriceBtn');
     const topPriceStatus = document.getElementById('topPriceStatus');
     const topPriceResult = document.getElementById('topPriceResult');
-    const topPriceBest = document.getElementById('topPriceBest');
-    const topPriceRunners = document.getElementById('topPriceRunners');
+    const topPriceRows = document.getElementById('topPriceRows');
     const t = (key) => window.i18n?.t(key) ?? key;
 
-    function formatTopEntry(e) {
-        const tier = e.enchant > 0 ? `T${e.tier}.${e.enchant}` : `T${e.tier}`;
-        const price = e.price.toLocaleString();
-        const age = e.ageMinutes < 60
-            ? `${e.ageMinutes} ${t('radar.topPrice.minutes')}`
-            : `${Math.round(e.ageMinutes / 60)} ${t('radar.topPrice.hours')}`;
-        return `${tier} ${e.resource} ${t('radar.topPrice.in')} ${e.city}: ${price} ${t('radar.topPrice.silver')} (${t('radar.topPrice.seen')} ${age})`;
+    function formatAge(minutes) {
+        if (minutes < 60) return `${minutes} ${t('radar.topPrice.minutes')}`;
+        return `${Math.round(minutes / 60)} ${t('radar.topPrice.hours')}`;
+    }
+
+    function topPriceRow(e, isBest) {
+        const tr = document.createElement('tr');
+        if (isBest) tr.className = 'font-semibold text-base-content';
+        const cells = [
+            e.resource,
+            e.enchant > 0 ? `T${e.tier}.${e.enchant}` : `T${e.tier}`,
+            e.city,
+            e.price.toLocaleString(),
+            formatAge(e.ageMinutes),
+        ];
+        cells.forEach((text, i) => {
+            const td = document.createElement('td');
+            td.textContent = text;
+            if (i >= 3) td.className = 'text-right font-mono';
+            tr.appendChild(td);
+        });
+        return tr;
     }
 
     addListener(topPriceBtn, 'click', async () => {
@@ -391,13 +415,9 @@ window.onGlobalsReady(function() {
                 topPriceResult.classList.add('hidden');
                 return;
             }
-            topPriceBest.textContent = formatTopEntry(data.best);
-            topPriceRunners.innerHTML = '';
-            for (const e of data.runners || []) {
-                const li = document.createElement('li');
-                li.textContent = formatTopEntry(e);
-                topPriceRunners.appendChild(li);
-            }
+            topPriceRows.innerHTML = '';
+            topPriceRows.appendChild(topPriceRow(data.best, true));
+            for (const e of data.runners || []) topPriceRows.appendChild(topPriceRow(e, false));
             topPriceStatus.textContent = '';
             topPriceResult.classList.remove('hidden');
         } catch (err) {
