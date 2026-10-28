@@ -1,62 +1,56 @@
 {{define "layouts/sidebar.gohtml"}}
 <aside
     id="desktop-sidebar"
-    class="hidden md:flex flex-col z-20 flex-shrink-0 w-[72px] bg-base-200 border-r border-base-content/[0.03]">
+    class="hidden md:flex flex-col z-20 flex-shrink-0 w-44 bg-base-200 border-r border-base-content/[0.06]">
 
-    <div class="flex items-center justify-center p-3 border-b border-base-content/[0.03]">
-        <a href="/" class="rail-item" data-label="OpenRadar">
-            <img src="/images/icon.png" alt="OpenRadar" class="w-9 h-9 rounded-lg">
-        </a>
+    <div class="px-4 py-3 border-b border-base-content/[0.06]">
+        <a href="/" class="text-sm font-semibold text-base-content">OpenRadar</a>
     </div>
 
-    <nav id="desktop-nav" class="flex-1 flex flex-col items-center gap-1.5 py-3">
+    <nav id="desktop-nav" class="flex-1 flex flex-col gap-0.5 p-2">
         {{range .NavItems}}
         <a href="{{.Path}}"
-           hx-get="{{.Path}}" hx-target="#page-content" hx-swap="innerHTML transition:true"
+           hx-get="{{.Path}}" hx-target="#page-content" hx-swap="innerHTML"
            hx-push-url="true"
-           class="nav-icon-btn rail-item{{if .Active}} active{{end}}"
-           data-label="{{.Label}}" data-i18n-label="nav.{{.Key}}">
-            <i data-lucide="{{.Icon}}" class="w-[18px] h-[18px]" stroke-width="1.5"></i>
+           class="nav-list-item text-sm{{if .Active}} active{{end}}">
+            <span data-i18n="nav.{{.Key}}">{{.Label}}</span>
         </a>
         {{end}}
     </nav>
 
-    <div class="flex flex-col items-center gap-2 py-3 border-t border-base-content/[0.03]">
-        <button id="langToggleDesktop" class="nav-icon-btn rail-item lang-rail-btn" data-label="EN / PT">
-            <span id="langToggleLabel" class="text-[10px] font-mono font-semibold">EN</span>
-        </button>
-        <p class="text-[9px] text-base-content/40 font-mono">v{{.Version}}</p>
+    <div class="p-3 border-t border-base-content/[0.06] space-y-2">
+        <div id="langToggleDesktop" class="join w-full">
+            <button data-lang="en" class="lang-btn join-item btn btn-xs flex-1">EN</button>
+            <button data-lang="pt" class="lang-btn join-item btn btn-xs flex-1">PT</button>
+        </div>
+        <p class="text-[10px] text-base-content/40 font-mono">v{{.Version}}</p>
     </div>
 </aside>
 
 <aside id="mobile-sidebar"
-    class="mobile-sidebar fixed inset-y-0 left-0 z-40 w-64 bg-base-200 border-r border-base-content/[0.03] md:hidden">
+    class="mobile-sidebar fixed inset-y-0 left-0 z-40 w-64 bg-base-200 border-r border-base-content/[0.06] md:hidden">
 
-    <div class="flex items-center justify-between p-4 border-b border-base-content/[0.03]">
-        <a href="/" class="flex items-center gap-3">
-            <img src="/images/icon.png" alt="OpenRadar" class="w-10 h-10 rounded-lg">
-            <span class="text-xl font-bold text-base-content">OpenRadar</span>
-        </a>
+    <div class="flex items-center justify-between px-4 py-3 border-b border-base-content/[0.06]">
+        <a href="/" class="text-base font-semibold text-base-content">OpenRadar</a>
         <button onclick="window.sidebar.closeMobile()"
-            class="p-2 rounded-lg text-base-content/60 hover:text-base-content hover:bg-base-300 transition-colors">
+            class="p-2 rounded-lg text-base-content/60 hover:text-base-content hover:bg-base-300">
             <i data-lucide="x" class="w-5 h-5"></i>
         </button>
     </div>
 
-    <nav id="mobile-nav" class="p-3 space-y-0.5">
+    <nav id="mobile-nav" class="p-2 space-y-0.5">
         {{range .NavItems}}
         <a href="{{.Path}}"
-           hx-get="{{.Path}}" hx-target="#page-content" hx-swap="innerHTML transition:true"
+           hx-get="{{.Path}}" hx-target="#page-content" hx-swap="innerHTML"
            hx-push-url="true"
            onclick="window.sidebar.closeMobile()"
-           class="nav-list-item{{if .Active}} active{{end}}">
-            <i data-lucide="{{.Icon}}" class="w-[18px] h-[18px]" stroke-width="1.5"></i>
-            <span data-i18n="nav.{{.Key}}" class="text-sm">{{.Label}}</span>
+           class="nav-list-item text-sm{{if .Active}} active{{end}}">
+            <span data-i18n="nav.{{.Key}}">{{.Label}}</span>
         </a>
         {{end}}
     </nav>
 
-    <div class="absolute bottom-0 left-0 right-0 border-t border-base-content/[0.03]">
+    <div class="absolute bottom-0 left-0 right-0 border-t border-base-content/[0.06]">
         <div id="langToggleMobile" class="join w-full p-3">
             <button data-lang="en" class="lang-btn join-item btn btn-xs flex-1">EN</button>
             <button data-lang="pt" class="lang-btn join-item btn btn-xs flex-1">PT</button>

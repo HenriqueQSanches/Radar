@@ -38,9 +38,9 @@
     --color-warning-content: #2e2205;
     --color-error: #d1543f;
     --color-error-content: #250705;
-    --radius-selector: 1rem;
+    --radius-selector: 0.25rem;
     --radius-field: 0.5rem;
-    --radius-box: 1rem;
+    --radius-box: 0.5rem;
     --size-selector: 0.25rem;
     --size-field: 0.25rem;
     --border: 1px;

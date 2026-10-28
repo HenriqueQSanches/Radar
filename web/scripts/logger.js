@@ -9,21 +9,12 @@ let reconnectTimeoutId = null;
 const MAX_RECONNECT_DELAY = 30000;
 const INITIAL_RECONNECT_DELAY = 1000;
 
-// Diagnosing identification bugs (wrong mob/resource type or tier) after the
-// fact — instead of asking someone to catch a console command at the exact
-// moment it happens — depends on these logs already being on disk. Default
-// to DEBUG + persisted-to-server + the categories behind those bugs, so a
-// fresh browser profile (or one where localStorage got cleared) still
-// captures everything needed without anyone touching Settings first. Users
-// can still turn any of this off/down from the Logging section.
-const DEFAULT_LOG_LEVEL = 'DEBUG';
-const DEFAULT_LOG_TO_SERVER = true;
-// NETWORK used to be on here too (every raw packet, easily 100k+ lines/session) — it
-// found the last three "game patched, our parsing broke" bugs, but reported as making
-// the whole app noticeably heavy on weaker PCs, which every user pays for on every
-// session whether or not anyone's actively diagnosing something. Off by default now;
-// still available from Settings > Logging when actually chasing a parsing bug.
-const CATEGORIES_ON_BY_DEFAULT = new Set(['MOBS', 'HARVESTABLES', 'DUNGEONS', 'FISHING']);
+// Logging is off by default (WARN and above only, nothing written to disk): the radar
+// runs next to the game and every log line costs CPU. When a bug needs diagnosing,
+// Settings > Logging turns on DEBUG, the categories and the on-disk log.
+const DEFAULT_LOG_LEVEL = 'WARN';
+const DEFAULT_LOG_TO_SERVER = false;
+const CATEGORIES_ON_BY_DEFAULT = new Set();
 
 class Logger {
     constructor() {

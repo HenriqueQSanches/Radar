@@ -27,9 +27,6 @@ Corpos de "critter" (bichinho que vira recurso ao morrer) tinham o tipo do recur
 ### Alerta de jogador mais visível
 A posição de outros jogadores é criptografada pelo próprio Albion (proteção anti-radar), então eles nunca aparecem "andando" no mapa — só dá pra saber que tem um por perto. Pra compensar, além do flash de tela e do som que já existiam, agora aparece também um aviso na tela com nome e guilda do jogador hostil, que fica alguns segundos (não é só um pisca rápido que dá pra perder).
 
-### Log detalhado ligado por padrão
-Investigar um bug de identificação (tier/tipo errado) só dava pra fazer pegando o F12 no exato momento que acontecia — impraticável no meio de uma sessão de jogo. Agora o log de Mobs/Recursos Coletáveis em nível DEBUG, salvo em `logs/debug/`, já vem ativado por padrão (Configurações > Logging), sem precisar mexer em nada. Dá pra desligar por lá se o volume de log incomodar.
-
 ### Log para diagnosticar recurso que "não aparece"
 Quando um recurso não aparece no radar, o motivo pode ser as caixinhas de filtro em Resources (tier/encantamento) desmarcadas, e não um bug de verdade — mas isso não dava pra saber só olhando o log. Agora fica registrado tanto quando um recurso passa a ser exibido/escondido pelo filtro quanto quando você marca ou desmarca uma caixinha na tela de Resources, então dá pra comparar os dois e achar a causa sem precisar descrever o que estava marcado.
 
@@ -38,13 +35,6 @@ Recurso estático usa uma faixa fixa de números pra decidir se é Madeira/Pedra
 
 ### Download em um clique só (Windows)
 Baixar o `.exe` direto da página de release confundia quem não é da área (tinha checksum, README, binário Linux, tudo junto). Agora tem um `IniciarRadar.bat`: baixa o Radar sozinho na primeira vez, abre o programa e já deixa o navegador aberto em `localhost:5001` — só dar duplo clique.
-
-### Calcular Rota (preço de recursos, peixe e ranking de cidade)
-Três botões novos na página do radar, todos via [Albion Online Data Project](https://www.albion-online-data.com/) (não precisa instalar o Albion Data Client — essa API pública já é alimentada por quem usa esse app), nas 6 principais cidades de mercado (Thetford, Fort Sterling, Lymhurst, Bridgewatch, Martlock, Caerleon), servidor Americas:
-
-- **Calcular Rota**: preço de venda de Madeira/Pedra/Fibra/Couro/Minério, T2-T8 (incluindo T4.1-T8.1 encantado), do mais caro pro mais barato. Filtro por recurso e por tier.
-- **Melhor Cidade**: mesma busca da Rota, mas agrupada pela média de preço por cidade — pra saber onde os recursos em geral estão vendendo mais caro, sem precisar olhar item por item.
-- **Buscar Peixe**: preço de venda de peixe (água doce/salgada, comum/raro), T4-T8. Também com filtro por tipo e tier.
 
 ### Inimigos/Dungeons/Mists/Pesca não apareciam de primeira
 Várias caixinhas de visibilidade (tipos de inimigo, Dungeons, Mists, Fishing) nunca tinham um valor padrão — ficavam desmarcadas até abrir cada página e marcar na mão. Agora vêm ligadas por padrão, mesmo esquema já usado nas categorias de log em Configurações.
@@ -56,7 +46,7 @@ O evento de spawn de peixe parou de mandar posição num patch recente do Albion
 Além do log de recursos que já existia, agora também registra o veredito de exibição de inimigo/boss/dungeon/mist/pesca (aceito ou rejeitado, e por qual configuração) e um retrato automático de todas as configurações de visibilidade a cada mudança — para investigar "não está aparecendo" direto pelo log, sem precisar reproduzir ao vivo.
 
 ### Dungeons/Brumas sumiram depois de uma atualização do jogo
-O jogo mudou o evento de rede da saída de dungeon pra outro código sem aviso, e nada mais aparecia (nem dungeon comum, nem Bruma). Corrigido, e o log de eventos de rede crus agora vem ligado por padrão pra pegar a próxima mudança de protocolo assim mais rápido.
+O jogo mudou o evento de rede da saída de dungeon pra outro código sem aviso, e nada mais aparecia (nem dungeon comum, nem Bruma). Corrigido. O log de eventos de rede crus pode ser ligado em Configurações > Logging quando for preciso investigar a próxima mudança de protocolo.
 
 ### Portais de Bruma com o ícone errado, e marcador de saída invisível
 Portais de Bruma apareciam com o mesmo ícone de uma dungeon comum — agora usam o próprio conjunto de ícones dedicado, que já vinha com os assets do jogo mas nunca tinha sido ligado. E o marcador de saída da Bruma (o Fogo-Fátuo) estava classificado por engano como inimigo comum, ficando escondido atrás da caixinha de "Inimigo Encantado"; agora aparece sempre.
@@ -67,20 +57,8 @@ Zonas de Bruma e Avalon são geradas proceduralmente por instância e realmente 
 ### Peixe "andando" pra posição errada, e contagem "0/5" confusa
 O jogo recicla os ids internos em poucos segundos entre objetos completamente diferentes, o que fazia o marcador de peixe pular pra onde aquele id passava a apontar — a posição agora trava na primeira vez que a poça é vista. Além disso, uma poça recém-avistada mostrava "0/5" (tecnicamente certo, mas lia como vazia); agora mostra a capacidade real.
 
-### Aba de Mercado própria, e tradução Inglês/Português
-Separei "Calcular Rota", "Melhor Cidade" e "Buscar Peixe" numa aba de Mercado própria (antes ficavam meio perdidos na página do Radar). E como o idioma nativo do app é inglês, adicionei um alternador de idioma (o botão no rodapé do menu lateral) cobrindo navegação, radar, mercado e configurações.
-
-### Tema visual novo e menu lateral em trilho compacto
-Troquei o tema azul antigo por uma paleta quente de carvão e laranja queimado ("Ferrugem"), e substituí a sidebar expansível por um trilho fixo só com ícones — o nome de cada item aparece num balão ao passar o mouse.
-
 ### Recorte circular no PiP
 O conteúdo da janelinha flutuante do PiP agora é recortado em círculo com um anel na cor de destaque do tema atual, em vez de copiar o quadrado cru do radar com os cantos mortos.
-
-### Página "Sobre"
-Adicionei uma aba explicando que este é um fork (não o projeto original) e listando todas as mudanças feitas aqui, pra quem chega no projeto direto por essa versão.
-
-### Flip de mercado local (captura de ordem de compra/venda, sem enviar nada pra nuvem)
-Aba nova ("Flip") que reaproveita a mesma captura de pacote que já existia pra mob/recurso, só que pra pacote de mercado. Quando você abre a tela de mercado numa cidade, o jogo pede pro servidor a lista de ordem de compra/venda daquele item — isso é capturado, decodificado e guardado só localmente (arquivo `market_flip.json`, nunca sobe pra nenhuma API, nem pro Albion Online Data Project). A tela calcula sozinha o melhor "compra aqui, vende ali" entre as cidades já visitadas. Ordem capturada há mais de 4h é descartada automaticamente — pode já ter sido vendida ou cancelada, então o preço não é mais confiável.
 
 ### Tradução quebrada em Baús, Inimigos, Jogadores, Recursos e Lista de Ignorados
 Quando o alternador de idioma foi adicionado, só cobriu Radar/Mercado/Configurações/Sobre — essas outras 5 páginas continuavam com texto fixo em inglês mesmo trocando pra português. Adicionei o mesmo mecanismo (atributo `data-i18n` + chave no dicionário) nelas também.
@@ -104,6 +82,21 @@ Uma observação: qualquer janela por cima do jogo em tela cheia (o PiP do radar
 
 ### Grifo, Dragão Fada e Tecelã (aranha) das Brumas encantadas não apareciam
 Um patch do Albion mudou os campos de texto do evento de mob novo. O radar desviava todo mob que trouxesse texto nos campos 31/32 para uma lista separada de portais, e esses bichos passaram a chegar com texto ali, então nunca eram identificados como mob. Agora todo mob novo passa pela identificação normal pelo ID: o portal de Bruma continua aparecendo como antes (pelo ID dele, não pelo texto), e Grifo, Dragão Fada, Tecelã e Aranha de Cristal aparecem com ícone próprio, cada um com a sua caixinha na página de Inimigos (ligadas por padrão).
+
+### Botão "Limpar tudo" e "Marcar tudo" em cada página
+Recursos, Inimigos, Baús & Masmorras e Jogadores ganharam dois botões no topo que desmarcam ou marcam todas as caixinhas da página de uma vez, em vez de clicar uma por uma.
+
+### Opções que não funcionavam até abrir a página
+Várias opções (mostrar jogadores, som e flash do alerta, pesca, baús, contagem de recursos, entre outras) só passavam a valer depois que a página delas era aberta e a caixinha marcada na mão. Num radar recém-instalado isso significava sem alerta de jogador, sem pesca e sem baú no mapa. Agora todas as opções de visibilidade e alerta já nascem ligadas, e a lista de jogadores deixou de esconder os três grupos (hostil, facção, passivo) até a página de Jogadores ser visitada.
+
+### Recurso mais caro de hoje
+Um botão na página do radar consulta o [Albion Online Data Project](https://www.albion-online-data.com/) e mostra o recurso bruto com a maior ordem de venda nas 6 cidades principais (servidor Americas): tier, cidade, preço e há quanto tempo esse preço foi visto, mais os 4 seguintes para comparar. Preço com mais de 24h é ignorado, porque a API só conhece o preço do último jogador com o Albion Data Client que abriu aquele mercado.
+
+### Visual mais simples e radar mais leve
+Saíram as animações de página, as sombras, o desfoque dos balões e as transições de troca de página. O menu lateral virou uma lista de texto, sem logo e sem ícones. A página "Sobre" ficou só com créditos, versão e links. O log de depuração, que vinha ligado por padrão e gravava tudo em disco a cada sessão, agora vem desligado (nível WARN, nada em disco); para investigar um bug, ligue em Configurações > Logging.
+
+### Flip, Fazenda e Mercado removidos
+As três abas saíram do radar, junto com a captura local de ordens de mercado (`market_flip.json`). O que valia a pena delas virou o botão "Recurso mais caro de hoje" acima.
 
 ## Como rodar
 

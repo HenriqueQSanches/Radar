@@ -1,27 +1,10 @@
 /* OpenRadar Components */
 
-/* Scrollbar styling */
-.scrollbar-thin {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(0, 212, 255, 0.3) transparent;
-}
-
-.scrollbar-thin::-webkit-scrollbar {
-    width: 4px;
-}
-
-.scrollbar-thin::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.scrollbar-thin::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, rgba(0, 212, 255, 0.4), rgba(0, 212, 255, 0.1));
-    border-radius: 2px;
-}
-
-.scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, rgba(0, 212, 255, 0.6), rgba(0, 212, 255, 0.2));
-}
+/* Thin scrollbar for lists */
+.scrollbar-thin { scrollbar-width: thin; scrollbar-color: var(--color-base-300) transparent; }
+.scrollbar-thin::-webkit-scrollbar { width: 4px; }
+.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: var(--color-base-300); border-radius: 2px; }
 
 /* Lucide icon alignment */
 i[data-lucide] {
