@@ -12,10 +12,8 @@ import (
 	"time"
 
 	"github.com/nospy/albion-openradar/internal/capture"
-	"github.com/nospy/albion-openradar/internal/farm"
 	"github.com/nospy/albion-openradar/internal/logger"
 	"github.com/nospy/albion-openradar/internal/market"
-	"github.com/nospy/albion-openradar/internal/marketflip"
 	"github.com/nospy/albion-openradar/internal/templates"
 )
 
@@ -39,8 +37,6 @@ type HTTPServer struct {
 	networkAPI  *NetworkAPI
 	settingsAPI *SettingsAPI
 	marketAPI   *MarketAPI
-	flipAPI     *FlipAPI
-	farmAPI     *FarmAPI
 }
 
 // NewHTTPServer creates a new HTTP server with embedded assets (production mode)
@@ -55,8 +51,6 @@ func NewHTTPServer(
 	appDir string,
 	recorder Recorder,
 	captureDir string,
-	flipStore *marketflip.Store,
-	flipItems *marketflip.ItemIndex,
 ) (*HTTPServer, error) {
 	// Extract subdirectories from embed.FS (they include the folder path)
 	imagesFS, err := fs.Sub(images, "web/images")
@@ -105,8 +99,6 @@ func NewHTTPServer(
 	}
 	s.settingsAPI = NewSettingsAPI(appDir, log, recorder, captureDir)
 	s.marketAPI = NewMarketAPI(market.NewClient(market.RegionAmericas))
-	s.flipAPI = NewFlipAPI(flipStore, flipItems)
-	s.farmAPI = NewFarmAPI(farm.NewPriceClient())
 	s.setupRoutes()
 	return s, nil
 }
@@ -122,8 +114,6 @@ func NewHTTPServerDev(
 	allInterfaces []capture.NetworkInterface,
 	recorder Recorder,
 	captureDir string,
-	flipStore *marketflip.Store,
-	flipItems *marketflip.ItemIndex,
 ) (*HTTPServer, error) {
 	// Initialize template engine in dev mode (hot reload)
 	tmplDir := appDir + "/internal/templates"
@@ -152,8 +142,6 @@ func NewHTTPServerDev(
 	}
 	s.settingsAPI = NewSettingsAPI(appDir, log, recorder, captureDir)
 	s.marketAPI = NewMarketAPI(market.NewClient(market.RegionAmericas))
-	s.flipAPI = NewFlipAPI(flipStore, flipItems)
-	s.farmAPI = NewFarmAPI(farm.NewPriceClient())
 	s.setupRoutes()
 	return s, nil
 }
@@ -184,9 +172,6 @@ func (s *HTTPServer) setupRoutes() {
 		"/resources":  "resources",
 		"/enemies":    "enemies",
 		"/chests":     "chests",
-		"/market":     "market",
-		"/flip":       "flip",
-		"/farm":       "farm",
 		"/ignorelist": "ignorelist",
 		"/settings":   "settings",
 		"/about":      "about",
@@ -220,8 +205,6 @@ func (s *HTTPServer) setupRoutes() {
 	// API endpoints
 	s.settingsAPI.Register(s.mux)
 	s.marketAPI.Register(s.mux)
-	s.flipAPI.Register(s.mux)
-	s.farmAPI.Register(s.mux)
 	if s.networkAPI != nil {
 		s.networkAPI.Register(s.mux)
 	}
@@ -236,9 +219,6 @@ func (s *HTTPServer) renderPage(w http.ResponseWriter, r *http.Request, page str
 		"resources":  "Resources",
 		"enemies":    "Enemies",
 		"chests":     "Chests",
-		"market":     "Market",
-		"flip":       "Flip",
-		"farm":       "Farm",
 		"ignorelist": "Ignore List",
 		"settings":   "Settings",
 		"about":      "About",
