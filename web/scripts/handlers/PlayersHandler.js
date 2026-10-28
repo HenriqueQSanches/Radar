@@ -454,9 +454,9 @@ export class PlayersHandler {
      * @returns {Player[]} - Filtered list of players
      */
     getFilteredPlayers() {
-        const showPassive = settingsSync.getBool('settingPassivePlayers') ?? true;
-        const showFaction = settingsSync.getBool('settingFactionPlayers') ?? true;
-        const showDangerous = settingsSync.getBool('settingDangerousPlayers') ?? true;
+        const showPassive = settingsSync.getBool('settingPassivePlayers', true);
+        const showFaction = settingsSync.getBool('settingFactionPlayers', true);
+        const showDangerous = settingsSync.getBool('settingDangerousPlayers', true);
 
         const pvpType = zonesDatabase.getPvpType(window.currentMapId);
 

@@ -45,3 +45,28 @@ describe('SettingsSync.getJSON memoization', () => {
         expect(sync.getJSON('settingLivingOreEnchants', null)).toBeNull();
     });
 });
+
+describe('SettingsSync default-on seeding', () => {
+    beforeEach(() => localStorage.clear());
+
+    test('a fresh install gets every visibility/alert toggle on', () => {
+        const sync = new SettingsSync();
+        expect(sync.getBool('settingShowPlayers')).toBe(true);
+        expect(sync.getBool('settingSound')).toBe(true);
+        expect(sync.getBool('settingFishing')).toBe(true);
+        expect(sync.getBool('settingChestGreen')).toBe(true);
+        expect(sync.getBool('settingDungeonE4')).toBe(true);
+    });
+
+    test('a toggle the player turned off stays off', () => {
+        localStorage.setItem('settingSound', 'false');
+        const sync = new SettingsSync();
+        expect(sync.getBool('settingSound')).toBe(false);
+    });
+
+    test('debug-only toggles are not seeded', () => {
+        const sync = new SettingsSync();
+        expect(sync.getBool('settingLivingResourcesID')).toBe(false);
+        expect(sync.getBool('settingWispSpawnDebugID')).toBe(false);
+    });
+});

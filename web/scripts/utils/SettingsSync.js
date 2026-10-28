@@ -2,6 +2,31 @@ import {CATEGORIES} from "../constants/LoggerConstants.js";
 
 const CHANNEL_NAME = 'openradar-settings';
 
+// Visibility and alert toggles that should be ON until the player turns them off.
+// getBool() returns false for a setting that was never written, so without this every
+// one of these stayed off until its settings page was opened and the box ticked by
+// hand: no player alerts, no fishing spots, no chests on a fresh install. Seeded once,
+// on every page load, so the radar page works before any settings page is visited.
+export const DEFAULT_ON_SETTINGS = [
+    // Players
+    'settingShowPlayers', 'settingItems', 'settingShowSpells', 'settingShowPlayerHealthBar',
+    'settingSound', 'settingFlash', 'settingFlashDangerousPlayer',
+    'settingPassivePlayers', 'settingFactionPlayers', 'settingDangerousPlayers',
+    // Resources
+    'settingFishing', 'settingResourceCount', 'settingLivingResourcesHealthBar',
+    // Enemies
+    'settingAllEnemies', 'settingNormalEnemy', 'settingEnchantedEnemy', 'settingMiniBossEnemy',
+    'settingBossEnemy', 'settingShowUnmanagedEnemies', 'settingAvaloneDrones', 'settingShowEventEnemies',
+    'settingBossCrystalSpider', 'settingBossFairyDragon', 'settingBossVeilWeaver', 'settingBossGriffin',
+    // Chests, Mists, Dungeons
+    'settingChestGreen', 'settingChestBlue', 'settingChestPurple', 'settingChestYellow',
+    'settingMistSolo', 'settingMistDuo', 'settingMistE0', 'settingMistE1', 'settingMistE2',
+    'settingMistE3', 'settingMistE4', 'settingCage', 'settingWispSpawn',
+    'settingDungeonSolo', 'settingDungeonDuo', 'settingDungeonE0', 'settingDungeonE1',
+    'settingDungeonE2', 'settingDungeonE3', 'settingDungeonE4', 'settingDungeonCorrupted',
+    'settingDungeonHellgate',
+];
+
 export class SettingsSync {
     constructor() {
         this.channel = null;
@@ -25,6 +50,15 @@ export class SettingsSync {
             this.initialize();
         } else {
             this.setupFallback();
+        }
+        this.seedDefaults();
+    }
+
+    // Writes DEFAULT_ON_SETTINGS that have never been set. Only the first page load of a
+    // fresh install writes anything; a box the player unticked stays unticked.
+    seedDefaults() {
+        for (const key of DEFAULT_ON_SETTINGS) {
+            if (localStorage.getItem(key) === null) localStorage.setItem(key, 'true');
         }
     }
 

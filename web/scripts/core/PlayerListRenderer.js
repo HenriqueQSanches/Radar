@@ -229,9 +229,9 @@ export function update(playersHandler) {
     const total = counts.hostile + counts.faction + counts.passive;
 
     // Get filter settings
-    const showHostile = window.settingsSync?.getBool('settingDangerousPlayers') ?? true;
-    const showFaction = window.settingsSync?.getBool('settingFactionPlayers') ?? true;
-    const showPassive = window.settingsSync?.getBool('settingPassivePlayers') ?? true;
+    const showHostile = window.settingsSync?.getBool('settingDangerousPlayers', true) ?? true;
+    const showFaction = window.settingsSync?.getBool('settingFactionPlayers', true) ?? true;
+    const showPassive = window.settingsSync?.getBool('settingPassivePlayers', true) ?? true;
 
     // Update stats values
     const countsChanged = counts.hostile !== _lastPlayerCounts.hostile ||
