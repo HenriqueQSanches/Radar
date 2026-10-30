@@ -19,6 +19,39 @@ export function selectAllTierEnchants(resourcePrefix, tierIndex) {
     });
 
     updateTierButtonState(resourcePrefix, tierIndex);
+    updateAllEnchantRowStates(resourcePrefix);
+}
+
+// Row toggles: one checkbox in front of each E0..E4 label that sets the whole row
+// (every tier) of that resource grid at once. Mirrors the ✓T4 column buttons.
+function rowCheckboxes(resourcePrefix, enchantLevel) {
+    const row = document.getElementById(`${resourcePrefix}-${enchantLevel}`);
+    if (!row) return [];
+    return Array.from(row.children).filter(el => el.tagName === 'INPUT' && el.type === 'checkbox');
+}
+
+// Each cell's own change handler (resources page) persists the value and refreshes
+// its tier button, so dispatching "change" is enough.
+export function toggleEnchantRow(resourcePrefix, enchantLevel, checked) {
+    rowCheckboxes(resourcePrefix, enchantLevel).forEach(checkbox => {
+        if (checkbox.checked === checked) return;
+        checkbox.checked = checked;
+        checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    updateEnchantRowState(resourcePrefix, enchantLevel);
+}
+
+export function updateEnchantRowState(resourcePrefix, enchantLevel) {
+    const toggle = document.getElementById(`${resourcePrefix}-${enchantLevel}-row`);
+    if (!toggle) return;
+    const boxes = rowCheckboxes(resourcePrefix, enchantLevel);
+    const checkedCount = boxes.filter(cb => cb.checked).length;
+    toggle.checked = boxes.length > 0 && checkedCount === boxes.length;
+    toggle.indeterminate = checkedCount > 0 && checkedCount < boxes.length;
+}
+
+export function updateAllEnchantRowStates(resourcePrefix) {
+    ['e0', 'e1', 'e2', 'e3', 'e4'].forEach(level => updateEnchantRowState(resourcePrefix, level));
 }
 
 export function updateTierButtonState(resourcePrefix, tierIndex) {
@@ -96,6 +129,8 @@ export function initializeTierButtonStates() {
             button.classList.add('opacity-50');
         }
     });
+
+    resources.forEach(prefix => updateAllEnchantRowStates(prefix));
 }
 
 export function attachCheckboxListeners() {
@@ -113,8 +148,14 @@ export function attachCheckboxListeners() {
                     const checkboxes = Array.from(row.children).filter(child => child.type === 'checkbox');
                     const index = checkboxes.indexOf(e.target);
                     if (index !== -1) setTimeout(() => updateTierButtonState(prefix, index), 10);
+                    setTimeout(() => updateEnchantRowState(prefix, enchantLevel), 10);
                 }
             }, true);
+
+            const rowToggle = document.getElementById(`${prefix}-${enchantLevel}-row`);
+            if (rowToggle) {
+                rowToggle.addEventListener('change', () => toggleEnchantRow(prefix, enchantLevel, rowToggle.checked));
+            }
         });
     });
 }
@@ -151,15 +192,16 @@ export function generateResourceGrid(config) {
             <span class="text-xs">${typeIcon}</span>
             ${typeLabel}
         </h4>
-        <div class="grid" style="grid-template-columns: 24px 1fr; gap: 4px;">
+        <div class="grid" style="grid-template-columns: 44px 1fr; gap: 4px;">
             <div class="grid gap-1 items-center">
                 <span class="text-[10px] text-base-content/50 h-5"></span>
                 <span class="text-[10px] text-base-content/50 h-4"></span>
-                <span class="text-[10px] text-base-content/60 h-4 flex items-center">E0</span>
-                <span class="text-[10px] text-base-content/60 h-4 flex items-center">E1</span>
-                <span class="text-[10px] text-base-content/60 h-4 flex items-center">E2</span>
-                <span class="text-[10px] text-base-content/60 h-4 flex items-center">E3</span>
-                <span class="text-[10px] text-base-content/60 h-4 flex items-center">E4</span>
+                ${['e0', 'e1', 'e2', 'e3', 'e4'].map(level =>
+                    `<label class="h-4 flex items-center gap-1 cursor-pointer" title="Toggle every tier of ${level.toUpperCase()}">
+                        <input type="checkbox" class="checkbox checkbox-secondary checkbox-xs" id="${prefix}-${level}-row">
+                        <span class="text-[10px] text-base-content/60">${level.toUpperCase()}</span>
+                    </label>`
+                ).join('')}
             </div>
             <div class="grid gap-1">
                 <div class="grid grid-cols-8 gap-1 justify-items-center">${buttons}</div>
