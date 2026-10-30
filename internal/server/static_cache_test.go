@@ -16,7 +16,7 @@ func TestGzipFSHandler_VersionedETagRevalidates(t *testing.T) {
 	h := s.gzipFSHandlerDirect("/scripts/", fsys, time.Hour)
 
 	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/scripts/app.js", nil))
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/scripts/app.js", http.NoBody))
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200", rec.Code)
 	}
@@ -27,7 +27,7 @@ func TestGzipFSHandler_VersionedETagRevalidates(t *testing.T) {
 		t.Errorf("Cache-Control = %q, want no-cache", got)
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/scripts/app.js", nil)
+	req := httptest.NewRequest(http.MethodGet, "/scripts/app.js", http.NoBody)
 	req.Header.Set("If-None-Match", `"1.6"`)
 	rec = httptest.NewRecorder()
 	h.ServeHTTP(rec, req)

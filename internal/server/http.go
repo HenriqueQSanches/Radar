@@ -329,7 +329,7 @@ func (s *HTTPServer) gzipFSHandlerDirect(
 	// must not keep serving the previous release's JS for up to an hour next to the
 	// new HTML (seen as raw "common.selectAll" labels and stale settings code). The
 	// ETag is the build version, so an unchanged build still answers 304 cheaply.
-	etag := fmt.Sprintf(`"%s"`, s.version)
+	etag := fmt.Sprintf("%q", s.version)
 	versioned := cacheDuration > 0
 	if versioned {
 		cacheDuration = 0 // setCacheHeaders must not add a max-age on top of no-cache
