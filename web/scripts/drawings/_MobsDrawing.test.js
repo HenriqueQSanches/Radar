@@ -506,3 +506,56 @@ describe('MobsDrawing Mists-only creatures', () => {
         expect(drawing.DrawCustomImage).not.toHaveBeenCalled();
     });
 });
+
+describe('MobsDrawing mist portals', () => {
+    let drawing;
+    let ctx;
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        window.logger = {debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn()};
+        drawing = new MobsDrawing();
+        drawing.DrawCustomImage = vi.fn();
+        drawing.transformPoint = vi.fn((x, y) => ({x, y}));
+        drawing.drawTextItems = vi.fn();
+        drawing.drawFilledCircle = vi.fn();
+        drawing.drawDistanceIndicator = vi.fn();
+        drawing.drawHealthBar = vi.fn();
+        drawing.getEnemyColor = vi.fn(() => '#ffffff');
+        drawing.getScaledSize = vi.fn(s => s);
+        drawing.getMarkerSize = vi.fn(s => s);
+        drawing.getScaledFontSize = vi.fn(s => s);
+        ctx = {font: '', measureText: vi.fn(() => ({width: 12}))};
+        settingsSync.getBool.mockImplementation((_key, d) => d ?? false);
+    });
+
+    const portal = (name) => ({
+        id: 1, typeId: 120, hX: 1, hY: 2, tier: 4, name, identified: true, maxHealth: 1,
+        type: EnemyType.MistBoss, mistBoss: null, getCurrentHP: () => 1,
+    });
+
+    test.each([
+        ['MOB_UNIQUE_MISTS_PORTAL_WISP', 'mist_0'],
+        ['MOB_UNIQUE_MISTS_PORTAL_WISP_STANDARD', 'mist_1'],
+        ['MOB_UNIQUE_MISTS_PORTAL_WISP_UNCOMMON', 'mist_2'],
+        ['MOB_UNIQUE_MISTS_PORTAL_WISP_DUO_RARE', 'mist_3'],
+        ['MOB_UNIQUE_MISTS_PORTAL_WISP_RESOURCE_LEGENDARY', 'mist_4'],
+    ])('%s draws %s', (name, icon) => {
+        drawing.invalidate(ctx, [portal(name)]);
+        expect(drawing.DrawCustomImage).toHaveBeenCalledWith(ctx, 1, 2, icon, 'Resources', 40);
+    });
+
+    test('a rarity box turned off hides only that rarity', () => {
+        settingsSync.getBool.mockImplementation((key, d) => key === 'settingMistE2' ? false : (d ?? false));
+        drawing.invalidate(ctx, [portal('MOB_UNIQUE_MISTS_PORTAL_WISP_UNCOMMON'), portal('MOB_UNIQUE_MISTS_PORTAL_WISP_RARE')]);
+        expect(drawing.DrawCustomImage).toHaveBeenCalledTimes(1);
+        expect(drawing.DrawCustomImage.mock.calls[0][3]).toBe('mist_3');
+    });
+
+    test('the Duo box hides duo portals and leaves solo ones', () => {
+        settingsSync.getBool.mockImplementation((key, d) => key === 'settingMistDuo' ? false : (d ?? false));
+        drawing.invalidate(ctx, [portal('MOB_UNIQUE_MISTS_PORTAL_WISP_DUO'), portal('MOB_UNIQUE_MISTS_PORTAL_WISP')]);
+        expect(drawing.DrawCustomImage).toHaveBeenCalledTimes(1);
+        expect(drawing.DrawCustomImage.mock.calls[0][3]).toBe('mist_0');
+    });
+});

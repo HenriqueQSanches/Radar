@@ -1,5 +1,5 @@
 import {DrawingUtils} from "../utils/DrawingUtils.js";
-import {EnemyType, getSettingNameForEnemyType} from "../handlers/MobsHandler.js";
+import {EnemyType, getSettingNameForEnemyType, parseMistPortal} from "../handlers/MobsHandler.js";
 import {CATEGORIES} from "../constants/LoggerConstants.js";
 import settingsSync from "../utils/SettingsSync.js";
 import {shouldRenderLivingResource} from "../utils/LivingResourceFilter.js";
@@ -51,6 +51,7 @@ export class MobsDrawing extends DrawingUtils
             let drawHealthBar = settingsSync.getBool("settingEnemiesHealthBar");
             let drawId = settingsSync.getBool("settingEnemiesID");
             let isLivingResource = false;
+            let mistRarity = 0;
 
             if (mobOne.type == EnemyType.LivingSkinnable || mobOne.type == EnemyType.LivingHarvestable)
             {
@@ -131,15 +132,19 @@ export class MobsDrawing extends DrawingUtils
             }
             else if (mobOne.type == EnemyType.MistBoss)
             {
-                // Mist portal wisps: no settings gate, logged as always-accepted so a
-                // report of "mist boss not showing" is distinguishable from "never reaches here".
-                this._logVerdictOnChange(mobOne, true, {gate: 'mistBoss'});
+                // Mist portal wisps: rarity and solo/duo come from the mob row itself
+                // (see parseMistPortal), gated by the Mists boxes on the Chests page.
+                const portal = parseMistPortal(mobOne.name);
+                if (portal) {
+                    const typeKey = portal.isDuo ? 'settingMistDuo' : 'settingMistSolo';
+                    const rarityKey = 'settingMistE' + portal.rarity;
+                    const accepted = settingsSync.getBool(typeKey, true) && settingsSync.getBool(rarityKey, true);
+                    this._logVerdictOnChange(mobOne, accepted, {gate: 'mistPortal', typeKey, rarityKey});
+                    if (!accepted) continue;
 
-                // Only set imageName if mob has been identified (has name from mobinfo)
-                // Otherwise leave undefined and fallback blue circle will be drawn
-                if (mobOne.name) {
-                    imageName = mobOne.name;
-                    imageFolder = "Resources"; // Change folder to enemies
+                    imageName = 'mist_' + portal.rarity;
+                    imageFolder = "Resources";
+                    mistRarity = portal.rarity;
                 }
 
                 drawId = settingsSync.getBool("settingEnemiesID");
@@ -173,6 +178,11 @@ export class MobsDrawing extends DrawingUtils
                     );
                 } else {
                     this.DrawCustomImage(ctx, point.x, point.y, imageName, imageFolder, baseSize);
+                }
+                // The mist_N icons differ only by tint, hard to tell apart at marker size.
+                if (mistRarity > 0) {
+                    this.drawTextItems(point.x - 3, point.y + this.getMarkerSize(26), String(mistRarity), ctx,
+                        `bold ${this.getScaledFontSize(12, 9)}px`, '#FFFFFF');
                 }
             }
             else {

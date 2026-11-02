@@ -23,7 +23,7 @@ Portal names follow the pattern `MISTS_<TYPE>_<COLOR>`:
 - `<TYPE>` is one of `SOLO`, `DUO`.
 - `<COLOR>` is the PvP zone tag: `YELLOW`, `GREEN`, `BLUE`, `PURPLE`, `RED`. **It is not the rarity.**
 
-Rarity is carried in `Parameters[8]` on the NewMob event for Mists. Values 0 to 4 map to Common, Uncommon, Rare, Epic, Legendary. Live evidence from a "Peu commun" YELLOW portal confirmed `Parameters[8]=1`. The same `Parameters[8]` slot is used for non-Mists dungeons (e.g. T6_MORGANA), which is why the dungeon enchant fix that came with PR #78 unblocked every group dungeon family at the same time.
+Rarity of a portal wisp comes from its mob row, not from a packet field: typeId 120-124 (solo) and 125-129 (duo) are `MOB_UNIQUE_MISTS_PORTAL_WISP[_DUO]` with no suffix (common) or `_STANDARD`, `_UNCOMMON`, `_RARE`, `_LEGENDARY`. Live captures (2026-10) show the enchant field at 0 on all of them. See `parseMistPortal` in `MobsHandler.js`. The suffix order is inferred from the chest rarities and still needs confirming in game.
 
 `MobsHandler.AddMist` stores the rarity as `mist.enchant`. Settings gate uses `settingMistE<enchant>`.
 

@@ -28,6 +28,17 @@ export function findMistBoss(uniqueName) {
     return MIST_BOSSES.find(b => typeof uniqueName === 'string' && uniqueName.includes(b.match)) ?? null;
 }
 
+// A mist portal's rarity is part of its mob row, not a packet field: live captures show
+// enchant 0 on every wisp, with typeId 120-124 (solo) and 125-129 (duo) telling them apart.
+// No suffix is common; the suffixes follow the same order as the chest rarities.
+const MIST_PORTAL_RARITY = {STANDARD: 1, UNCOMMON: 2, RARE: 3, LEGENDARY: 4};
+
+export function parseMistPortal(uniqueName) {
+    const match = /MISTS_PORTAL_WISP(_RESOURCE)?(_DUO)?(?:_(STANDARD|UNCOMMON|RARE|LEGENDARY))?$/.exec(uniqueName ?? '');
+    if (!match) return null;
+    return {isDuo: !!match[2], rarity: MIST_PORTAL_RARITY[match[3]] ?? 0};
+}
+
 export function getSettingNameForEnemyType(type) {
     switch (type) {
         case EnemyType.Enemy: return 'settingNormalEnemy';

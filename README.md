@@ -107,6 +107,9 @@ O navegador guardava o JavaScript por 1 hora, então logo depois de uma atualiza
 ### Tema "Sombra" e botão de diagnóstico
 Cores neutras: preto, roxo discreto para o principal e vermelho escuro para ações de limpar. Em Configurações > Logging entrou o botão "Ligar diagnóstico completo", que liga DEBUG, log em disco e todas as categorias de uma vez para relatar um bug. A Lista de Ignorados saiu do menu.
 
+### Brumas com a raridade certa no radar
+Toda bruma aparecia igual, como uma bolinha azul, porque o desenho pedia um ícone que não existe e a raridade era procurada em campos do pacote que vêm sempre zerados. A raridade está no próprio ID do mob do portal. Agora cada bruma usa o ícone da sua raridade, com o número ao lado, e as caixinhas Solo, Dupla e E0 a E4 da página de Baús passam a controlar esses portais.
+
 ## Como rodar
 
 Precisa de [Go](https://go.dev/) e [Node.js](https://nodejs.org/) instalados, e do [Npcap](https://npcap.com/) pra capturar o tráfego.
